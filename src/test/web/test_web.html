@@ -1,0 +1,21 @@
+<html>
+<header>
+    <title>Hello CYFS!</title>
+    <script src="./cyfs.js"></script>
+    <script src="./test.js"></script>
+</header>
+<body>
+    <div id = "app">
+        <input type="file" id="input" multiple>
+    </div>
+</body>
+
+<script type="text/javascript">
+    const inputElement = document.getElementById("input");
+    inputElement.addEventListener("change", handleFiles, false);
+    function handleFiles() {
+        const fileList = this.files; /* now you can work with the file list */
+        console.log(fileList);
+    }
+</script>
+</html>

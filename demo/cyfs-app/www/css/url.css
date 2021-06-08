@@ -1,0 +1,21 @@
+.example{
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+}
+
+#show{
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+}
+
+#named_object_manager{
+    outline: yellow;
+}
+
+#image_list{
+    outline: yellow;
+}

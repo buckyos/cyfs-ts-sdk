@@ -1,0 +1,72 @@
+import { Hash, sha256 } from "js-sha256";
+
+import { Err, Ok, BuckyResult, BuckyError, BuckyErrorCode } from "../base/results";
+import { RawEncode, RawDecode } from "../base/raw_encode";
+import { } from "../base/buffer";
+
+import bs58 from 'bs58';
+//const bs58 = require('../base/bs58');
+
+export const HASH_VALUE_LEN: number = 32;
+
+export class HashValue implements RawEncode {
+    m_buf: Uint8Array;
+
+    constructor(buf: Uint8Array) {
+        if (buf.length !== HASH_VALUE_LEN) {
+            throw new Error(`invalid hash length:${buf.length}`);
+        }
+
+        this.m_buf = buf;
+    }
+
+    as_slice(): Uint8Array {
+        return this.m_buf;
+    }
+
+    length(): number {
+        return HASH_VALUE_LEN;
+    }
+
+    static default(): HashValue {
+        return new HashValue(new Uint8Array(HASH_VALUE_LEN));
+    }
+
+    static copy_from_slice(buf: Uint8Array): HashValue {
+        return new HashValue(buf.slice(0, HASH_VALUE_LEN));
+    }
+
+    static hash_data(data: Uint8Array): HashValue {
+        // calc hash
+        const hash = sha256.create();
+        hash.update(data);
+        const val = hash.arrayBuffer();
+
+        // construct
+        return new HashValue(new Uint8Array(val));
+    }
+
+    raw_measure(): BuckyResult<number> {
+        return Ok(HASH_VALUE_LEN);
+    }
+
+    raw_encode(buf: Uint8Array): BuckyResult<Uint8Array> {
+        buf.set(this.as_slice());
+        return Ok(buf.offset(this.as_slice().length));
+    }
+
+    to_base_58(): string {
+        return bs58.encode(this.as_slice());
+    }
+}
+
+export class HashValueDecoder implements RawDecode<HashValue>{
+    raw_decode(buf: Uint8Array): BuckyResult<[HashValue, Uint8Array]> {
+        const buffer = buf.slice(0, HASH_VALUE_LEN);
+        buf = buf.offset(HASH_VALUE_LEN);
+
+        const ret: [HashValue, Uint8Array] = [new HashValue(buffer), buf];
+
+        return Ok(ret);
+    }
+}

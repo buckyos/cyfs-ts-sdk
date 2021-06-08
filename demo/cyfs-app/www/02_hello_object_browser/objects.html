@@ -1,0 +1,246 @@
+<html>
+<header>
+    <title>cyfs named objects manager</title>
+    <script src="http://libs.baidu.com/jquery/2.0.0/jquery.min.js"></script>
+    <script src="../cyfs_sdk/cyfs.js"></script>
+
+    <!--JSON查看器-->
+    <link href="../component/jsonTree.css" rel="stylesheet" />
+    <script src="../component/jsonTree.js"></script>
+
+    <!--时间选择器-->
+    <link href="../component/jquery-ui.min.css" rel="stylesheet" />
+    <script src="../component/jquery-ui.min.js"></script>
+
+    <link href="../component/jquery-ui-timepicker-addon.css" rel="stylesheet" />
+    <script src="../component/jquery-ui-timepicker-addon.js"></script>
+
+</header>
+<body>
+
+<!--对象管理器-->
+<div id="named_object_manager">
+    <div id="toolbar">
+        <button onclick="on_query()">查询</button>
+        <button onclick="on_expand()">展开</button>
+        <button onclick="on_collapse()">收缩</button>
+        <input type="text" class="range_time_select" id="range_example_1_start">
+        <input type="text" class="range_time_select" id="range_example_1_end">
+        <span>对象类型:</span>
+        <input type="text" id="obj_type">
+    </div>
+    <div id="loading" style="display: none; margin-left: 100px;margin-top: 100px;">
+        <img src="../img/loading1.gif">
+    </div>
+    <div id="object_tree">
+
+    </div>
+</div>
+
+<script>
+    class ObjectManager{
+        constructor(){
+            this.m_sharedStatck = cyfs.SharedObjectStack.open_runtime();
+            this.m_router = this.m_sharedStatck.noc_service();
+        }
+
+        init(){
+            const startDateTextBox = $('#range_example_1_start');
+            const endDateTextBox = $('#range_example_1_end');
+
+            startDateTextBox.datetimepicker({ 
+                timeFormat: 'HH:mm z',
+                onClose: function(dateText, inst) {
+                    if (endDateTextBox.val() != '') {
+                        var testStartDate = startDateTextBox.datetimepicker('getDate');
+                        var testEndDate = endDateTextBox.datetimepicker('getDate');
+                        if (testStartDate > testEndDate)
+                            endDateTextBox.datetimepicker('setDate', testStartDate);
+                    }
+                    else {
+                        endDateTextBox.val(dateText);
+                    }
+                },
+                onSelect: function (selectedDateTime){
+                    endDateTextBox.datetimepicker('option', 'minDate', startDateTextBox.datetimepicker('getDate') );
+                }
+            });
+
+            // 默认1分钟
+            const now = new Date();
+            startDateTextBox.val(new Date(now.getFullYear(), now.getMonth(), now.getDate(), now.getHours(), now.getMinutes()-1));
+
+            endDateTextBox.datetimepicker({ 
+                timeFormat: 'HH:mm z',
+                onClose: function(dateText, inst) {
+                    if (startDateTextBox.val() != '') {
+                        var testStartDate = startDateTextBox.datetimepicker('getDate');
+                        var testEndDate = endDateTextBox.datetimepicker('getDate');
+                        if (testStartDate > testEndDate)
+                            startDateTextBox.datetimepicker('setDate', testEndDate);
+                    }
+                    else {
+                        startDateTextBox.val(dateText);
+                    }
+                },
+                onSelect: function (selectedDateTime){
+                    startDateTextBox.datetimepicker('option', 'maxDate', endDateTextBox.datetimepicker('getDate') );
+                }
+            });
+            endDateTextBox.val(new Date());
+        }
+
+        async run(){
+            await this.fetchObjects();
+        }
+
+        async fetchObjects(){
+            const loading = document.getElementById("loading");
+            const object_tree_container = document.getElementById("object_tree");
+
+            loading.style.display="block";
+            object_tree_container.style.display = "none";
+
+            const startDateTextBox = $('#range_example_1_start');
+            const endDateTextBox = $('#range_example_1_end');
+
+            const startDate = new Date(startDateTextBox.val());
+            const endDate = new Date(endDateTextBox.val());
+            
+            const start = cyfs.bucky_time(startDate);
+            const end = cyfs.bucky_time(endDate);
+
+            let obj_type;
+            const objTypeValue = $('#obj_type').val();
+            if(objTypeValue!==""){
+                try{
+                    obj_type = parseInt(objTypeValue);
+                }catch{
+                    obj_type = null;
+                }
+            }
+
+            console.log('');
+            console.log(`will select objects from ${startDate} to ${endDate}`);
+            console.log(`start:${start}`);
+            console.log(`end:${end}`);
+            console.log("===");
+            console.log('');
+
+            const router = this.m_router;
+            
+            const req = {
+                filter: {
+                    obj_type: obj_type,
+                    insert_time: new cyfs.SelectTimeRange(start, end)
+                },
+                opt: cyfs.None,
+                target: cyfs.None
+            }
+
+            const r = await router.select(req.filter, req.opt);
+
+            if(r.err){
+                console.log("request select object error, result:", r);
+                return;
+            }
+
+            const ret = r.unwrap();
+            const objects = [];
+            for(const key in ret){
+                const items = ret[key];
+                for(const inner_key in items){
+                    const item = items[inner_key];
+                    
+                    if(item.object!=null){
+                        objects.push(item.object);
+                    }
+
+                    // TODO: 在此解码到具体的类型
+                    if(item.object_raw!=null){
+                        
+                    }
+                }
+            }
+
+            console.log("objects:", objects);
+
+            objects.sort((a,b)=>{
+                let a_time;
+                if(a.body().is_some()){
+                    a_time = a.body().unwrap().update_time();
+                }else{
+                    a_time = a.desc().create_time();
+                }
+
+                let b_time;
+                if(a.body().is_some()){
+                    b_time = b.body().unwrap().update_time();
+                }else{
+                    b_time = b.desc().create_time();
+                }
+
+                return a_time - b_time >0;
+            });
+
+            if(this.object_tree!=null){
+                this.object_tree.clear();
+            }
+
+            const filterRooters = ["m_ctx","m_obj_flags"];
+            
+            this.object_tree = jsonTree.create(objects, object_tree_container, (label)=>{
+                return filterRooters.indexOf(label)>=0;
+            },(keys)=>{
+                // console.log("keys", keys);
+                if(keys.indexOf("m_ctx")>=0&&keys.indexOf("m_desc")>=0){
+                    return [
+                        "m_obj_type",
+                        "m_object_id",
+                        "m_desc",
+                        "m_body",
+                        "m_signs",
+                        "m_nonce",
+                    ];
+                }else{
+                    const type_index = keys.indexOf('m_obj_type');
+                    if(type_index>=0){
+                        keys.splice(type_index,1).sort();
+                        return [...keys];
+                    }else{
+                        return keys.sort();
+                    }
+                }
+            });
+
+            loading.style.display="none";
+            object_tree_container.style.display = "block";
+        }
+
+        expand(){
+            this.object_tree.expand();
+        }
+
+        collapse(){
+            this.object_tree.collapse();
+        }
+    }
+
+    const objectManager = new ObjectManager();
+
+    async function on_query() {
+        await objectManager.fetchObjects();
+    }
+
+    function on_expand(){
+        objectManager.expand();
+    }
+
+    function on_collapse(){
+        objectManager.collapse()
+    }
+    
+    objectManager.init();
+</script>
+</body>
+</html>

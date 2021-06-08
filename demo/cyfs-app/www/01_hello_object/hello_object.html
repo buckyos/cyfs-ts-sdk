@@ -1,0 +1,252 @@
+<html>
+<header>
+    <title>Hello Objects</title>
+    <script src="http://libs.baidu.com/jquery/2.0.0/jquery.min.js"></script>
+    <script src="../cyfs_sdk/cyfs.js"></script>
+
+    <!--JSON查看器-->
+    <link href="../component/jsonTree.css" rel="stylesheet" />
+    <script src="../component/jsonTree.js"></script>
+
+    <!--时间选择器-->
+    <link href="../component/jquery-ui.min.css" rel="stylesheet" />
+    <script src="../component/jquery-ui.min.js"></script>
+
+    <link href="../component/jquery-ui-timepicker-addon.css" rel="stylesheet" />
+    <script src="../component/jquery-ui-timepicker-addon.js"></script>
+
+</header>
+<body>
+
+<!--对象管理器-->
+<div id="named_object_manager">
+    <div id="object_tree">
+
+    </div>
+</div>
+
+<script>
+
+    // 定义一个扩展对象
+    // 纯JS定义
+
+    // 测试
+    class ObjectManager{
+        constructor(){
+            this.m_router = null;
+            this.m_message_list_id =  null;
+        }
+
+        init(){
+            this.m_sharedStatck = cyfs.SharedObjectStack.open_runtime();
+            this.m_router = this.m_sharedStatck.noc_service();
+            this.m_util_service = this.m_sharedStatck.util();
+            this.m_object_tree_container = document.getElementById("object_tree");
+        }
+
+        async run(){
+            await this.dumpInfo();
+            await this.createObject();
+            await this.queryObject();
+            // await this.modifyObject();
+        }
+
+        async dumpInfo(){
+            // Util 接口测试
+            let current_device_static_info = await this.m_util_service.get_device_static_info();
+            console.log('current_device_static_info:', current_device_static_info);
+
+            let ood_status = await this.m_util_service.get_ood_status();
+            console.log('ood_status:', ood_status);
+
+            let noc_stat = await this.m_util_service.get_noc_stat();
+            console.log('noc_stat:', noc_stat);
+
+            let network_access_info = await this.m_util_service.get_network_access_info();
+            console.log('get_network_access_info:', network_access_info);
+        }
+
+        async createObject(){
+            // 对象分为三种
+            // * 标准对象
+            // * 核心对象
+            // * DApp扩展对象
+
+            // 创建一个People（这是一个标准对象）
+            // 对象定义：../../src/cyfs-base/objects/people.ts
+            // create(
+            //   owner: Option<ObjectId>, 
+            //   ood_list: Vec<DeviceId>, 
+            //   public_key: PublicKey, 
+            //   area: Option<Area>, 
+            //   name: Option<string>, 
+            //   icon: Option<FileId>
+            // ):People;
+            let people = cyfs.People.create(
+                cyfs.None,
+                new cyfs.Vec([]),
+                new cyfs.RSAPublicKey("rsa1024", new Uint8Array(cyfs.RAW_PUBLIC_KEY_RSA_1024_LENGTH)), // TODO：公玥的创建
+                cyfs.None,
+                cyfs.Some("cyperpunk2077")
+            );
+
+            let people_id = people.people_id();
+
+            // 创建一个MessageList对象（这是一个DECApp扩展对象）
+            // 对象定义：../../src/cyfs-dec-app/message/message_list.ts
+            // static create(
+            //   owner: PeopleId
+            // ):MessageList;
+            let message_list = cyfs.MessageList.create(
+                people_id
+            );
+            let message_list_id = message_list.message_list_id();
+            this.m_message_list_id = message_list_id.object_id;
+            console.log("this.m_message_list_id:", this.m_message_list_id.to_base_58());
+            
+            return this.put_message_list(message_list);
+        }
+
+        async queryObject(){
+            const ret = await this.fetch_message_list(this.m_message_list_id);
+            if(ret.err){
+                return ret;
+            }
+
+            const message_list = ret.unwrap();
+            this.dump(message_list);
+        }
+
+        async modifyObject(){
+            // TODO
+        }
+
+        // 获取消息列表
+        async fetch_message_list(object_id){
+            const ret = await this.fetch_obj(object_id);
+            if(ret.err){
+                console.error(`"fetch_message_list [${object_id.to_base_58()}] failed! ${ret.err}`);
+                return ret;
+            }
+
+            const resp = ret.unwrap();
+            const [message_list, _] = new cyfs.MessageListDecoder().raw_decode(resp.object_raw).unwrap();
+            return {
+                err:0,
+                unwrap: ()=>{
+                    return message_list;
+                }
+            };
+        }
+
+        // 发送消息列表
+        async put_message_list(message_list){
+            return this.put_object(message_list);
+        }
+
+        // 发送一个对象
+        async put_object(obj){
+            const object_id = obj.desc().calculate_id();
+            const buf = new Uint8Array(obj.raw_measure().unwrap());
+            const _ = obj.raw_encode(buf).unwrap();
+            const put_req = {
+                object_id: object_id.clone(),
+                object_raw: buf,
+                target: undefined, // 可选指定目标设备id
+                flags: 0,
+            };
+
+            // test 2
+            // {
+            //     console.log("===>buf is:", buf);
+            //     const [obj_2, buf2] = new cyfs.AnyNamedObjectDecoder().raw_decode(buf);
+            //     const id = obj_2.desc().calculate_id();
+            //     console.log("calclate_id is:{}", id.to_base_58(), ", buf2.length:", buf2.length);
+            // }
+
+            const ret = await this.m_router.put_object(put_req);
+            if(ret.err){
+                console.error(`"put_object [${object_id.to_base_58()}] failed! ${ret.err}`);
+                return;
+            }
+
+            console.log("put object result:", ret);
+            return;
+        }
+
+        // 查找指定id对象
+        async fetch_obj(object_id){
+            const get_req = {
+                object_id: object_id,
+                flags: 0,
+            };
+
+            const ret = await this.m_router.get_object(get_req);
+            if(ret.err){
+                console.error(`"get_object [${object_id.to_base_58()}] failed! ${ret.err}`);
+                return ret;
+            }
+
+            return ret;
+        }
+
+        // 显式一个对象
+        async dump(obj){
+            if(this.object_tree!=null){
+                this.object_tree.clear();
+            }
+
+            const filterRooters = ["m_ctx","m_obj_flags"];
+            
+            this.object_tree = jsonTree.create([obj], this.m_object_tree_container, (label)=>{
+                return filterRooters.indexOf(label)>=0;
+            },(keys)=>{
+                // console.log("keys", keys);
+                if(keys.indexOf("m_ctx")>=0&&keys.indexOf("m_desc")>=0){
+                    return [
+                        "m_obj_type",
+                        "m_object_id",
+                        "m_desc",
+                        "m_body",
+                        "m_signs",
+                        "m_nonce",
+                    ];
+                }else{
+                    const type_index = keys.indexOf('m_obj_type');
+                    if(type_index>=0){
+                        keys.splice(type_index,1).sort();
+                        return [...keys];
+                    }else{
+                        return keys.sort();
+                    }
+                }
+            });
+        }
+    }
+
+    // 启动
+    const objectManager = new ObjectManager();
+    objectManager.init();
+    objectManager.run();
+
+    // var myHeaders = new Headers();
+    // var myInit = { 
+    //     method: 'GET',
+    //     headers: myHeaders,
+    //     mode: 'cors',
+    //     cache: 'default' 
+    // };
+    // var myRequest = new Request('http://cyfs/o/9tGpLNnfbRQD28vw69SF8jri6Mhwq6Xqd6FfinCfbvBL', myInit);
+    // fetch(myRequest).then(function(response) {
+    //     return response.blob();
+    // }).then(function(myBlob) {
+    //     return myBlob.arrayBuffer();
+    // }).then(function (buffer){
+    //     console.log(buffer);
+    //     const [dec_app, rest] = new cyfs.DecAppDecoder().raw_decode(new Uint8Array(buffer));
+    //     console.log(dec_app);
+    // });
+
+</script>
+</body>
+</html>

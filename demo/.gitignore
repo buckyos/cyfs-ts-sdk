@@ -1,0 +1,9 @@
+dist
+node_modules
+.vscode
+.bucky
+*.js
+*.map
+/.cyfs/owner.json
+/cyfs
+!webpack.config.js
