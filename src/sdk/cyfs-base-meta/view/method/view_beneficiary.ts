@@ -1,0 +1,33 @@
+import {BuckyResult, ObjectId, ObjectIdDecoder, Ok, RawDecode, RawEncode, RawEncodePurpose} from "../../../cyfs-base";
+
+export class ViewBenefi implements RawEncode {
+    constructor(public address: ObjectId) {
+    }
+
+    raw_encode(buf: Uint8Array, ctx?: any, purpose?: RawEncodePurpose): BuckyResult<Uint8Array> {
+        buf = this.address.raw_encode(buf).unwrap();
+        return Ok(buf);
+    }
+
+    raw_measure(ctx?: any, purpose?: RawEncodePurpose): BuckyResult<number> {
+        let size = 0;
+        size += this.address.raw_measure().unwrap();
+        return Ok(size);
+    }
+}
+
+export class ViewBenefiDecoder implements RawDecode<ViewBenefi> {
+    raw_decode(buf: Uint8Array, ctx?: any): BuckyResult<[ViewBenefi, Uint8Array]> {
+        let address: ObjectId;
+        {
+            const ret = new ObjectIdDecoder().raw_decode(buf);
+            if (ret.err) {
+                return ret;
+            }
+
+            [address, buf] = ret.unwrap();
+        }
+
+        return Ok([new ViewBenefi(address), buf]);
+    }
+}

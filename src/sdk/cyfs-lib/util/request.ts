@@ -1,0 +1,37 @@
+import { UtilOutputRequestCommon, UtilGetDeviceOutputRequest, UtilGetDeviceOutputResponse, UtilGetZoneOutputRequest, UtilGetZoneOutputResponse, UtilResolveOODOutputRequest, UtilResolveOODOutputResponse, UtilGetOODStatusOutputRequest, UtilGetOODStatusOutputResponse, UtilGetNOCInfoOutputRequest, UtilGetNOCInfoOutputResponse, UtilGetDeviceStaticInfoOutputRequest, UtilGetDeviceStaticInfoOutputResponse, UtilGetNetworkAccessInfoOutputRequest, UtilGetNetworkAccessInfoOutputResponse, UtilGetSystemInfoOutputRequest, UtilGetSystemInfoOutputResponse, UtilGetVersionInfoOutputRequest, UtilGetVersionInfoOutputResponse, UtilBuildDirFromObjectMapOutputRequest, UtilBuildDirFromObjectMapOutputResponse } from "./output_request";
+
+export type UtilRequestCommon = UtilOutputRequestCommon;
+
+export type UtilGetDeviceRequest = UtilGetDeviceOutputRequest;
+export type UtilGetDeviceResponse = UtilGetDeviceOutputResponse;
+
+export type UtilGetZoneRequest = UtilGetZoneOutputRequest;
+export type UtilGetZoneResponse = UtilGetZoneOutputResponse;
+
+export type UtilResolveOODRequest = UtilResolveOODOutputRequest;
+export type UtilResolveOODResponse = UtilResolveOODOutputResponse;
+
+export type UtilGetOODStatusRequest = UtilGetOODStatusOutputRequest;
+export type UtilGetOODStatusResponse = UtilGetOODStatusOutputResponse;
+
+export type UtilGetNOCInfoRequest = UtilGetNOCInfoOutputRequest;
+export type UtilGetNOCInfoResponse = UtilGetNOCInfoOutputResponse;
+
+export type UtilGetDeviceStaticInfoRequest = UtilGetDeviceStaticInfoOutputRequest;
+export type UtilGetDeviceStaticInfoResponse = UtilGetDeviceStaticInfoOutputResponse;
+
+export type UtilGetNetworkAccessInfoRequest = UtilGetNetworkAccessInfoOutputRequest;
+export type UtilGetNetworkAccessInfoResponse = UtilGetNetworkAccessInfoOutputResponse;
+
+export type UtilGetSystemInfoRequest = UtilGetSystemInfoOutputRequest;
+export type UtilGetSystemInfoResponse = UtilGetSystemInfoOutputResponse;
+
+export type UtilGetVersionInfoRequest = UtilGetVersionInfoOutputRequest;
+export type UtilGetVersionInfoResponse = UtilGetVersionInfoOutputResponse;
+
+export type UtilBuildDirFromObjectMapRequest = UtilBuildDirFromObjectMapOutputRequest;
+export type UtilBuildDirFromObjectMapResponse = UtilBuildDirFromObjectMapOutputResponse;
+
+export enum BuildDirType {
+    Zip = 0,
+}

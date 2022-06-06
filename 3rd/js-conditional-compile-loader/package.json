@@ -1,0 +1,31 @@
+{
+  "name": "js-conditional-compile-loader",
+  "version": "1.0.14",
+  "description": "A conditional compiling loader for webpack, support js,ts,css,scss,vue. 一个条件编译的webpack loader，支持js,ts,css,scss,vue等。",
+  "main": "index.js",
+  "scripts": {
+    "test": "jest",
+    "prepublish": "npm test"
+  },
+  "dependencies": {
+    "loader-utils": "2"
+  },
+  "keywords": [
+    "webpack",
+    "javascript",
+    "ifdebug",
+    "conditional",
+    "compile"
+  ],
+  "author": {
+    "name": "James.Huang",
+    "email": "hz932@qq.com",
+    "url": "http://www.hz300.com/js-conditional-compile-loader/"
+  },
+  "license": "MIT",
+  "readme": "readme.md",
+  "devDependencies": {
+    "jest": "^24.8.0",
+    "loader-utils": "2"
+  }
+}

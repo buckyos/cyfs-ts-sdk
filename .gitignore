@@ -6,18 +6,22 @@ non_sdk.js
 
 *.gen.ts
 *.d.ts
+.vscode
 
 !os_rn.js
 !webpack.config.js
 !webpack.rn.config.js
 !webpack.node.config.js
 !webpack.tool.config.js
-!demo/cyfs-app/*.js
-!demo/cyfs-app/*/*.js
-!src/cyfs-debug/blog/*.js
-!src/cyfs-debug/blog/src/*.js
+!src/sdk/cyfs-debug/blog/*.js
+!src/sdk/cyfs-debug/blog/src/*.js
+!src/sdk/platform-spec/rn/platform_rn_js.js
 !index.g.js
 !auto.js
 !auto_*.js
 !dist.js
 !webpack_helper.js
+/node_modules/
+/out/
+/dist/
+/package-lock.json

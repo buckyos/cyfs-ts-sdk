@@ -1,6 +1,4 @@
-import { Dir, AnyNamedObjectVisitor, DirDecoder, ChunkId, ObjectId } from '../cyfs-base';
-import { DirId, match_any_obj, None } from '../cyfs-base';
-import { RouterGetObjectRequest, SharedObjectStack, TransAddFileRequest } from '../non-lib';
+import * as cyfs from '../sdk';
 
 interface TreeNode {
     // 只有根节点没有名字
@@ -13,24 +11,27 @@ interface TreeNode {
     subs?: Map<string, TreeNode>,
 
     // type='object'情况下有object_id
-    object_id?: ObjectId,
+    object_id?: cyfs.ObjectId,
 }
 
 // 重建dir的目录树结构
-async function build_dir(stack: SharedObjectStack, dir_id: DirId) {
-    const req: RouterGetObjectRequest = {
+async function build_dir(stack: cyfs.SharedCyfsStack, dir_id: cyfs.DirId) {
+    const req = {
+        common: {
+            level: cyfs.NONAPILevel.Router,
+            flags: 0,
+        },
         object_id: dir_id.object_id,
-        flags: 0,
     };
 
-    const resp = await stack.router().get_object(req);
+    const resp = await stack.non_service().get_object(req);
     if (resp.err) {
         console.error(`get dir object from router error!`, resp);
         return;
     }
 
     const ret = resp.unwrap();
-    const [dir, _] = new DirDecoder().raw_decode(ret.object_raw).unwrap();
+    const [dir, _] = new cyfs.DirDecoder().raw_decode(ret.object.object_raw).unwrap();
     
     const root: TreeNode = {
         type: 'dir',
@@ -38,7 +39,7 @@ async function build_dir(stack: SharedObjectStack, dir_id: DirId) {
     };
 
     dir.desc().content().obj_list().match({
-        Chunk: (chunk_id: ChunkId) => {
+        Chunk: (chunk_id: cyfs.ChunkId) => {
             console.error(`obj_list in chunk not support yet! ${chunk_id}`);
         },
         ObjList: (obj_list) => {
@@ -77,14 +78,14 @@ async function build_dir(stack: SharedObjectStack, dir_id: DirId) {
 }
 
 export async function test_dir() {
-    const stack = SharedObjectStack.open_runtime();
+    const stack = cyfs.SharedCyfsStack.open_runtime();
     (await stack.online()).unwrap();
 
     console.info("device_id=", stack.local_device_id(), stack.local_device_id().toString());
     const owner = stack.local_device().desc().owner()!.unwrap();
     console.info("owner=", owner.toString());
 
-    const dir_id = DirId.from_base_58('7jMmeXZWRh8u3qHTEsujtLrTXRpJn6EziWQRsY9qbNEB').unwrap();
+    const dir_id = cyfs.DirId.from_base_58('7jMmeXZWRh8u3qHTEsujtLrTXRpJn6EziWQRsY9qbNEB').unwrap();
 
     await build_dir(stack, dir_id);
 }

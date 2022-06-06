@@ -11,11 +11,56 @@
 </body>
 
 <script type="text/javascript">
+    async function test_get_data(stack) {
+        const dir_id = cyfs.ObjectId.from_base_58('7jMmeXZqmEro3y46GBdYBhJPPxaGsq2oLg8pqi3mGMBz').unwrap();
+        const req = {
+            common: {
+                level: cyfs.NDNAPILevel.Router,
+                flags: 0,
+                referer_object: ["7jMmeXZqmEro3y46GBdYBhJPPxaGsq2oLg8pqi3mGMBz", "5aSixgLohgYuvVJEefXp9v5PhwAnnwnuzetTmvgubDB9"],
+            },
+            object_id: dir_id,
+            inner_path: '/test1/1.log',
+        };
+        const url = stack.ndn_service().prepare_download_data(req);
+        console.info(url);
+
+        var a = document.createElement('a');
+        a.href = new URL(url)
+        a.download = "1.jpg";
+        a.click();
+
+        //const ret = await stack.ndn_service().get_data(req);
+        //const resp = ret.unwrap();
+        //console.info(resp.length);
+    }
+
     const inputElement = document.getElementById("input");
     inputElement.addEventListener("change", handleFiles, false);
-    function handleFiles() {
+    async function handleFiles() {
         const fileList = this.files; /* now you can work with the file list */
-        console.log(fileList);
+        
+        
+        let formData = new FormData();
+     
+        for (const file of fileList) {
+             console.log(file);
+             formData.append(file.name, file);
+        }
+        
+        const resp = await fetch('http://127.0.0.1:38090/file-cache', {method: "POST", body: formData});
+        const ret = await resp.json();
+        console.log(ret);
     }
+
+    async function test() {
+        const param = cyfs.SharedObjectStackParam.new_with_ws_event_ports(21000, 21001).unwrap();
+        const stack = cyfs.SharedObjectStack.open(param);
+        (await stack.online()).unwrap();
+
+        await test_get_data(stack);
+    }
+    
+    //test();
 </script>
 </html>
