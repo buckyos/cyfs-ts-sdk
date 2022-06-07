@@ -14,10 +14,16 @@ export function makeCommand(config: any): Command {
     return new Command("get")
         .description("get any file or dir from ood/runtime")
         .argument("<link>", "get dir object raw data")
+        .requiredOption("-e, --endpoint <endpoint>", "cyfs endpoint, ood or runtime", "runtime")
         .requiredOption("-s, --save <save_path>", "save dir obj to path, mut be absolute path!!!")
         .action(async (olink, options) => {
             console.log("options:", options)
-            let stack = SharedCyfsStack.open_runtime(default_dec_id);
+            let stack: SharedCyfsStack;
+            if (options.endpoint === "ood") {
+                stack = SharedCyfsStack.open_default(default_dec_id);
+            } else {
+                stack = SharedCyfsStack.open_runtime(default_dec_id);
+            }
             await stack.online();
             await run(olink, options, stack);
         })
@@ -90,14 +96,6 @@ async function download_obj(stack: SharedCyfsStack, target?: ObjectId, dec_id?: 
 
     console.log(`files: ${files.size}`);
     return files;
-}
-
-function makeRLink(
-    ownerId: ObjectId,
-    dec_id: ObjectId,
-    inner_path: string
-) {
-    return [`cyfs://r`, ownerId.to_base_58(), dec_id.to_base_58(), inner_path].join("/");
 }
 
 async function download_files(stack: SharedCyfsStack, options: any, files, file_object_id, dec_id) {
@@ -221,13 +219,7 @@ export async function run(link: string, options:any, stack: SharedCyfsStack, tar
         }
 
         await download_files(stack, options, files, target_id, dec_id)
-        // let base_save = options.save;
-        // for (const file of files) {
-        //     console.log(`dump file ${file}`);
-        //     options.save = path.join(base_save, `${file[0]}`)
-        //     const cyfs_rlink = makeRLink(target_id, dec_id, file[0]);
-        //     await dump.run(cyfs_rlink, options, stack, target_id, false, mode);
-        // }
+
     } else {
         console.log(`target: ${target}, object_id: ${obj_id}`);
         let target_id = ObjectId.from_base_58(target).unwrap();
@@ -242,21 +234,13 @@ export async function run(link: string, options:any, stack: SharedCyfsStack, tar
             }
 
             await download_files(stack, options, files, target_id, default_dec_id)
-            // let base_save = options.save;
-            // for (const file of files) {
-            //     console.log(`dump file ${file}`);
-            //     options.save = path.join(base_save, `${file[0]}`)
-            //     const cyfs_rlink = makeRLink(target_id, default_dec_id, file[0]);
-            //     await dump.run(cyfs_rlink, options, stack, undefined, false, mode);
-            // }
+
         } else {
             let files = new Map();
             let file_name = obj_id + ".fileobj";
             files.set(file_name, object_id);
             await download_files(stack, options, files, target_id, default_dec_id)
-            // options.save = path.join(options.save, `${obj_id}.fileobj`)
-            // const cyfs_rlink = makeRLink(target_id, default_dec_id, "/");
-            // await dump.run(obj_id, options, stack, undefined, false, mode);
+
         }
 
     }
