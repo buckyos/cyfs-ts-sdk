@@ -374,6 +374,9 @@ async function help(){
     num = '重新选择target,选择后路径重置为根目录';
     list.push({ name: 'target' + `,${num}`, value: num, descript: '重新选择target,选择后路径重置为根目录' });
 
+    num = '清除屏幕';
+    list.push({ name: 'clear' + `,${num}`, value: num, descript: '清除屏幕' });
+
     num = '帮助信息';
     list.push({ name: 'help' + `,${num}`, value: num, descript: '帮助信息' });
 
@@ -544,7 +547,7 @@ export async function run(options:any, stack: SharedCyfsStack) {
                 // check tmp path existed(ObjectMap)
                 const check = await check_dir(inner_path, target_id, stack, dec_id);
                 if (!check) {
-                    console.error(`${inner_path} is not vaild sub dir`);
+                    console_orig.error(`${inner_path} is not vaild sub dir`);
                     continue;
                 }
                 current_path = inner_path;
@@ -564,7 +567,7 @@ export async function run(options:any, stack: SharedCyfsStack) {
             } else if (program === "get"){
                 const temp_options = options;
                 if (argv._.length < 2 || argv.s === undefined) {
-                    console.log(`Usage: get [objectmap option] [-s absolute path option]`)
+                    console_orig.log(`Usage: get [objectmap option] [-s absolute path option]`)
                     continue;
                 }
 
@@ -587,10 +590,10 @@ export async function run(options:any, stack: SharedCyfsStack) {
                 if (!check) {
                     console_orig.log(`inner_path: ${inner_path}`);
                     let key = await cat(stack, target_id, dec_id, inner_path);
-                    console.log(`target_id: ${target_id}, dec_id: ${dec_id}, inner_path: ${inner_path}, ep: ${options.endpoint}, key: ${key}`)
+                    console_orig.log(`target_id: ${target_id}, dec_id: ${dec_id}, inner_path: ${inner_path}, ep: ${options.endpoint}, key: ${key}`)
                     await rm(key, stack, target_id, dec_id, options.endpoint)
                 } else {
-                    console.error(`rm: cannot remove ${inner_path}: Is a recurive directory`)
+                    console_orig.error(`rm: cannot remove ${inner_path}: Is a recurive directory`)
                 }
             } else if (program === "target"){
                 device_list = [];
@@ -601,6 +604,8 @@ export async function run(options:any, stack: SharedCyfsStack) {
                 dec_id = await select_dec_id();
             } else if (program === "exit") {
                 break;
+            } else if (program === "clear") {
+                console.clear();
             } else if (program === "help") {
                 await help();
             }

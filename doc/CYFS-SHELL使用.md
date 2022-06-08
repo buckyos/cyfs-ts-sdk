@@ -14,6 +14,8 @@
 
  \- [target: 重新选择target,选择后路径重置为根目录](#target: 重新选择target,选择后路径重置为根目录)
 
+ \- [clear: 清除屏幕](#clear: 清除屏幕)
+
  \- [help: 帮助信息](#help: 帮助信息)
 
  \- [exit: 退出shell](#exit: 退出shell)
@@ -169,7 +171,10 @@ choose dec_id:> 9tGpLNnDpa8deXEk2NaWGccEu4yFQ2DrTZJPLYLT7gj4
 (Move up and down to reveal more choices)
 ```
 
-
+## clear: 清屏
+```shell
+ 5hLXAcQGjS1hJc88U11Zcwdrk7ZtzSosNmyxzq3jcUdj:/> clear
+```
 
 ## exit: 退出shell
 
