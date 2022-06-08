@@ -22,7 +22,7 @@
 
 # CYFS-SHELL使用
 
-> 输入cyfs shell,进入交互式命令行, 选择device_id 和 dec_id后进入对应的Root-State 根
+> 输入cyfs shell [ -e runtime/ood],进入交互式命令行, 选择device_id 和 dec_id后进入对应的Root-State 根
 
 
 
@@ -148,7 +148,7 @@ commit for op_env success: sid=99, resp={"dec_root":"95RvaS5NjKcdisTF7m6jWVQ87Te
 ## target: 重新选择target,选择后路径重置为根目录
 
 ```shell
-5hLXAcQGjS1hJc88U11Zcwdrk7ZtzSosNmyxzq3jcUdj:/upload_map/95RvaS5frxqyKW6BH6dmNAqadhgtQeg2Lwbn4pdNaQYA/..>  target
+5hLXAcQGjS1hJc88U11Zcwdrk7ZtzSosNmyxzq3jcUdj:/upload_map/95RvaS5frxqyKW6BH6dmNAqadhgtQeg2Lwbn4pdNaQYA/..>  target -e [runtime/ood]
 choose device:> 5hLXAcQGjS1hJc88U11Zcwdrk7ZtzSosNmyxzq3jcUdj
 dec_id: 9tGpLNnDpa8deXEk2NaWGccEu4yFQ2DrTZJPLYLT7gj4
 choose dec_id:> 9tGpLNnDpa8deXEk2NaWGccEu4yFQ2DrTZJPLYLT7gj4

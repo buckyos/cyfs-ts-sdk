@@ -441,7 +441,7 @@ async function runPrompt(target_id, current_path, device_list) {
           return str.replace(/ \[.*$/, '')
         }
       },
-      'ls', 'ls /', 'ls /a/b', 'cd', 'cd [inner_path option]', 'cd /a', 'cat [object option]', 'exit', 'quit', 'dump [object option]', 'dump [object option] -s savepath', "rm [object]", "target", "help"
+      'ls', 'ls /', 'ls /a/b', 'cd', 'cd [inner_path option]', 'cd /a', 'cat [object option]', 'exit', 'quit', 'dump [object option]', 'dump [object option] -s savepath', "rm [object]", "target [-e runtime/ood]", "help"
     ]
   
     return inquirer.prompt([
@@ -465,7 +465,7 @@ async function runPrompt(target_id, current_path, device_list) {
       }
     ]).then(answers => {
       if (!~'ls,cd,cat,dump,get,rm,target,help,exit,quit'.split(',').indexOf(answers.cmd)) {
-          // do sth?
+          // console_orig.log(`answers: ${answers}`)
       }
       return answers.cmd;
 
@@ -541,7 +541,7 @@ export async function run(options:any, stack: SharedCyfsStack) {
             }
             if (program === "ls") {
                 // console_orig.log(`RUN: ${program} ${args} ${inner_path}`);
-                await tree_list(inner_path, target_id, stack, dec_id);
+                await ls(inner_path, target_id, stack, dec_id);
 
             } else if (program === "cd") {
                 // check tmp path existed(ObjectMap)
@@ -598,6 +598,12 @@ export async function run(options:any, stack: SharedCyfsStack) {
             } else if (program === "target"){
                 device_list = [];
                 dec_id_list = [];
+                if (argv.e === "ood") {
+                    stack = SharedCyfsStack.open_default();
+                } else {
+                    stack = SharedCyfsStack.open_runtime();
+                }
+                await stack.online();
                 await perpare_device_list(stack);
                 target_id = await select_target();
                 await perpare_dec_list(stack, target_id);
@@ -614,6 +620,6 @@ export async function run(options:any, stack: SharedCyfsStack) {
 }
 
 
-async function ls(args: any) {
-    //
+async function ls(inner_path: string, target_id: ObjectId, stack: SharedCyfsStack, dec_id: ObjectId) {
+    await tree_list(inner_path, target_id, stack, dec_id);
 }
