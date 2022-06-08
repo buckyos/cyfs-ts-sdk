@@ -452,9 +452,11 @@ async function runPrompt(target_id, current_path, device_list) {
         prefix: "",
         suffix: ">",
         validate: val => {
-          return val
-              ? true
-              : 'Press TAB for suggestions'
+          // Enter \r\n support
+          if (val === "") {
+              return true
+          }
+          return val ? true : `Press TAB for suggestions val`
         },
         short: true
       }
@@ -513,7 +515,6 @@ export async function run(options:any, stack: SharedCyfsStack) {
             // console_orig.log(`prorgam: ${argv._[0]}, args: ${argv._[1]}, a: ${argv.a}, b: ${argv.b}`)
             // 校验参数
             if (argv._.length < 1) {
-                console_orig.error(`Usage <program>  [argc1...] `);
                 continue;
             }
             //windows下  ls e:
