@@ -2,7 +2,7 @@
 name: Task request
 about: Record the things you do
 title: ''
-labels: ''
+labels: task
 assignees: ''
 
 ---

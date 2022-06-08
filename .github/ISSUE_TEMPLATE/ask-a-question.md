@@ -2,12 +2,12 @@
 name: Ask a Question
 about: I want to ask a question
 title: ''
-labels: bug, feature
+labels: question
 assignees: ''
 
 ---
 
-** General Question**
+**General Question**
 <!--
 Before asking a question, make sure you have:
 - Searched existing questions.
