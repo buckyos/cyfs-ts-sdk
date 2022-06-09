@@ -507,14 +507,15 @@ export async function run(options:any, stack: SharedCyfsStack) {
             dec_id = await select_dec_id();
         } else {
             const cmd = await runPrompt(target_id, current_path, device_list);
-            const arr = cmd.split(' ');
+            var regex = /"([^"]*)"|(\S+)/g;
+            var arr = (cmd.match(regex) || []).map(m => m.replace(regex, '$1$2'));
+            console.log(arr);
             const args = arr.filter(el => {
                 return el != null && el != '';
             });
             // ls -a avalue -b bvalue --name=xiaoming -abc 10 --save-dev --age 20 arg
             // const args = ['--name=xiaoming', '-abc', '10', '--save-dev', '--age', '20'];
             const argv = parseArgs(args);
-            // console_orig.log(`program argv: ${JSON.stringify(argv)}`);
             // console_orig.log(`prorgam: ${argv._[0]}, args: ${argv._[1]}, a: ${argv.a}, b: ${argv.b}`)
             // 校验参数
             if (argv._.length < 1) {
@@ -528,13 +529,17 @@ export async function run(options:any, stack: SharedCyfsStack) {
             } else {
                 const args = argv._.slice(1);  // skip argv[0]
                 const tmp_path = args.join("/");
-                if (-1 != tmp_path.indexOf("/")) {
-                    inner_path = tmp_path;
+                console_orig.log(`tmp_path: ${tmp_path}`);
+                let trim_double_quota_path = tmp_path.replace("\"","").replace("\"","");
+                let trim_single_quota_path = trim_double_quota_path.replace("\'","").replace("\'","");
+
+                if (-1 != trim_single_quota_path.indexOf("/")) {
+                    inner_path = trim_single_quota_path;
                 } else {
                     if (current_path === "/") {
-                        inner_path = current_path + tmp_path;
+                        inner_path = current_path + trim_single_quota_path;
                     } else {
-                        inner_path = current_path + "/" + tmp_path;
+                        inner_path = current_path + "/" + trim_single_quota_path;
                     }
 
                 }
