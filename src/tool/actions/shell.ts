@@ -559,7 +559,9 @@ export async function run(options:any, stack: SharedCyfsStack) {
                 const temp_options = options;
                 temp_options.save = "./";
                 if (argv.s !== undefined) {
-                    temp_options.save = argv.s;
+                    let ref = argv.s.replace("\"","").replace("\"","");
+                    let trim_quota = ref.replace("\'","").replace("\'","");
+                    temp_options.save = trim_quota;
                 }
 
                 await dump.run(makeRLink(target_id, dec_id, inner_path), temp_options, stack, undefined, true, "object");
@@ -571,7 +573,9 @@ export async function run(options:any, stack: SharedCyfsStack) {
                     continue;
                 }
 
-                temp_options.save = argv.s;
+                let ref = argv.s.replace("\"","").replace("\"","");
+                let trim_quota = ref.replace("\'","").replace("\'","");
+                temp_options.save = trim_quota;
                 /*
                 let arr = argv._[1].split("/");
                 console.log(`arr: ${arr}`)

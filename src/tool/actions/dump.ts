@@ -95,6 +95,11 @@ export async function run(olink_or_objectid: string, options:any, stack: SharedC
     }
 
     const file = path.join(options.save);
+    // check dir is existed
+    if (!fs.existsSync(path.dirname(file))) {
+        console.error(` save path not existed: ${path.dirname(file)}`);
+        return;
+    }
     fs.writeFileSync(file, obj_raw);
 
     console.log(`dump obj对象为${file}`);

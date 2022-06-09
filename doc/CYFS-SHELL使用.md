@@ -139,8 +139,6 @@ remove_with_key for op_env success: sid=99
 remove_with_key success, sid=99, key=/upload_map/95RvaS5frxqyKW6BH6dmNAqadhgtQeg2Lwbn4pdNaQYA/../95RvaS5frxqyKW6BH6dmNAqadhgtQeg2Lwbn4pdNaQYA, prev_value=undefined
 will commit for op_env: sid=99
 commit for op_env success: sid=99, resp={"dec_root":"95RvaS5NjKcdisTF7m6jWVQ87TesqBAcjqgH6f7sik4C","revision":"14","root":"95RvaS5NjKcdisTF7m6jWVQ87TesqBAcjqgH6f7sik4C"}
-
-# 这里单纯的删除好像不行
 ```
 
 
