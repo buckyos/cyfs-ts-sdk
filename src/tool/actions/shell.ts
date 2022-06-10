@@ -573,14 +573,18 @@ export async function run(options:any, stack: SharedCyfsStack) {
 
             } else if (program === "get"){
                 const temp_options = options;
-                if (argv._.length < 2 || argv.s === undefined) {
+                if (argv._.length < 2) {
                     console_orig.log(`Usage: get [objectmap option] [-s absolute path option]`)
                     continue;
                 }
+                if (argv.s !== undefined) {
+                    let ref = argv.s.replace("\"","").replace("\"","");
+                    let trim_quota = ref.replace("\'","").replace("\'","");
+                    temp_options.save = trim_quota;
+                } else {
+                    temp_options.save = "./";
+                }
 
-                let ref = argv.s.replace("\"","").replace("\"","");
-                let trim_quota = ref.replace("\'","").replace("\'","");
-                temp_options.save = trim_quota;
                 /*
                 let arr = argv._[1].split("/");
                 console.log(`arr: ${arr}`)

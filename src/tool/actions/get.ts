@@ -6,6 +6,7 @@ import * as fs from 'fs-extra';
 import fetch from 'node-fetch';
 import * as dump from './dump';
 import { CyfsToolConfig, get_final_owner } from "../lib/util";
+import { dir } from "console";
 
 
 const default_dec_id = ObjectId.from_base_58('9tGpLNnDpa8deXEk2NaWGccEu4yFQ2DrTZJPLYLT7gj4').unwrap()
@@ -28,18 +29,6 @@ export function makeCommand(config: CyfsToolConfig): Command {
             await run(olink, options, stack);
         })
 }
- 
-// 递归创建目录 同步方法
-export function mkdirsSync(dirname) {
-    if (fs.existsSync(dirname)) {
-      return true;
-    } else {
-      if (mkdirsSync(path.dirname(dirname))) {
-        fs.mkdirSync(dirname);
-        return true;
-      }
-    }
-}
 
 // 从一个已经挂到inner_path上的对象起，将后续的对象树全部从target的下载
 async function download_obj(stack: SharedCyfsStack, target?: ObjectId, dec_id?: ObjectId, inner_path?: string, options?: any): Promise<Map<string, ObjectId> | undefined> {
@@ -58,8 +47,6 @@ async function download_obj(stack: SharedCyfsStack, target?: ObjectId, dec_id?: 
         files.set(inner_path, obj.object_id);
         console.log(`inner_path: ${inner_path}, object_id: ${obj.object_id}`);
     } else if (obj.object_id.obj_type_code() === ObjectTypeCode.ObjectMap) {
-        // 创建本地路径?
-        mkdirsSync(path.join(options.save, `${inner_path}`));
 
         let pages = 0;
         while (true) {
@@ -98,7 +85,7 @@ async function download_obj(stack: SharedCyfsStack, target?: ObjectId, dec_id?: 
     return files;
 }
 
-async function download_files(stack: SharedCyfsStack, options: any, files, file_object_id, dec_id) {
+async function download_files(stack: SharedCyfsStack, options: any, files, file_object_id, dec_id, relative_root) {
     
     const owner_r = await get_final_owner(file_object_id, stack);
     if (owner_r.err) {
@@ -115,10 +102,23 @@ async function download_files(stack: SharedCyfsStack, options: any, files, file_
     })).unwrap().device_list;
 
     let base_save = options.save;
+    if (!path.isAbsolute(options.save)) {
+        base_save = path.normalize(path.join(process.cwd(), options.save));
+    }
+    if (!fs.existsSync(base_save)) {
+        fs.ensureDirSync(base_save);
+    }
+    
     const unfinished = new Set<string>();
     // 在本地上开启下载
     for (const file of files) {
-        let save_path = path.join(base_save, `${file[0]}`);
+        // 这里以 relative_root 分割, 裁剪路径
+        let ipos = file[0].indexOf(relative_root);//指定开始的字符串
+        let file_path =file[0].substring(ipos, file[0].length);//取后部分（指定开始的字符串的之后）
+        let save_path = path.join(base_save, `${file_path}`);
+        if (!fs.existsSync(path.dirname(save_path))) {
+            fs.ensureDirSync(path.dirname(save_path));
+        }
         console.log(`download file ${save_path} object: ${file[1]}, on ${oods[0]}`);
         const r = await stack.trans().create_task({
             common: {
@@ -176,7 +176,7 @@ export async function run(link: string, options:any, stack: SharedCyfsStack, tar
     const local_device_id = stack.local_device_id();
     const non_service_url = stack.non_service().service_url;
     const mode = "data";
-    let obj_id, target;
+    let obj_id, target, relative_root;
     if (link.indexOf("cyfs://") != -1) {      
         // 把cyfs链接参照runtime的proxy.rs逻辑，转换成non的标准协议，直接用http请求
         const proxy_url_str = link.replace("cyfs://", non_service_url);
@@ -189,6 +189,10 @@ export async function run(link: string, options:any, stack: SharedCyfsStack, tar
         } else {
             url.pathname = path_seg.slice(1).join("/");
         }
+
+        relative_root = decodeURI(path_seg[path_seg.length - 1]);
+        console.log(`relative_root: ${path_seg[path_seg.length - 1]}`);
+
         url.searchParams.set("mode", "object");
         url.searchParams.set("format", "json");
         const new_url_str = url.toString();
@@ -218,7 +222,7 @@ export async function run(link: string, options:any, stack: SharedCyfsStack, tar
             return
         }
 
-        await download_files(stack, options, files, target_id, dec_id)
+        await download_files(stack, options, files, target_id, dec_id, relative_root)
 
     } else {
         console.log(`target: ${target}, object_id: ${obj_id}`);
@@ -233,13 +237,12 @@ export async function run(link: string, options:any, stack: SharedCyfsStack, tar
                 return
             }
 
-            await download_files(stack, options, files, target_id, default_dec_id)
+            await download_files(stack, options, files, target_id, default_dec_id, relative_root)
 
         } else {
             let files = new Map();
-            let file_name = obj_id + ".fileobj";
-            files.set(file_name, object_id);
-            await download_files(stack, options, files, target_id, default_dec_id)
+            files.set(relative_root, object_id);
+            await download_files(stack, options, files, target_id, default_dec_id, relative_root)
 
         }
 
