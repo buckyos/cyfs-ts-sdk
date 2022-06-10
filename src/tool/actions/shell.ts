@@ -569,7 +569,7 @@ export async function run(options:any, stack: SharedCyfsStack) {
                     temp_options.save = trim_quota;
                 }
 
-                await dump.run(makeRLink(target_id, dec_id, inner_path), temp_options, stack, undefined, true, "object");
+                await dump.run(makeRLink(target_id, dec_id, inner_path), temp_options, stack);
 
             } else if (program === "get"){
                 const temp_options = options;
