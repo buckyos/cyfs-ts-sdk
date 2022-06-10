@@ -100,17 +100,24 @@ const sdk_only_deps = [
 ]
 
 function main(){
+    console.time("main")
     let package_config = require('./package.json');
     const old_version = getNPMVersion(package_name, package_config.version);
     let version = increseBuildNo(old_version, package_config.version);
-    console.log(`${package_name} 下一个版本号:`, version);
+    console.timeLog("main", `${package_name} 下一个版本号:`, version);
     const pubDir = path.join(__dirname, "dist", `${package_name}-pub`);
     fs.emptyDirSync(pubDir);
-
+    console.timeLog("main", "empty dist dir")
     for (const copy_src in copys[type]) {
         const src = path.join(__dirname, copy_src);
         const dest = path.join(pubDir, copys[type][copy_src]);
         fs.copySync(src, dest);
+    }
+    console.timeLog("main", "copy fil")
+    let sdk_name, sdk_cur_ver;
+    if (type === "tool") {
+        sdk_name = getPackageName('sdk', channel);
+        sdk_cur_ver = getNPMVersion(sdk_name, package_config.version);
     }
 
     // 重命名demo/.gitignore, 否则npm不会打包这个文件
@@ -122,10 +129,10 @@ function main(){
         let demoConfig = JSON.parse(fs.readFileSync(demoConfigPath))
         // 添加cyfs依赖, 就用当前版本
         demoConfig.dependencies = {}
-        let sdk_name = getPackageName('sdk', channel);
-        let sdk_cur_ver = getNPMVersion(sdk_name, package_config.version);
         demoConfig.dependencies['cyfs-sdk'] = `npm:${sdk_name}@${sdk_cur_ver}`
         fs.writeFileSync(demoConfigPath, JSON.stringify(demoConfig, null, 2))
+
+        console.timeLog("main", "adjust demo")
     }
 
     // 修改包的package.json
@@ -150,11 +157,8 @@ function main(){
             break;
         case "tool":
             // 添加cyfs依赖, 就用当前版本
-            let sdk_name = getPackageName('sdk', channel);
-            let sdk_cur_ver = getNPMVersion(sdk_name, package_config.version);
             newPackageJson.dependencies['cyfs-sdk'] = `npm:${sdk_name}@~${semver.major(sdk_cur_ver)}.${semver.minor(sdk_cur_ver)}`
 
-            //
             // 删除sdk的专有依赖
             for (const key of sdk_only_deps) {
                 delete newPackageJson.dependencies[key]
@@ -164,6 +168,7 @@ function main(){
             break;
     }
     fs.writeFileSync(packageJsonFile, JSON.stringify(newPackageJson, null, 2));
+    console.timeLog("main", "adjust package")
 }
 
 main();
