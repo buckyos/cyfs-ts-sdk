@@ -4,7 +4,7 @@ import { NONAPILevel, ObjectId, SharedCyfsStack, AnyNamedObjectDecoder } from ".
 import * as fs from 'fs-extra';
 
 import fetch from 'node-fetch';
-import { CyfsToolConfig } from "../lib/util";
+import { create_stack, CyfsToolConfig, stop_runtime } from "../lib/util";
 
 const dec_id = ObjectId.from_base_58('9tGpLNnDpa8deXEk2NaWGccEu4yFQ2DrTZJPLYLT7gj4').unwrap()
 
@@ -17,14 +17,10 @@ export function makeCommand(config: CyfsToolConfig): Command {
         .option("--json", "show object as json format, dont save to local")
         .action(async (olink_or_objectid, options) => {
             console.log("options:", options)
-            let stack: SharedCyfsStack;
-            if (options.endpoint === "ood") {
-                stack = SharedCyfsStack.open_default(dec_id);
-            } else {
-                stack = SharedCyfsStack.open_runtime(dec_id);
-            }
+            const [stack, writable] = await create_stack(options.endpoint, config, dec_id)
             await stack.online();
             await run(olink_or_objectid, options, stack);
+            stop_runtime()
         })
 }
 

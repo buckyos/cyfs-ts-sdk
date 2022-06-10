@@ -1,4 +1,4 @@
-import child_process from 'child_process';
+import child_process, { ChildProcess } from 'child_process';
 import path from 'path';
 import fs from 'fs';
 
@@ -255,33 +255,49 @@ async function check_runtime(endpoint): Promise<[boolean, boolean]> {
     }
 }
 
+let child_runtime: ChildProcess | undefined = undefined;
+
 function start_runtime(config: CyfsToolConfig) {
     const anonymous = !fs.existsSync(path.join(config.runtime_desc_path, "device.desc"));
     let cmd = config.runtime_exe_path;
     if (anonymous) {
-        cmd += ' '
+        cmd += ' --anonymous'
     }
-    child_process.execFile(config.runtime_exe_path)
+    child_runtime = child_process.spawn(cmd, {windowsHide: true, stdio: 'ignore', shell: false});
 }
 
-export async function create_stack(endpoint: string, config: CyfsToolConfig, dec_id?: ObjectId): Promise<[SharedCyfsStack, boolean, () => void | undefined]> {
+export async function create_stack(endpoint: string, config: CyfsToolConfig, dec_id?: ObjectId): Promise<[SharedCyfsStack, boolean]> {
     if (endpoint === "ood") {
-        return [SharedCyfsStack.open_default(dec_id), true, undefined];
+        return [SharedCyfsStack.open_default(dec_id), true];
     } else if (endpoint === "runtime") {
         // retry 3 times
         for (let index = 0; index < 3; index++) {
-            console.log('check runtime running...')
+            console.log('check cyfs-runtime running...')
             const [running, writable] = await check_runtime(endpoint);
             if (running) {
-                return [SharedCyfsStack.open_runtime(dec_id), writable, undefined];
+                return [SharedCyfsStack.open_runtime(dec_id), writable];
             }
-            console.log('runtime not running, try start runtime...')
-            start_runtime(config);
+            if (child_runtime && child_runtime.exitCode !== null) {
+                console.warn("cyfs-runtime still initalizing, please wait...");
+            } else {
+                console.log('cyfs-runtime not running, try start runtime...');
+                start_runtime(config);
+            }
             await sleep(2000)
         }
+
+        console.error('cannot start cyfs-runtime, please check cyfs-runtime status')
+        process.exit(1)
         
     } else {
         console.error('invalid endpoint:', endpoint);
         throw Error("invalid endpoint")
+    }
+}
+
+export function stop_runtime():void {
+    if (child_runtime) {
+        child_runtime.kill()
+        child_runtime = undefined;
     }
 }

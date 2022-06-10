@@ -9,7 +9,7 @@ import {
     create_meta_client,
 } from '../../sdk';
 
-import { check_channel, CyfsToolConfig, exec, get_owner_path, load_desc_and_sec, upload_app_objs } from "../lib/util";
+import { check_channel, create_stack, CyfsToolConfig, exec, get_owner_path, load_desc_and_sec, stop_runtime, upload_app_objs } from "../lib/util";
 
 import { pack } from "./pack";
 
@@ -196,10 +196,16 @@ export function makeCommand(config:CyfsToolConfig): Command {
                 process.exit(0);
             }
 
-            const stack = SharedCyfsStack.open_runtime();
+            const [stack, writable] = await create_stack("runtime", config)
+            if (!writable) {
+                console.error('runtime running in anonymous(readonly) mode, cannot deploy app.')
+                return;
+            }
+
             await stack.online();
 
             await run(options, config, ctx, stack);
+            stop_runtime()
 
             // process.exit(0);
         })

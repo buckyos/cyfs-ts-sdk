@@ -1,7 +1,7 @@
 import { AppExtInfoDecoder, create_meta_client, SharedCyfsStack } from "../../sdk";
 import * as fs from 'fs-extra';
 import { put_app_obj, update_ext_info } from './deploy'
-import { CyfsToolConfig, question, upload_app_objs} from "../lib/util";
+import { create_stack, CyfsToolConfig, question, stop_runtime, upload_app_objs} from "../lib/util";
 import { CyfsToolContext } from "../lib/ctx";
 import { setup_app_obj } from "./create";
 import { Command } from "commander";
@@ -33,13 +33,11 @@ export function makeCommand(config: CyfsToolConfig) {
                 return;
             }
 
-            await run(options, ctx)
-
-            process.exit(0);
+            await run(options, config, ctx)
         })
 }
 
-export async function run(options:any, ctx: CyfsToolContext) {
+export async function run(options:any, config: CyfsToolConfig, ctx: CyfsToolContext) {
     const app = ctx.get_app_obj();
     if (!options.show) {
         if (options.owner && options.owner !== "") {
@@ -105,14 +103,14 @@ export async function run(options:any, ctx: CyfsToolContext) {
         ctx.save_app_obj()
     
         if (!options.local) {
-            let stack;
-            if (options.endpoint === "ood") {
-                stack = SharedCyfsStack.open_default();
-            } else {
-                stack = SharedCyfsStack.open_runtime();
+            const [stack, writable] = await create_stack("runtime", config)
+            if (!writable) {
+                console.error('runtime running in anonymous(readonly) mode, cannot upload decapp object.')
+                return;
             }
             await stack.online();
             await put_app_obj(options, ctx, stack);
+            stop_runtime();
 
             if (options.upload) {
                 const meta_client = create_meta_client();

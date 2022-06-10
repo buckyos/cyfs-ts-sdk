@@ -1,7 +1,7 @@
 import { Command } from "commander";
 import path from "path";
 import { NDNAPILevel, NONAPILevel, ObjectId, ObjectTypeCode, SharedCyfsStack, TransTaskState, ObjectMapSimpleContentType } from "../../sdk";
-import { CyfsToolConfig, get_final_owner } from "../lib/util";
+import { create_stack, CyfsToolConfig, get_final_owner, stop_runtime } from "../lib/util";
 import * as fs from 'fs-extra';
 
 import * as util from 'util';
@@ -19,14 +19,15 @@ export function makeCommand(config: CyfsToolConfig): Command {
         .option("-s, --save <save_path>", "save obj to path")
         .action(async (path, options) => {
             console.log("options:", options)
-            let stack: SharedCyfsStack;
-            if (options.endpoint === "ood") {
-                stack = SharedCyfsStack.open_default(dec_id);
-            } else {
-                stack = SharedCyfsStack.open_runtime(dec_id);
+            const [stack, writable] = await create_stack(options.endpoint, config, dec_id)
+            if (!writable) {
+                console.error('runtime running in anonymous(readonly) mode, cannot upload.')
+                return;
             }
             await stack.online();
             await run(path, options, stack);
+
+            stop_runtime()
         })
 }
 

@@ -1,6 +1,6 @@
 import { Command } from "commander";
 import { ObjectId, ObjectTypeCode, SharedCyfsStack, clog, NONObjectInfo, ObjectMapSimpleContentType, ObjectMapContentItem, AnyNamedObjectDecoder } from "../../sdk";
-import { CyfsToolConfig, getObject, get_final_owner } from "../lib/util";
+import { create_stack, CyfsToolConfig, getObject, get_final_owner, stop_runtime } from "../lib/util";
 import * as dump from './dump';
 import * as get from './get';
 import fetch from 'node-fetch';
@@ -482,15 +482,12 @@ export function makeCommand(config: CyfsToolConfig): Command {
         .action(async (options) => {
             clog.restore_console();
             console_orig.log("options:", options)
-            let stack: SharedCyfsStack;
-            if (options.endpoint === "ood") {
-                stack = SharedCyfsStack.open_default();
-            } else {
-                stack = SharedCyfsStack.open_runtime();
-            }
+            const [stack, writable] = await create_stack("runtime", config)
             await stack.online();
             await perpare_device_list(stack);
             await run(options, stack);
+
+            stop_runtime()
         })
 }
 

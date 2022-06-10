@@ -4,9 +4,7 @@ import { ObjectId, ObjectTypeCode, SharedCyfsStack, ObjectMapSimpleContentType, 
 import * as fs from 'fs-extra';
 
 import fetch from 'node-fetch';
-import * as dump from './dump';
-import { CyfsToolConfig, get_final_owner } from "../lib/util";
-import { dir } from "console";
+import { create_stack, CyfsToolConfig, get_final_owner, stop_runtime } from "../lib/util";
 
 
 const default_dec_id = ObjectId.from_base_58('9tGpLNnDpa8deXEk2NaWGccEu4yFQ2DrTZJPLYLT7gj4').unwrap()
@@ -19,14 +17,11 @@ export function makeCommand(config: CyfsToolConfig): Command {
         .requiredOption("-s, --save <save_path>", "save dir obj to path, mut be absolute path!!!", ".")
         .action(async (olink, options) => {
             console.log("options:", options)
-            let stack: SharedCyfsStack;
-            if (options.endpoint === "ood") {
-                stack = SharedCyfsStack.open_default(default_dec_id);
-            } else {
-                stack = SharedCyfsStack.open_runtime(default_dec_id);
-            }
+            const [stack, writable] = await create_stack("runtime", config, default_dec_id)
             await stack.online();
             await run(olink, options, stack);
+
+            stop_runtime()
         })
 }
 
