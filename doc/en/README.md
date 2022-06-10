@@ -12,4 +12,4 @@
 
 ## DecApp development documentation
 
-### [Check_cmd logic explanation in DecApp Demo](Decapp/check_cmd.md)
+### [Check_cmd logic explanation in DecApp Demo](DecApp/check_cmd.md)
