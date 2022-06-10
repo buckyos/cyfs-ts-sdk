@@ -1,6 +1,6 @@
 import * as cyfs from "../../sdk";
 import { Command, InvalidArgumentError } from "commander";
-import { get_owner_path, load_desc_and_sec } from "../lib/util";
+import { CyfsToolConfig, get_owner_path, load_desc_and_sec } from "../lib/util";
 import { CyfsToolContext } from "../lib/ctx";
 import JSBI from "jsbi";
 
@@ -15,13 +15,13 @@ function myParseInt(value: string, dummyPrevious: string) {
     return parsedValue;
 }
 
-export function makeCommand(config: any) {
+export function makeCommand(config: CyfsToolConfig) {
     return new Command("meta")
         .option("-e, --endpoint <endpoint>", "meta endpoint")
         .addCommand(new Command("receipt")
             .argument("<txid>", "transcation id to see receipt")
             .action(async (options) => {
-                let meta_client = cyfs.create_meta_client(options.endpoint)
+                const meta_client = cyfs.create_meta_client(options.endpoint)
                 await get_receipt(meta_client, options.txid)
             })
         )
@@ -34,15 +34,15 @@ export function makeCommand(config: any) {
             .option("-v, --value <balance>", "balance from caller to desc account", JSBI.BigInt, JSBI.BigInt(0))
             .option("-u, --update", "force update body time on put")
             .action(async (options) => {
-                let ctx = new CyfsToolContext(process.cwd());
+                const ctx = new CyfsToolContext(process.cwd());
                 ctx.init();
-                let meta_client = cyfs.create_meta_client(options.endpoint) 
+                const meta_client = cyfs.create_meta_client(options.endpoint) 
                 await put_desc(meta_client, options, config, ctx);
             })
         )
 }
 
-async function put_desc(client: cyfs.MetaClient, options: any, config: any, ctx: CyfsToolContext) {
+async function put_desc(client: cyfs.MetaClient, options: any, config: CyfsToolConfig, ctx: CyfsToolContext) {
     let path = get_owner_path(options.caller, config, ctx);
     console.log(`use caller at ${path}`);
     let [caller, sec] = load_desc_and_sec(path);

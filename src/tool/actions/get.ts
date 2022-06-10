@@ -5,17 +5,17 @@ import * as fs from 'fs-extra';
 
 import fetch from 'node-fetch';
 import * as dump from './dump';
-import { get_final_owner } from "../lib/util";
+import { CyfsToolConfig, get_final_owner } from "../lib/util";
 
 
 const default_dec_id = ObjectId.from_base_58('9tGpLNnDpa8deXEk2NaWGccEu4yFQ2DrTZJPLYLT7gj4').unwrap()
 
-export function makeCommand(config: any): Command {
+export function makeCommand(config: CyfsToolConfig): Command {
     return new Command("get")
         .description("get any file or dir from ood/runtime")
         .argument("<link>", "get dir object raw data")
         .requiredOption("-e, --endpoint <endpoint>", "cyfs endpoint, ood or runtime", "runtime")
-        .requiredOption("-s, --save <save_path>", "save dir obj to path, mut be absolute path!!!")
+        .requiredOption("-s, --save <save_path>", "save dir obj to path, mut be absolute path!!!", ".")
         .action(async (olink, options) => {
             console.log("options:", options)
             let stack: SharedCyfsStack;

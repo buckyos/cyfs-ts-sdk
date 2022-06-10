@@ -9,7 +9,7 @@ import {
     create_meta_client,
 } from '../../sdk';
 
-import { check_channel, exec, get_owner_path, load_desc_and_sec, upload_app_objs } from "../lib/util";
+import { check_channel, CyfsToolConfig, exec, get_owner_path, load_desc_and_sec, upload_app_objs } from "../lib/util";
 
 import { pack } from "./pack";
 
@@ -18,7 +18,7 @@ import * as fs from 'fs-extra';
 import { CyfsToolContext, CUR_CONFIG_VERSION } from '../lib/ctx';
 import { Command } from 'commander';
 
-function upload_dec_app(config: any, ctx: CyfsToolContext) {
+function upload_dec_app(config: CyfsToolConfig, ctx: CyfsToolContext) {
     // 上传 dec app 包到 chunk manager
     // cyfs-client.exe put <app.zip> -f fid -o <owner>
     const app_dist_path = ctx.get_app_dist_path();
@@ -133,7 +133,7 @@ export async function put_app_obj(options: any, ctx: CyfsToolContext, stack: Sha
     (console as any).origin.log(`Upload DecApp Finished.\nCYFS App Install Link: cyfs://${owner}/${id}\n`);
 }
 
-function check_owner(config: any, ctx: CyfsToolContext, stack: SharedCyfsStack): boolean {
+function check_owner(config: CyfsToolConfig, ctx: CyfsToolContext, stack: SharedCyfsStack): boolean {
     // 先检测本地project的owner和app obj的owner是不是同一个
     const app_owner = ctx.get_app_obj().desc().owner().unwrap();
     const [cur_owner, cur_key] = load_desc_and_sec(get_owner_path(undefined, config, ctx));
@@ -163,7 +163,7 @@ function check_config(ctx: CyfsToolContext) {
     }
 }
 
-async function deploy_dec_app(options:any, config: any, ctx: CyfsToolContext, stack: SharedCyfsStack): Promise<void> {
+async function deploy_dec_app(options:any, config: CyfsToolConfig, ctx: CyfsToolContext, stack: SharedCyfsStack): Promise<void> {
     // 目前deploy app需要用到runtime带的cyfs-client工具，这里检查工具的channel和sdk的channel是否匹配
     if (!check_channel(config)) {
         console.error('channel mismatch, exit deploy.');
@@ -183,7 +183,7 @@ async function deploy_dec_app(options:any, config: any, ctx: CyfsToolContext, st
     console.log(`Deployed DecApp Version: ${old_ver}`);
 }
 
-export function makeCommand(config:any): Command {
+export function makeCommand(config:CyfsToolConfig): Command {
     return new Command("deploy")
         .description("deploy cyfs project`s service or web to ood")
         .option("--tag <tag>", "set version tag, default latest", "latest")
@@ -205,7 +205,7 @@ export function makeCommand(config:any): Command {
         })
 } 
 
-export async function run(options:any, config: any, ctx: CyfsToolContext, stack: SharedCyfsStack): Promise<void> {
+export async function run(options:any, config: CyfsToolConfig, ctx: CyfsToolContext, stack: SharedCyfsStack): Promise<void> {
     console.log('will deploy service');
     await deploy_dec_app(options, config, ctx, stack);
 }

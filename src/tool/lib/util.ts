@@ -15,6 +15,16 @@ import * as util from 'util';
 
 const sleep = util.promisify(setTimeout);
 
+export interface CyfsToolConfig {
+    user_home: string,
+    cyfs_client: string,
+    pack_tool: string,
+    runtime_exe_path: string,
+    runtime_desc_path: string,
+    runtime_web_root: string,
+    user_profile_dir: string
+}
+
 export function question(msg: string): Promise<string> {
     return new Promise((reslove, reject) => {
         const cmd = readline.createInterface({ input: process.stdin, output: process.stdout });
@@ -32,7 +42,7 @@ export function exec(cmd: string, workspace: string): void {
     child_process.execSync(cmd, { stdio: 'inherit', cwd: workspace })
 }
 
-export function get_owner_path(option_value: any, config: any, ctx: CyfsToolContext): string {
+export function get_owner_path(option_value: any, config: CyfsToolConfig, ctx: CyfsToolContext): string {
     // 优先使用 option_value
     // 如果没有，使用ctx.owner
     // 如果还没有，使用default
@@ -53,7 +63,7 @@ export function load_desc_and_sec(path: string): [StandardObject, PrivateKey] {
     return [desc, sec];
 }
 
-export function check_channel(config: any): boolean {
+export function check_channel(config: CyfsToolConfig): boolean {
     const output = child_process.execSync(`${config.cyfs_client} --version`, { encoding: 'utf-8' })
     const versions = output.match(/^cyfs-client (.+)-(.+) .+/m);
     const channel = versions[2];
@@ -210,5 +220,68 @@ export async function upload_app_objs(ctx: CyfsToolContext, meta_client: MetaCli
 
     if (!upload_meta_success) {
         console.error(`upload app objs failed.\nyou can retry upload use command 'cyfs modify -u' later`)
+    }
+}
+
+import * as http from 'http'
+async function get(url): Promise<string> {
+    return new Promise((reslove, reject) => {
+        const req = http.get(url, (resp) => {
+            let resp_body = "";
+            resp.on('data', (chunk) => {
+                resp_body += chunk;
+            });
+            resp.on('end', () => {
+                reslove(resp_body)
+            })
+        });
+        req.on('error', (error) => {
+            reject(error)
+        })
+    });
+}
+
+// check runtime opening, and also return is writable
+// if runtime endpoint, return is writable
+// return [isopening, iswritable]
+async function check_runtime(endpoint): Promise<[boolean, boolean]> {
+    try {
+        const resp_json = await get('http://127.0.0.1:1321/check');
+        const resp = JSON.parse(resp_json);
+        return [true, resp.activation]
+    } catch (error) {
+        console.log('runtime not running')
+        return [false, false]
+    }
+}
+
+function start_runtime(config: CyfsToolConfig) {
+    const anonymous = !fs.existsSync(path.join(config.runtime_desc_path, "device.desc"));
+    let cmd = config.runtime_exe_path;
+    if (anonymous) {
+        cmd += ' '
+    }
+    child_process.execFile(config.runtime_exe_path)
+}
+
+export async function create_stack(endpoint: string, config: CyfsToolConfig, dec_id?: ObjectId): Promise<[SharedCyfsStack, boolean, () => void | undefined]> {
+    if (endpoint === "ood") {
+        return [SharedCyfsStack.open_default(dec_id), true, undefined];
+    } else if (endpoint === "runtime") {
+        // retry 3 times
+        for (let index = 0; index < 3; index++) {
+            console.log('check runtime running...')
+            const [running, writable] = await check_runtime(endpoint);
+            if (running) {
+                return [SharedCyfsStack.open_runtime(dec_id), writable, undefined];
+            }
+            console.log('runtime not running, try start runtime...')
+            start_runtime(config);
+            await sleep(2000)
+        }
+        
+    } else {
+        console.error('invalid endpoint:', endpoint);
+        throw Error("invalid endpoint")
     }
 }

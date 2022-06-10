@@ -38,6 +38,8 @@ export class CyfsToolContext {
         const owner_config = this.get_owner_config_path();
         if (fs.existsSync(owner_config)) {
             this.owner = fs.readJsonSync(owner_config);
+        } else {
+            console.error('cannot found app owner config file at', owner_config)
         }
     }
 

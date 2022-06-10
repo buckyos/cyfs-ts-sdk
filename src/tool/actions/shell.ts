@@ -1,6 +1,6 @@
 import { Command } from "commander";
 import { ObjectId, ObjectTypeCode, SharedCyfsStack, clog, NONObjectInfo, ObjectMapSimpleContentType, ObjectMapContentItem, AnyNamedObjectDecoder } from "../../sdk";
-import { getObject, get_final_owner } from "../lib/util";
+import { CyfsToolConfig, getObject, get_final_owner } from "../lib/util";
 import * as dump from './dump';
 import * as get from './get';
 import fetch from 'node-fetch';
@@ -475,7 +475,7 @@ async function runPrompt(target_id, current_path, device_list) {
   
   }
 
-export function makeCommand(config: any): Command {
+export function makeCommand(config: CyfsToolConfig): Command {
     return new Command("shell")
         .description("interactive shell")
         .requiredOption("-e, --endpoint <target>", "cyfs shell endpoint, ood or runtime", "runtime")

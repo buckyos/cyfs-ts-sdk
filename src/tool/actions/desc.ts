@@ -3,18 +3,18 @@ import * as fs from 'fs-extra';
 import * as cyfs from '../../sdk';
 import JSBI from 'jsbi';
 import { Command } from "commander";
+import { CyfsToolConfig } from "../lib/util";
 
 function stringToUint8Array(str:string): Uint8Array{
-    var arr = [];
-    for (var i = 0, j = str.length; i < j; ++i) {
+    const arr = [];
+    for (let i = 0, j = str.length; i < j; ++i) {
       arr.push(str.charCodeAt(i));
     }
    
-    var tmpUint8Array = new Uint8Array(arr);
-    return tmpUint8Array
+    return new Uint8Array(arr)
 }
 
-export function makeCommand(config: any) {
+export function makeCommand(config: CyfsToolConfig) {
     return new Command("desc")
         .description("create temp desc and sec")
         .requiredOption("-s, --save <path>", "desc save dir", config.user_profile_dir)
@@ -26,7 +26,7 @@ export function makeCommand(config: any) {
 }
 
 async function run(save_path: string) {
-    let workspace = save_path;
+    const workspace = save_path;
 
     const people_desc = path.join(workspace, "people.desc");
     if(fs.existsSync(people_desc)){

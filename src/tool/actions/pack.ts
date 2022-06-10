@@ -1,4 +1,4 @@
-import {exec} from "../lib/util";
+import {CyfsToolConfig, exec} from "../lib/util";
 
 import * as path from 'path';
 import * as fs from 'fs-extra';
@@ -85,7 +85,7 @@ function copy_acl_config(ctx: CyfsToolContext) {
     }
 }
 
-function pack_targets(config: any, ctx: CyfsToolContext) {
+function pack_targets(config: CyfsToolConfig, ctx: CyfsToolContext) {
     // 打包 service
     // pack-tools -d <path>，在<path>的上一级目录下生成<last_path_name>.zip文件
     for(const target of ctx.app.service.dist_targets){
@@ -99,7 +99,7 @@ function pack_targets(config: any, ctx: CyfsToolContext) {
     }
 }
 
-function pack_service(config: any, ctx: CyfsToolContext) {
+function pack_service(config: CyfsToolConfig, ctx: CyfsToolContext) {
     console.log("begin pack service");
     // 如果没配置service.pack, 认为用户没有service
     if (ctx.app!.service.pack.length === 0) {
@@ -114,7 +114,7 @@ function pack_service(config: any, ctx: CyfsToolContext) {
     pack_targets(config, ctx);
 }
 
-function pack_web(config: any, ctx: CyfsToolContext) {
+function pack_web(config: CyfsToolConfig, ctx: CyfsToolContext) {
     console.log("begin pack web folder");
     // 如果没有配置ctx.web.folder, 就不build
     if (ctx.app!.web.folder === undefined || ctx.app!.web.folder === "") {
@@ -131,7 +131,7 @@ function pack_web(config: any, ctx: CyfsToolContext) {
     fs.writeJSONSync(path.join(ctx.get_app_dist_path(), "web", "web_config.json"), web_config);
 }
 
-export function makeCommand(config: any) {
+export function makeCommand(config: CyfsToolConfig) {
     return new Command('pack')
         .description("pack app for deploy")
         .action(() => {
@@ -147,7 +147,7 @@ export function makeCommand(config: any) {
         });
 }
 
-export function pack(config: any, ctx: CyfsToolContext) {
+export function pack(config: CyfsToolConfig, ctx: CyfsToolContext) {
     fs.emptyDirSync(ctx.app!.dist)
 
     pack_web(config, ctx);

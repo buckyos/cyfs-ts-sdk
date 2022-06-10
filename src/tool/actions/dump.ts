@@ -4,10 +4,11 @@ import { NONAPILevel, ObjectId, SharedCyfsStack, AnyNamedObjectDecoder } from ".
 import * as fs from 'fs-extra';
 
 import fetch from 'node-fetch';
+import { CyfsToolConfig } from "../lib/util";
 
 const dec_id = ObjectId.from_base_58('9tGpLNnDpa8deXEk2NaWGccEu4yFQ2DrTZJPLYLT7gj4').unwrap()
 
-export function makeCommand(config: any): Command {
+export function makeCommand(config: CyfsToolConfig): Command {
     return new Command("dump")
         .description("dump any object from ood/runtime")
         .argument("<olink or objectid>", "dump object raw data")

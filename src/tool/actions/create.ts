@@ -4,7 +4,7 @@ import child_process from 'child_process';
 import { AppExtInfo, DecApp } from "../../sdk";
 import { CyfsToolContext } from "../lib/ctx";
 import { Command } from "commander";
-import { load_desc_and_sec } from "../lib/util";
+import { CyfsToolConfig, load_desc_and_sec } from "../lib/util";
 
 function init_from_demo(ctx: CyfsToolContext){
     const items = [
@@ -88,7 +88,7 @@ function setup_node_modules(ctx: CyfsToolContext){
     child_process.execSync("npm install", { stdio: 'inherit', env: process.env, cwd: ctx.project_dir });
 }
 
-export function makeCommand(config: any) {
+export function makeCommand(config: CyfsToolConfig) {
     return new Command('create')
         .description("create cyfs project")
         .requiredOption("-n, --name <name>", "project name")

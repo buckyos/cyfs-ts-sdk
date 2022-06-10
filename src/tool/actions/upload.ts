@@ -1,7 +1,7 @@
 import { Command } from "commander";
 import path from "path";
 import { NDNAPILevel, NONAPILevel, ObjectId, ObjectTypeCode, SharedCyfsStack, TransTaskState, ObjectMapSimpleContentType } from "../../sdk";
-import { get_final_owner } from "../lib/util";
+import { CyfsToolConfig, get_final_owner } from "../lib/util";
 import * as fs from 'fs-extra';
 
 import * as util from 'util';
@@ -10,7 +10,7 @@ const sleep = util.promisify(setTimeout);
 
 const dec_id = ObjectId.from_base_58('9tGpLNnDpa8deXEk2NaWGccEu4yFQ2DrTZJPLYLT7gj4').unwrap()
 
-export function makeCommand(config: any): Command {
+export function makeCommand(config: CyfsToolConfig): Command {
     return new Command("upload")
         .description("upload any file or dir to ood/runtime")
         .argument("<path>", "upload path, file or dir")

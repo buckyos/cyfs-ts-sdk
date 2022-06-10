@@ -1,7 +1,7 @@
 import { AppExtInfoDecoder, create_meta_client, SharedCyfsStack } from "../../sdk";
 import * as fs from 'fs-extra';
 import { put_app_obj, update_ext_info } from './deploy'
-import { question, upload_app_objs} from "../lib/util";
+import { CyfsToolConfig, question, upload_app_objs} from "../lib/util";
 import { CyfsToolContext } from "../lib/ctx";
 import { setup_app_obj } from "./create";
 import { Command } from "commander";
@@ -12,7 +12,7 @@ function resetBuildNo(version: string){
     return version;
 }
 
-export function makeCommand(config: any) {
+export function makeCommand(config: CyfsToolConfig) {
     return new Command("modify")
         .description("modify app info and upload to ood")
         .option("-l, --local", "only change app info locally, not put to ood or meta")
@@ -49,6 +49,10 @@ export async function run(options:any, ctx: CyfsToolContext) {
             }
     
             // 修改owner.json
+            if (!ctx.owner) {
+                console.error('app owner config not exist!, create an empty config')
+                ctx.owner = {all: ""}
+            }
             ctx.owner.all = options.owner
             ctx.save_owner();
     

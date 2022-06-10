@@ -3,7 +3,7 @@ import * as path from 'path';
 import * as os from 'os';
 import * as http from 'http';
 import { PeopleDecoder } from '../../sdk';
-import { question } from '../lib/util';
+import { CyfsToolConfig, question } from '../lib/util';
 import { Command } from 'commander';
 const qrcode = require('qrcode-terminal');
 
@@ -86,7 +86,7 @@ function import_people(basePath: string): Promise<null> {
     })
 }
 
-export function makeCommand(config: any) {
+export function makeCommand(config: CyfsToolConfig) {
     return new Command("import-people")
         .description("import people desc and sec from wallet")
         .requiredOption("-s, --save <path>", "desc save dir", config.user_profile_dir)

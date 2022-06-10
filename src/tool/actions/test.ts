@@ -2,14 +2,15 @@ import { Command } from 'commander';
 import * as fs from 'fs-extra';
 import * as path from 'path';
 import { CyfsToolContext } from '../lib/ctx';
+import { CyfsToolConfig } from '../lib/util';
 
-export function makeCommand(config: any) {
+export function makeCommand(config: CyfsToolConfig) {
     return new Command("test")
         .description("start or stop local web test path")
         .option("--start", "start web test")
         .option("--stop", "stop web test")
         .action((options) => {
-            let ctx = new CyfsToolContext(process.cwd());
+            const ctx = new CyfsToolContext(process.cwd());
             ctx.init();
 
             if(!ctx.cyfs_project_exist){
@@ -21,8 +22,8 @@ export function makeCommand(config: any) {
         })
 }
 
-function run(options:any, config:any, ctx: CyfsToolContext) {
-    let runtime_project_root = path.join(config.runtime_web_root, ctx.app.app_name)
+function run(options:any, config:CyfsToolConfig, ctx: CyfsToolContext) {
+    const runtime_project_root = path.join(config.runtime_web_root, ctx.app.app_name)
     if (ctx.app.web && ctx.app.web.folder && options.start) {
         fs.ensureSymlinkSync(ctx.app.web.folder, runtime_project_root);
         console.log(`link folder ${ctx.app.web.folder} to ${runtime_project_root}`)
