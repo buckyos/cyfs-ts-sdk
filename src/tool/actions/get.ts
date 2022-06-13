@@ -6,6 +6,8 @@ import * as fs from 'fs-extra';
 import fetch from 'node-fetch';
 import { create_stack, CyfsToolConfig, get_final_owner, stop_runtime } from "../lib/util";
 
+import { dump_object } from "./dump";
+
 
 const default_dec_id = ObjectId.from_base_58('9tGpLNnDpa8deXEk2NaWGccEu4yFQ2DrTZJPLYLT7gj4').unwrap()
 
@@ -25,58 +27,46 @@ export function makeCommand(config: CyfsToolConfig): Command {
         })
 }
 
+function objToStrMap(obj){
+    let strMap = new Map();
+    for (let k of Object.keys(obj)) {
+        strMap.set(k,obj[k]);
+    }
+    return strMap;
+}
+
 // 从一个已经挂到inner_path上的对象起，将后续的对象树全部从target的下载
-async function download_obj(stack: SharedCyfsStack, target?: ObjectId, dec_id?: ObjectId, inner_path?: string, options?: any): Promise<Map<string, ObjectId> | undefined> {
+async function download_obj(stack: SharedCyfsStack, link: string, target?: ObjectId, dec_id?: ObjectId, inner_path?: string, options?: any): Promise<Map<string, ObjectId> | undefined> {
     console.log(`target: ${target}, download obj from root state path, ${inner_path}`)
     let files = new Map();
-    const stub = stack.root_state_access_stub(target, dec_id);
-    const r = await stub.get_object_by_path(inner_path);
-    if (r.err) {
-        console.log(`get root state path ${inner_path} err ${r.val}`)
-        return;
-    }
-    const obj = r.unwrap().object;
+
+    let json = await dump_object(stack, link, true);
+    console.log(`ret: `, json);
+    let obj_id = json["desc"]["object_id"];
+    let object_id = ObjectId.from_base_58(obj_id).unwrap();
     
-    const page_size = 20;
-    if (obj.object_id.obj_type_code() === ObjectTypeCode.File) {
-        files.set(inner_path, obj.object_id);
-        console.log(`inner_path: ${inner_path}, object_id: ${obj.object_id}`);
-    } else if (obj.object_id.obj_type_code() === ObjectTypeCode.ObjectMap) {
-
-        let pages = 0;
-        while (true) {
-            const r = await stub.list(inner_path, pages, page_size);
-            if (r.err) {
-                console.log(`list root state access ${inner_path} failed, err ${r.val}`)
+    if (object_id.obj_type_code() === ObjectTypeCode.File) {
+        files.set(inner_path, object_id);
+        console.log(`inner_path: ${inner_path}, object_id: ${object_id}`);
+    } else if (object_id.obj_type_code() === ObjectTypeCode.ObjectMap) {
+        const str = json["desc"]["content"]["content"];
+        const items = objToStrMap(str);
+        for (const item of items) {
+            const reletive = "/" + item[0];
+            const sub_inner_path = inner_path + reletive;
+            let sub_link = link + reletive;
+            const download_files = await download_obj(stack, sub_link, target, dec_id, sub_inner_path, options);
+            if (download_files === undefined) {
                 return;
             }
-            const items = r.unwrap();
-            if (items.length === 0) {
-                break;
-            }
-            if (items[0].content_type !== ObjectMapSimpleContentType.Map) {
-                console.error(`inner path ${inner_path} type mismatch! except map, actual ${items[0].content_type}`)
-                return;
-            }
-            for (const item of items) {
-                const sub_inner_path = inner_path + "/" + item.map.key;
-                const download_files = await download_obj(stack, target, dec_id, sub_inner_path, options);
-                if (download_files === undefined) {
-                    return;
-                }
-                console.log(`download_files: ${download_files.size}`);
 
-                files = new Map([...files.entries(), ...download_files.entries()])
-                console.log(`inner files: ${files.size}`);
-            }
-            pages += 1;
+            files = new Map([...files.entries(), ...download_files.entries()])
         }
     } else {
-        console.error(`object ${obj.object_id} type ${obj.object_id.obj_type_code()} not file nor object map!`);
+        console.error(`object ${object_id} type ${object_id.obj_type_code()} not file nor object map!`);
         return;
     }
 
-    console.log(`files: ${files.size}`);
     return files;
 }
 
@@ -211,7 +201,7 @@ export async function run(link: string, options:any, stack: SharedCyfsStack, tar
         console.log(`target_id: ${target_id.toString()}, dec_id: ${dec_id.toString()}, inner_path: ${inner_path}`);
 
         // 遍历对象，下载整个对象树到本地
-        const files = await download_obj(stack, target_id, dec_id, inner_path, options);
+        const files = await download_obj(stack, link, target_id, dec_id, inner_path, options);
         if (files === undefined) {
             console.log("search not found files");
             return
@@ -226,7 +216,7 @@ export async function run(link: string, options:any, stack: SharedCyfsStack, tar
         const is_dir = object_id.obj_type_code() === ObjectTypeCode.ObjectMap;
         if (is_dir) {
             // 遍历对象，下载整个对象树到本地
-            let files = await download_obj(stack, target_id, undefined, "/upload_map/"+obj_id, options);
+            let files = await download_obj(stack, link, target_id, undefined, "/upload_map/"+obj_id, options);
             if (files === undefined) {
                 // 和 upload -e -t ood 对应上search
                 console.log("search not found files");
