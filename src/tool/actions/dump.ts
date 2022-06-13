@@ -1,6 +1,6 @@
 import { Command } from "commander";
 import path from "path";
-import { NONAPILevel, ObjectId, SharedCyfsStack, AnyNamedObjectDecoder } from "../../sdk";
+import { NONAPILevel, ObjectId, SharedCyfsStack, AnyNamedObjectDecoder, AnyNamedObject, obj_type_code_raw_check } from "../../sdk";
 import * as fs from 'fs-extra';
 
 import fetch from 'node-fetch';
@@ -24,30 +24,11 @@ export function makeCommand(config: CyfsToolConfig): Command {
         })
 }
 
-export async function run(olink_or_objectid: string, options:any, stack: SharedCyfsStack) {
-    if (olink_or_objectid === undefined || olink_or_objectid === "") {
-        console.error('no args olink or objectid. exit');
-        return
-    }
-
-    // console.log(`olink_or_objectid: ${olink_or_objectid}`);
-
-    // cyfs://o/5r4MYfFMPYJr5UqgAh2XcM4kdui5TZrhdssWpQ7XCp2y/95RvaS5gwV5SFnT38UXXNuujFBE3Pk8QQDrKVGdcncB4
+export async function dump_object(stack: SharedCyfsStack, olink: string, json: boolean): Promise<any|[Uint8Array, ObjectId]|undefined> {
     const local_device_id = stack.local_device_id();
     const non_service_url = stack.non_service().service_url;
-    let non_url;
-    if (olink_or_objectid.indexOf("cyfs://") != -1) {
-        // 把cyfs链接参照runtime的proxy.rs逻辑，转换成non的标准协议，直接用http请求
-        non_url = olink_or_objectid.replace("cyfs://", non_service_url);
-    } else {
-        const obj_id_ret = ObjectId.from_base_58(olink_or_objectid);
-        if (obj_id_ret.err) {
-            console.error('invalid object id', olink_or_objectid);
-            return;
-        }
-        // 直接拼non url为"http://127.0.0.1:1318/non/xxxxxxx"
-        non_url = non_service_url+olink_or_objectid;
-    }
+
+    const non_url = olink.replace("cyfs://", non_service_url);
 
     const url = new URL(non_url)
     const path_seg = url.pathname.split("/").slice(1);
@@ -59,24 +40,22 @@ export async function run(olink_or_objectid: string, options:any, stack: SharedC
         url.pathname = path_seg.slice(1).join("/");
     }
     url.searchParams.set("mode", "object");
-    if (options.json) {
+    if (json) {
         url.searchParams.set("format", "json");
     } else {
         url.searchParams.set("format", "raw");
     }
     
     const new_url_str = url.toString();
-    console.log(`convert cyfs url: ${olink_or_objectid} to non url: ${new_url_str}`);
+    console.log(`convert cyfs url: ${olink} to non url: ${new_url_str}`);
     const response  = await fetch(new_url_str, {headers: {CYFS_REMOTE_DEVICE: local_device_id.toString()}});
     if (!response.ok) {
         console.error(`response error code ${response.status}, msg ${response.statusText}`)
         return;
     }
 
-    if (options.json) {
-        // 返回json文本格式，直接输出
-        console.origin.log(`\nobject json:\n`)
-        console.origin.log(JSON.stringify(await response.json(), undefined, 4))
+    if (json) {
+        return await response.json()
     } else {
         const obj_raw = new Uint8Array(await response.buffer());
         // 取回的数据一定是个Object
@@ -85,7 +64,42 @@ export async function run(olink_or_objectid: string, options:any, stack: SharedC
             console.error(`invalid named object, hex: ${obj_raw.toHex()}`);
             return;
         }
-        const obj_id = obj_ret.unwrap().calculate_id()
+
+        return [obj_raw, obj_ret.unwrap().calculate_id()]
+    }
+}
+
+export async function run(olink_or_objectid: string, options:any, stack: SharedCyfsStack) {
+    if (olink_or_objectid === undefined || olink_or_objectid === "") {
+        console.error('no args olink or objectid. exit');
+        return
+    }
+
+    // cyfs://o/5r4MYfFMPYJr5UqgAh2XcM4kdui5TZrhdssWpQ7XCp2y/95RvaS5gwV5SFnT38UXXNuujFBE3Pk8QQDrKVGdcncB4
+    let olink;
+    if (olink_or_objectid.indexOf("cyfs://") != -1) {
+        // 把cyfs链接参照runtime的proxy.rs逻辑，转换成non的标准协议，直接用http请求
+        olink = olink_or_objectid;
+    } else {
+        const obj_id_ret = ObjectId.from_base_58(olink_or_objectid);
+        if (obj_id_ret.err) {
+            console.error('invalid object id', olink_or_objectid);
+            return;
+        }
+        // 直接拼non url为"cyfs://xxxxxxx"
+        olink = `cyfs://${olink_or_objectid}`
+    }
+
+    const ret = await dump_object(stack, olink, options.json)
+    if (ret === undefined) {
+        return;
+    }
+    if (options.json) {
+        // 返回json文本格式，直接输出
+        console.origin.log(`\nobject json:\n`)
+        console.origin.log(JSON.stringify(ret, undefined, 4))
+    } else {        
+        const [obj_raw, obj_id] = (ret as [Uint8Array, ObjectId]);
         let file_path = `${obj_id.to_base_58()}.obj`;
         if (options.save) {
             if (!fs.existsSync(options.save)) {
@@ -99,4 +113,5 @@ export async function run(olink_or_objectid: string, options:any, stack: SharedC
         fs.writeFileSync(file_path, obj_raw);
         console.origin.log(`dump obj对象为${file_path}`);
     }
+    
 }
