@@ -13,10 +13,11 @@ export function makeCommand(config: CyfsToolConfig): Command {
     return new Command("get")
         .description("get any file or dir from ood/runtime")
         .argument("<link>", "get dir object raw data")
+        .requiredOption("-e, --endpoint <endpoint>", "cyfs endpoint, ood or runtime", "runtime")
         .requiredOption("-s, --save <save_path>", "save dir obj to path, mut be absolute path!!!", ".")
         .action(async (olink, options) => {
             console.log("options:", options)
-            const [stack, writable] = await create_stack("runtime", config, default_dec_id)
+            const [stack, writable] = await create_stack(options.endpoint, config, default_dec_id)
             await stack.online();
             await run(olink, options, stack);
 
@@ -225,16 +226,11 @@ export async function run(link: string, options:any, stack: SharedCyfsStack, tar
         const is_dir = object_id.obj_type_code() === ObjectTypeCode.ObjectMap;
         if (is_dir) {
             // 遍历对象，下载整个对象树到本地
-            let files = await download_obj(stack, undefined, undefined, "/upload_map/"+obj_id, options);
+            let files = await download_obj(stack, target_id, undefined, "/upload_map/"+obj_id, options);
             if (files === undefined) {
                 // 和 upload -e -t ood 对应上search
-                stack = SharedCyfsStack.open_default(default_dec_id);
-                await stack.online();
-                files = await download_obj(stack, undefined, undefined, "/upload_map/"+obj_id, options);
-                if (files === undefined) {
-                    console.log("search not found files");
-                    return
-                }
+                console.log("search not found files");
+                return;
             }
 
             await download_files(stack, options, files, target_id, default_dec_id, relative_root)
