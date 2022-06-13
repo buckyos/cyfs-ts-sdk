@@ -506,7 +506,6 @@ export async function run(options:any, stack: SharedCyfsStack) {
             const cmd = await runPrompt(target_id, current_path, device_list);
             var regex = /"([^"]*)"|(\S+)/g;
             var arr = (cmd.match(regex) || []).map(m => m.replace(regex, '$1$2'));
-            console.log(arr);
             const args = arr.filter(el => {
                 return el != null && el != '';
             });
