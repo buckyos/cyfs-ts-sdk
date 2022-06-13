@@ -1,3 +1,4 @@
+import { ObjectId } from '../../../cyfs-base';
 import { RouterEventResponse } from '../../events/def';
 import { RouterHandlerAction } from "../action";
 import { RouterHandlerCategory } from "../category";
@@ -15,6 +16,7 @@ export interface RouterWSAddHandlerParam {
     chain: RouterHandlerChain,
     category: RouterHandlerCategory;
     id: string;
+    dec_id?: ObjectId,
     param: RouterAddHandlerParam;
 }
 
@@ -22,6 +24,7 @@ export interface RouterWSRemoveHandlerParam {
     chain: RouterHandlerChain,
     category: RouterHandlerCategory;
     id: string;
+    dec_id?: ObjectId,
 }
 
 export type RouterWSHandlerResponse = RouterEventResponse;

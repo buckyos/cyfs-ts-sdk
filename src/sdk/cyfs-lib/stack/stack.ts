@@ -208,7 +208,7 @@ export class SharedCyfsStack {
         this.m_root_state_access = GlobalStateAccessRequestor.new_root_state_access(SharedCyfsStack.select_requestor(param, param.requestor_config!.root_state), this.dec_id);
         this.m_local_cache_access = GlobalStateAccessRequestor.new_local_cache_access(SharedCyfsStack.select_requestor(param, param.requestor_config!.local_cache), this.dec_id);
 
-        this.m_router_handlers = new RouterHandlerManager(CyfsStackEventType.WebSocket, ws_url);
+        this.m_router_handlers = new RouterHandlerManager(CyfsStackEventType.WebSocket, ws_url, this.dec_id);
     }
 
     private static select_requestor(param: SharedCyfsStackParam, requestor_type: CyfsStackRequestorType,): BaseRequestor {

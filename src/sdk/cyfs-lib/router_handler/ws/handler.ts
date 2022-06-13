@@ -1,5 +1,5 @@
 import { RouterHandlerCategory } from "../category";
-import { BuckyError, BuckyErrorCode, BuckyResult, Err, None, Ok, Option, Some, EventListenerAsyncRoutineT } from "../../../cyfs-base";
+import { BuckyError, BuckyErrorCode, BuckyResult, Err, None, Ok, Option, Some, EventListenerAsyncRoutineT, ObjectId } from "../../../cyfs-base";
 import { RouterHandlerAction } from "../action";
 import { WebSocketRequestHandler, WebSocketRequestManager } from "../../ws/request";
 import {
@@ -27,6 +27,7 @@ class RouterHandlerItem {
         public category: RouterHandlerCategory,
         public index: number,
         public id: string,
+        public dec_id: Option<ObjectId>,
         private filter: string,
         private default_action: RouterHandlerAction,
         private routine: Option<RouterHandlerAnyRoutine>,
@@ -35,6 +36,10 @@ class RouterHandlerItem {
 
     set_routine(routine: Option<RouterHandlerAnyRoutine>) {
         this.routine = routine;
+    }
+
+    get_dec_id(): ObjectId | undefined {
+        return this.dec_id.is_some()? this.dec_id.unwrap() : undefined;
     }
 
     async emit(param: string): Promise<BuckyResult<string>> {
@@ -72,6 +77,7 @@ class RouterHandlerItem {
             chain: this.chain,
             category: this.category,
             id: this.id.toString(),
+            dec_id: this.get_dec_id(),
             param,
         }
 
@@ -92,8 +98,12 @@ class RouterHandlerItem {
 }
 
 export class RouterHandlerUnregisterItem {
-    constructor(private chain: RouterHandlerChain, private category: RouterHandlerCategory, public id: string) {
+    constructor(private chain: RouterHandlerChain, private category: RouterHandlerCategory, public id: string, public dec_id: Option<ObjectId>) {
 
+    }
+
+    get_dec_id(): ObjectId | undefined {
+        return this.dec_id.is_some()? this.dec_id.unwrap() : undefined;
     }
 
     async unregister(requestor: WebSocketRequestManager): Promise<BuckyResult<boolean>> {
@@ -103,6 +113,7 @@ export class RouterHandlerUnregisterItem {
             chain: this.chain,
             category: this.category,
             id: this.id,
+            dec_id: this.get_dec_id(),
         };
 
         const msg = JSON.stringify(req);
@@ -126,8 +137,8 @@ export class RouterHandlerUnregisterItem {
 
 export class RouterWSHandlerHandlerManagerImpl {
     // 均使用full_id作为索引
-    handlers: { [name: string]: RouterHandlerItem } = { };
-    unregister_handlers: { [name: string]: RouterHandlerUnregisterItem } = { };
+    handlers: { [name: string]: RouterHandlerItem } = {};
+    unregister_handlers: { [name: string]: RouterHandlerUnregisterItem } = {};
     session: Option<WebSocketSession> = None;
 
     private static gen_full_id(chain: RouterHandlerChain, category: RouterHandlerCategory, id: string): string {
@@ -162,8 +173,8 @@ export class RouterWSHandlerHandlerManagerImpl {
         return Ok(void (0));
     }
 
-    static async remove_handler(manager: RouterWSHandlerHandlerManagerImpl, chain: RouterHandlerChain, category: RouterHandlerCategory, id: string): Promise<BuckyResult<boolean>> {
-        const unregister_item = manager.remove_handler_op(chain, category, id);
+    static async remove_handler(manager: RouterWSHandlerHandlerManagerImpl, chain: RouterHandlerChain, category: RouterHandlerCategory, id: string, dec_id: Option<ObjectId>): Promise<BuckyResult<boolean>> {
+        const unregister_item = manager.remove_handler_op(chain, category, id, dec_id);
         if (manager.session.is_some()) {
             return unregister_item.unregister(manager.session.unwrap().requestor!);
         } else {
@@ -174,7 +185,7 @@ export class RouterWSHandlerHandlerManagerImpl {
         }
     }
 
-    remove_handler_op(chain: RouterHandlerChain, category: RouterHandlerCategory, id: string): RouterHandlerUnregisterItem {
+    remove_handler_op(chain: RouterHandlerChain, category: RouterHandlerCategory, id: string, dec_id: Option<ObjectId>): RouterHandlerUnregisterItem {
         const full_id = RouterWSHandlerHandlerManagerImpl.gen_full_id(chain, category, id);
 
         const ret = this.handlers[full_id];
@@ -192,6 +203,7 @@ export class RouterWSHandlerHandlerManagerImpl {
             chain,
             category,
             id,
+            dec_id,
         );
 
         this.unregister_handlers[full_id] = unregister_item;
@@ -301,13 +313,17 @@ class RouterWSHandlerRequestHandler extends WebSocketRequestHandler {
 export class RouterHandlerWSHandlerManager {
     manager = new RouterWSHandlerHandlerManagerImpl();
     client: WebSocketClient;
-    constructor(private service_url: string) {
+    constructor(private service_url: string, private dec_id?: ObjectId) {
         const handler = new RouterWSHandlerRequestHandler(this.manager);
         this.client = new WebSocketClient(service_url, handler);
     }
 
     start() {
         this.client.start();
+    }
+
+    get_dec_id(): Option<ObjectId> {
+        return this.dec_id ? Some(this.dec_id) : None;
     }
 
     async add_handler<REQ, RESP>(
@@ -325,6 +341,7 @@ export class RouterHandlerWSHandlerManager {
             category,
             index,
             id,
+            this.get_dec_id(),
             filter,
             default_action,
             None,
@@ -340,6 +357,6 @@ export class RouterHandlerWSHandlerManager {
     }
 
     async remove_handler(chain: RouterHandlerChain, category: RouterHandlerCategory, id: string): Promise<BuckyResult<boolean>> {
-        return RouterWSHandlerHandlerManagerImpl.remove_handler(this.manager, chain, category, id);
+        return RouterWSHandlerHandlerManagerImpl.remove_handler(this.manager, chain, category, id, this.get_dec_id());
     }
 }

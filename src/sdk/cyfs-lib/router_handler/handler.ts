@@ -1,4 +1,4 @@
-import { None, Option, Some, BuckyResult, Ok, EventListenerAsyncRoutineT } from "../../cyfs-base";
+import { None, Option, Some, BuckyResult, Ok, EventListenerAsyncRoutineT, ObjectId } from "../../cyfs-base";
 import { RouterHandlerWSHandlerManager } from "./ws/handler";
 import { CyfsStackEventType } from "../stack/stack";
 import { RouterHandlerAction } from "./action";
@@ -70,14 +70,14 @@ export class RouterHandlerManager {
     // http: Option<RouterHandlerHttpHandlerManager> = None;
     ws: Option<RouterHandlerWSHandlerManager> = None;
 
-    constructor(event_type: CyfsStackEventType, ws_url?: string) {
+    constructor(event_type: CyfsStackEventType, ws_url?: string, private dec_id?: ObjectId) {
         switch (event_type) {
             case CyfsStackEventType.Http:
                 // 暂时不支持http回调模式
                 throw new Error('ts sdk not support CyfsStackEventType.Http');
             case CyfsStackEventType.WebSocket:
                 console.assert(ws_url);
-                const ws = new RouterHandlerWSHandlerManager(ws_url!);
+                const ws = new RouterHandlerWSHandlerManager(ws_url!, dec_id);
                 ws.start();
                 this.ws = Some(ws);
                 break;
