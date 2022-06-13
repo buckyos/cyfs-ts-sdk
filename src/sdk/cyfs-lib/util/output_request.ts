@@ -2,6 +2,7 @@ import JSBI from "jsbi";
 import { BuckyResult, CyfsChannel, Device, DeviceDecoder, DeviceId, Endpoint, ObjectId, Ok, OODWorkMode } from "../../cyfs-base";
 import { Zone, ZoneId } from "../../cyfs-core";
 import { JsonCodec, JsonCodecHelper } from "../base/codec";
+import { GlobalStateAccessMode } from '../root_state/def';
 import { ZoneRole } from '../zone/def';
 import { NamedObjectCacheStat, SnStatus, SystemInfo } from "./def";
 import { BuildDirType } from "./request";
@@ -339,6 +340,9 @@ export interface DeviceStaticInfo {
 
     zone_role: ZoneRole,
 
+    root_state_access_mode: GlobalStateAccessMode,
+    local_cache_access_mode: GlobalStateAccessMode,
+
     // 当前zone的主ood id
     ood_device_id: DeviceId;
 
@@ -407,6 +411,10 @@ export class DeviceStaticInfoJsonCodec extends JsonCodec<DeviceStaticInfo> {
             is_ood_device: o.is_ood_device,
             ood_work_mode: o.ood_work_mode as OODWorkMode,
             zone_role: o.zone_role as ZoneRole,
+
+            root_state_access_mode: o.root_state_access_mode as GlobalStateAccessMode,
+            local_cache_access_mode: o.local_cache_access_mode as GlobalStateAccessMode,
+
             ood_device_id,
             zone_id,
             owner_id,
