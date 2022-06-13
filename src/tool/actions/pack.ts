@@ -93,7 +93,7 @@ function pack_targets(config: CyfsToolConfig, ctx: CyfsToolContext) {
         // 只有service target文件夹存在，才会打包对应target的service
         if (fs.existsSync(dist_target)) {
             console.log(`pack ${dist_target}`);
-            exec(`${config.pack_tool} -d ${dist_target}`, process.cwd());
+            exec(`"${config.pack_tool}" -d "${dist_target}"`, process.cwd());
             fs.removeSync(dist_target)
         }
     }

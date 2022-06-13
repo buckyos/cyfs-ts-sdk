@@ -64,7 +64,7 @@ export function load_desc_and_sec(path: string): [StandardObject, PrivateKey] {
 }
 
 export function check_channel(config: CyfsToolConfig): boolean {
-    const output = child_process.execSync(`${config.cyfs_client} --version`, { encoding: 'utf-8' })
+    const output = child_process.execSync(`"${config.cyfs_client}" --version`, { encoding: 'utf-8' })
     const versions = output.match(/^cyfs-client (.+)-(.+) .+/m);
     const channel = versions[2];
     // const version = versions[1];
