@@ -70,8 +70,31 @@ async function download_obj(stack: SharedCyfsStack, link: string, target?: Objec
     return files;
 }
 
-async function download_files(stack: SharedCyfsStack, options: any, files, file_object_id, dec_id, relative_root) {
-    
+/* 判断文件是否存在的函数
+*@path_way, 文件路径
+ */
+function isFileExisted(path_way) {
+    return new Promise((resolve, reject) => {
+      fs.access(path_way, (err) => {
+        if (err) {
+          reject(false);
+        } else {
+          resolve(true);
+        }
+      })
+    })
+};
+
+function isEmptyDir(path) {
+    return fs.readdirSync(path).length === 0;
+}
+
+function isDirectory(path) {
+    return fs.statSync(path).isDirectory();
+}
+
+
+async function download_files(stack: SharedCyfsStack, options: any, files, file_object_id, dec_id, relative_root, is_dir: boolean) {  
     const owner_r = await get_final_owner(file_object_id, stack);
     if (owner_r.err) {
         console.error("get stack owner failed, err", owner_r.val);
@@ -87,11 +110,29 @@ async function download_files(stack: SharedCyfsStack, options: any, files, file_
     })).unwrap().device_list;
 
     let base_save = options.save;
+    const option_str: String = options.save;
     if (!path.isAbsolute(options.save)) {
         base_save = path.normalize(path.join(process.cwd(), options.save));
     }
-    if (!fs.existsSync(base_save)) {
-        fs.ensureDirSync(base_save);
+
+    let flags = 0;
+    // obj_dor | 目录存在+目录不为空
+    if (is_dir) {
+        if (fs.existsSync(base_save) && !isEmptyDir(base_save)) {
+            flags = 1;
+        } else {
+            flags = 2;
+        }
+    } else {
+       if ((fs.existsSync(base_save) && isDirectory(base_save)) || option_str.endsWith("/") || option_str.endsWith("\\")) {
+            flags = 3;
+       } else {
+            flags = 4;
+       }
+    }
+
+    if (!fs.existsSync(path.dirname(base_save))) {
+        fs.ensureDirSync(path.dirname(base_save));
     }
     
     const unfinished = new Set<string>();
@@ -99,10 +140,29 @@ async function download_files(stack: SharedCyfsStack, options: any, files, file_
     for (const file of files) {
         // 这里以 relative_root 分割, 裁剪路径
         let ipos = file[0].indexOf(relative_root);//指定开始的字符串
-        let file_path =file[0].substring(ipos, file[0].length);//取后部分（指定开始的字符串的之后）
+        let file_path = file[0].substring(ipos, file[0].length);//取后部分(指定开始的字符串(包括)的之后)
+        if (flags === 1) {
+            // 缺省
+        } else if (flags === 2) {
+            file_path = file[0].substring(ipos + relative_root.length, file[0].length);//取后部分(指定开始的字符串(排除)的之后)
+        } else if (flags === 3) {
+            // 缺省
+        } else if (flags === 4) {
+            file_path = "";
+        }
         let save_path = path.join(base_save, `${file_path}`);
         if (!fs.existsSync(path.dirname(save_path))) {
             fs.ensureDirSync(path.dirname(save_path));
+        }
+        
+        try{
+            const isExisted = await isFileExisted(save_path);
+            if (isExisted) {
+                console.error(`${save_path} already exists`);
+                continue;
+            }
+        }catch (error){
+            // ignore
         }
         console.log(`download file ${save_path} object: ${file[1]}, on ${oods[0]}`);
         const r = await stack.trans().create_task({
@@ -126,8 +186,6 @@ async function download_files(stack: SharedCyfsStack, options: any, files, file_
         }
         unfinished.add(r.unwrap().task_id)
     }
-
-    console.log('check ood rebuild status...');
 
     // 在这里检查文件有没有传输到OOD上
     while (true) {
@@ -197,38 +255,47 @@ export async function run(link: string, options:any, stack: SharedCyfsStack, tar
         return;
     }
 
+    let object_id = ObjectId.from_base_58(obj_id).unwrap();
+    const is_dir = object_id.obj_type_code() === ObjectTypeCode.ObjectMap;
+
     if (target_id !== undefined && dec_id !== undefined && inner_path !== undefined) {
         console.log(`target_id: ${target_id.toString()}, dec_id: ${dec_id.toString()}, inner_path: ${inner_path}`);
 
-        // 遍历对象，下载整个对象树到本地
-        const files = await download_obj(stack, link, target_id, dec_id, inner_path, options);
-        if (files === undefined) {
-            console.log("search not found files");
-            return
-        }
+        if (is_dir) {
+            // 遍历对象，下载整个对象树到本地
+            const files = await download_obj(stack, link, target_id, dec_id, inner_path, options);
+            if (files === undefined) {
+                console.log("search not found files");
+                return
+            }
 
-        await download_files(stack, options, files, target_id, dec_id, relative_root)
+            await download_files(stack, options, files, target_id, dec_id, relative_root, is_dir)
+        } else {
+            let files = new Map();
+            const file_name = `${relative_root}.file`;
+            files.set(file_name, object_id);
+            await download_files(stack, options, files, target_id, default_dec_id, relative_root, is_dir)
+        }
 
     } else {
         console.log(`target: ${target}, object_id: ${obj_id}`);
         let target_id = ObjectId.from_base_58(target).unwrap();
-        let object_id = ObjectId.from_base_58(obj_id).unwrap();
-        const is_dir = object_id.obj_type_code() === ObjectTypeCode.ObjectMap;
+
         if (is_dir) {
             // 遍历对象，下载整个对象树到本地
             let files = await download_obj(stack, link, target_id, undefined, "/upload_map/"+obj_id, options);
             if (files === undefined) {
-                // 和 upload -e -t ood 对应上search
                 console.log("search not found files");
                 return;
             }
 
-            await download_files(stack, options, files, target_id, default_dec_id, relative_root)
+            await download_files(stack, options, files, target_id, default_dec_id, relative_root, is_dir)
 
         } else {
             let files = new Map();
-            files.set(relative_root, object_id);
-            await download_files(stack, options, files, target_id, default_dec_id, relative_root)
+            const file_name = `${relative_root}.file`;
+            files.set(file_name, object_id);
+            await download_files(stack, options, files, target_id, default_dec_id, relative_root, is_dir);
 
         }
 
