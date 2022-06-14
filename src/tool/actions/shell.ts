@@ -93,9 +93,11 @@ async function check_subdir(inner_path: string, to: ObjectId, stack: SharedCyfsS
     if (treeLists.items && treeLists.items.length ) {
         treeLists.items.forEach(element => {
             if (element != undefined) {
-                if (element.type === "ObjectMap") {
+                // ObjectTypeCode.ObjectMap
+                if (element.type === "14") {
+                    // console_orig.log(`element type: ${element.type}`);
                     check = true;
-                    return;
+                    return check;
                 }
             }
         });
