@@ -274,7 +274,7 @@ export async function run(link: string, options:any, stack: SharedCyfsStack, tar
             let files = new Map();
             const file_name = `${relative_root}.file`;
             files.set(file_name, object_id);
-            await download_files(stack, options, files, target_id, default_dec_id, relative_root, is_dir)
+            await download_files(stack, options, files, target_id, dec_id, relative_root, is_dir)
         }
 
     } else {
