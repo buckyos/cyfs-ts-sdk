@@ -607,6 +607,7 @@ export async function run(options:any, stack: SharedCyfsStack) {
             } else if (program === "target"){
                 device_list = [];
                 dec_id_list = [];
+                current_path = "/"
                 if (argv.e === "ood") {
                     stack = SharedCyfsStack.open_default();
                 } else {
