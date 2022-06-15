@@ -424,7 +424,7 @@ export async function run(options:any, default_stack: SharedCyfsStack, config: C
             target_id = await select_target();
             await perpare_dec_list(default_stack, target_id);
             dec_id = await select_dec_id();
-            // stop_runtime();
+            stop_runtime();
             console_orig.log(`dec_id: ${dec_id}`);
             const [stack, writable] = await create_stack(options.endpoint, config, default_dec_id);
             taret_stack = stack;
@@ -538,7 +538,7 @@ export async function run(options:any, default_stack: SharedCyfsStack, config: C
                 target_id = await select_target();
                 await perpare_dec_list(taret_stack, target_id);
                 dec_id = await select_dec_id();
-                //stop_runtime();
+                stop_runtime();
                 
                 const [stack, writable] = await create_stack(options.endpoint, config, default_dec_id);
                 taret_stack = stack;
