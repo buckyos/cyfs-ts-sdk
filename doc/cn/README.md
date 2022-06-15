@@ -28,4 +28,4 @@ CYFS TOOL切换通道安装时，需要在安装命令后加`--force`
 
 ## DecApp开发相关
 
-### [Demo中check_cmd逻辑解说](Decapp/check_cmd%E8%A7%A3%E8%AF%B4.md)
+### [Demo中check_cmd逻辑解说](DecApp/check_cmd%E8%A7%A3%E8%AF%B4.md)
