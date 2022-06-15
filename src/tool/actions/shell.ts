@@ -413,21 +413,22 @@ export function makeCommand(config: CyfsToolConfig): Command {
         })
 }
 
-export async function run(options:any, stack: SharedCyfsStack, config: CyfsToolConfig) {
+export async function run(options:any, default_stack: SharedCyfsStack, config: CyfsToolConfig) {
     let target_id;
     let dec_id;
     let current_path = "/"
 
+    let taret_stack = default_stack;
     while (true) {
         if (target_id === undefined) {
             target_id = await select_target();
-            await perpare_dec_list(stack, target_id);
+            await perpare_dec_list(default_stack, target_id);
             dec_id = await select_dec_id();
-            stop_runtime();
+            // stop_runtime();
             console_orig.log(`dec_id: ${dec_id}`);
-            const [target_stack, writable] = await create_stack(options.endpoint, config, dec_id);
-            stack = target_stack;
-            await stack.online();
+            const [stack, writable] = await create_stack(options.endpoint, config, default_dec_id);
+            taret_stack = stack;
+            await taret_stack.online();
 
         } else {
             const cmd = await runPrompt(target_id, current_path, device_list);
@@ -469,11 +470,11 @@ export async function run(options:any, stack: SharedCyfsStack, config: CyfsToolC
             }
             if (program === "ls") {
                 // console_orig.log(`RUN: ${program} ${args} ${inner_path}`);
-                await ls(inner_path, target_id, stack, dec_id);
+                await ls(inner_path, target_id, taret_stack, dec_id);
 
             } else if (program === "cd") {
                 // check tmp path existed(ObjectMap)
-                const check = await check_dir(inner_path, target_id, stack, dec_id);
+                const check = await check_dir(inner_path, target_id, taret_stack, dec_id);
                 if (!check) {
                     console_orig.error(`${inner_path} is not vaild sub dir`);
                     continue;
@@ -481,7 +482,7 @@ export async function run(options:any, stack: SharedCyfsStack, config: CyfsToolC
                 current_path = inner_path;
 
             } else if (program === "cat"){
-                await cat(stack, target_id, dec_id, inner_path);
+                await cat(taret_stack, target_id, dec_id, inner_path);
                 
             } else if (program === "dump"){
                 const temp_options = options;
@@ -492,7 +493,7 @@ export async function run(options:any, stack: SharedCyfsStack, config: CyfsToolC
                     temp_options.save = trim_quota;
                 }
 
-                await dump.run(makeRLink(target_id, dec_id, inner_path), temp_options, stack);
+                await dump.run(makeRLink(target_id, dec_id, inner_path), temp_options, taret_stack);
 
             } else if (program === "get"){
                 const temp_options = options;
@@ -509,15 +510,17 @@ export async function run(options:any, stack: SharedCyfsStack, config: CyfsToolC
                 }
 
                 console.log(`save path: ${temp_options.save}, target: ${target_id.to_string()}, dec_id: ${dec_id}, inner_path: ${inner_path}`)
-                await get.run(makeRLink(target_id, dec_id, inner_path), temp_options, stack, target_id, dec_id, inner_path);
+                await get.run(makeRLink(target_id, dec_id, inner_path), temp_options, taret_stack, target_id, dec_id, inner_path);
                 
             } else if (program === "rm"){
-                const check = await check_subdir(inner_path, target_id, stack, dec_id);
+                const check = await check_subdir(inner_path, target_id, taret_stack, dec_id);
                 if (!check) {
-                    const ret = await cat(stack, target_id, dec_id, inner_path);
+                    const ret = await cat(taret_stack, target_id, dec_id, inner_path);
                     const key =  ret["desc"]["object_id"];
-                    // const owner_id = ret["desc"]["owner"];
-                    await rm(key, stack, target_id, options.endpoint);
+                    const owner_id = ret["desc"]["owner"];
+                    let target = ObjectId.from_base_58(owner_id).unwrap();
+                    // await test_op_env(key, taret_stack, target, options.endpoint);
+                    await rm(key, taret_stack, target, options.endpoint);
                 } else {
                     console_orig.error(`rm: cannot remove ${inner_path}: Is a recurive directory`)
                 }
@@ -531,15 +534,15 @@ export async function run(options:any, stack: SharedCyfsStack, config: CyfsToolC
                     options.endpoint = "runtime";
                 }
                 // 先选出来dec_id, 之后都是对dec_id的具体操作
-                await perpare_device_list(stack);
+                await perpare_device_list(taret_stack);
                 target_id = await select_target();
-                await perpare_dec_list(stack, target_id);
+                await perpare_dec_list(taret_stack, target_id);
                 dec_id = await select_dec_id();
-
-                stop_runtime();
-                const [target_stack, writable] = await create_stack(options.endpoint, config, dec_id);
-                stack = target_stack;
-                await stack.online();
+                //stop_runtime();
+                
+                const [stack, writable] = await create_stack(options.endpoint, config, default_dec_id);
+                taret_stack = stack;
+                await taret_stack.online();
 
             } else if (program === "exit") {
                 break;
@@ -586,14 +589,12 @@ async function cat(stack: SharedCyfsStack, target_id: ObjectId, dec_id: ObjectId
 }
 
 async function rm(obj_id: string, stack: SharedCyfsStack, target_id: ObjectId, ep: string) {
-  
-    // let target = ObjectId.from_base_58(target_id).unwrap();
-    // let prev_value = ObjectId.from_base_58(obj_id).unwrap();
+    let prev_value = ObjectId.from_base_58(obj_id).unwrap();
 
     console_orig.log(`op_env: ${ep} -> path: /upload_map -> key: ${obj_id} -> target: ${target_id.toString()}`)
 
     const op_env = (await stack.root_state_stub(target_id).create_path_op_env()).unwrap()
-    const r = await op_env.remove_with_key("/upload_map", obj_id)
+    const r = await op_env.remove_with_key('/upload_map', obj_id, prev_value)
     if (r.err) {
         console.error("remove root state err", r.val)
         return
@@ -602,6 +603,45 @@ async function rm(obj_id: string, stack: SharedCyfsStack, target_id: ObjectId, e
     if (r1.err) {
         console.error("commit obj to root state err", r1.val)
         return
+    }
+
+    const op_env1 = (await stack.root_state_stub(target_id).create_path_op_env()).unwrap()
+    const ret = await op_env1.get_by_key('/upload_map', obj_id);
+    if (ret.err) {
+        console.error("get_by_key root state err", ret.val)
+        return
+    } else {
+        console_orig.log(`get_by_key ret: ${ret}`)
+    }
+
+}
+
+async function test_op_env(obj_id: string, stack: SharedCyfsStack, target_id: ObjectId, ep: string) {
+
+    let object_id = ObjectId.from_base_58(obj_id).unwrap();
+
+    console_orig.log(`op_env: ${ep} -> path: /upload_map -> key: ${obj_id} -> target: ${target_id.toString()}`)
+
+    const op_env = (await stack.root_state_stub(target_id).create_path_op_env()).unwrap()
+    const ret = await op_env.set_with_key('/upload_map', object_id.to_base_58(), object_id, undefined, true)
+    if (ret.err) {
+        console.error("insert obj to root state err", ret.val)
+        return
+    }
+
+    const commit_ret = await op_env.commit()
+    if (commit_ret.err) {
+        console.error("commit obj to root state err", commit_ret.val)
+        return
+    }
+
+    const op_env1 = (await stack.root_state_stub(target_id).create_path_op_env()).unwrap()
+    const ret1 = await op_env1.get_by_key("/upload_map", obj_id);
+    if (ret1.err) {
+        console.error("get_by_key root state err", ret.val)
+        return
+    } else {
+        console_orig.log(`get_by_key ret: ${ret}`)
     }
 
 }
