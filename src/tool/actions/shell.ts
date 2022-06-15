@@ -452,7 +452,7 @@ export async function run(options:any, stack: SharedCyfsStack, config: CyfsToolC
             } else {
                 const args = argv._.slice(1);  // skip argv[0]
                 const tmp_path = args.join("/");
-                console_orig.log(`tmp_path: ${tmp_path}`);
+                // console_orig.log(`tmp_path: ${tmp_path}`);
                 let trim_double_quota_path = tmp_path.replace("\"","").replace("\"","");
                 let trim_single_quota_path = trim_double_quota_path.replace("\'","").replace("\'","");
 
@@ -514,8 +514,10 @@ export async function run(options:any, stack: SharedCyfsStack, config: CyfsToolC
             } else if (program === "rm"){
                 const check = await check_subdir(inner_path, target_id, stack, dec_id);
                 if (!check) {
-                    let key = await cat(stack, target_id, dec_id, inner_path);
-                    await rm(key, stack, target_id);
+                    const ret = await cat(stack, target_id, dec_id, inner_path);
+                    const key =  ret["desc"]["object_id"];
+                    // const owner_id = ret["desc"]["owner"];
+                    await rm(key, stack, target_id, options.endpoint);
                 } else {
                     console_orig.error(`rm: cannot remove ${inner_path}: Is a recurive directory`)
                 }
@@ -580,14 +582,17 @@ async function cat(stack: SharedCyfsStack, target_id: ObjectId, dec_id: ObjectId
     }
     const ret = await response.json();
     console.log(`${JSON.stringify(ret, null, 4)}`);
-    return ret["desc"]["object_id"];;
+    return ret;
 }
 
-async function rm(obj_id: string, stack: SharedCyfsStack, target: ObjectId) {
+async function rm(obj_id: string, stack: SharedCyfsStack, target_id: ObjectId, ep: string) {
   
-    console_orig.log(`/upload_map -> ${obj_id} -> ${target.toString()}`)
+    // let target = ObjectId.from_base_58(target_id).unwrap();
+    // let prev_value = ObjectId.from_base_58(obj_id).unwrap();
 
-    const op_env = (await stack.root_state_stub(target).create_path_op_env()).unwrap()
+    console_orig.log(`op_env: ${ep} -> path: /upload_map -> key: ${obj_id} -> target: ${target_id.toString()}`)
+
+    const op_env = (await stack.root_state_stub(target_id).create_path_op_env()).unwrap()
     const r = await op_env.remove_with_key("/upload_map", obj_id)
     if (r.err) {
         console.error("remove root state err", r.val)
