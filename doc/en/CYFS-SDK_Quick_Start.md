@@ -13,9 +13,9 @@
 ## Environment Requirements
 
 Before following this document, please make sure you have done the following.
-- Installed HyperSend and created an account
-- Bound your OOD using HyperSend and kept the OOD online
-- Installed the CYFS Browser locally and bound it using HyperSend
+- Installed CyberChat and created an account
+- Bound your OOD using CyberChat and kept the OOD online
+- Installed the CYFS Browser locally and bound it using CyberChat
 
 Before executing any of the following commands, make sure that the CYFS Browser is open and can be properly initialized. Closing the CYFS Browser will cause command execution to fail
 
