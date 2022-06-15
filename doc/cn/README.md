@@ -1,12 +1,28 @@
 # CYFS SDK 文档
 
+## 安装
+
+### 安装SDK
+> - nightly通道 `npm i --save cyfs-sdk-nightly`
+> - beta通道 敬请期待
+> - stable通道 敬请期待
+
+### 安装CYFS TOOL
+> - nightly通道 `npm i -g cyfs-tool-nightly`
+> - beta通道 敬请期待
+> - stable通道 敬请期待
+
+CYFS TOOL的部分命令需要本机安装CYFS浏览器，或本机是OOD才可使用
+
+CYFS TOOL切换通道安装时，需要在安装命令后加`--force`
+
 ## 一般文档
 
-### [SDK命令说明](./sdk命令.md)
+### [CYFS TOOL命令说明](./sdk命令.md)
 
 ### [DecApp工程配置说明](./cyfs工程配置.md)
 
-### [SDK Shell命令详解](./CYFS-SHELL使用.md)
+### [CYFS TOOL Shell命令详解](./CYFS-SHELL使用.md)
 
 ### [CYFS-SDK快速入门](./CYFS-SDK快速入门.md)
 

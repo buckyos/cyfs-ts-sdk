@@ -70,3 +70,9 @@
 - -e, --endpoint 指定本机的协议栈类型，可选runtime，ood。如果不指定该参数，默认为runtime
 - -t, --target 指定部署对象，可选runtime, ood。如果不指定该参数，默认为runtime，即本协议栈。endpoint为ood的情况下，部署对象必须指定为ood，否则部署会失败
 - -s, --save 指定生成的对象元数据的存储路径，如果指定了该参数，本次上传生成的文件/文件夹对象会保存在该路径下，文件名为\<objectid>.fileobj。保存的元数据可以用来后续上传到链，并绑定链上名字
+
+## CYFS Shell
+CYFS Shell是一个交互式命令行，可以让开发者以类似Linux Shell的体验操作本zone内设备的root state
+
+Shell的详细操作指南见
+[CYFS TOOL Shell命令详解](./CYFS-SHELL使用.md)
