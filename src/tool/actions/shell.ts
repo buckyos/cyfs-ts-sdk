@@ -424,11 +424,7 @@ export async function run(options:any, default_stack: SharedCyfsStack, config: C
             target_id = await select_target();
             await perpare_dec_list(default_stack, target_id);
             dec_id = await select_dec_id();
-            stop_runtime();
             console_orig.log(`dec_id: ${dec_id}`);
-            const [stack, writable] = await create_stack(options.endpoint, config, default_dec_id);
-            taret_stack = stack;
-            await taret_stack.online();
 
         } else {
             const cmd = await runPrompt(target_id, current_path, device_list);
@@ -538,11 +534,6 @@ export async function run(options:any, default_stack: SharedCyfsStack, config: C
                 target_id = await select_target();
                 await perpare_dec_list(taret_stack, target_id);
                 dec_id = await select_dec_id();
-                stop_runtime();
-                
-                const [stack, writable] = await create_stack(options.endpoint, config, default_dec_id);
-                taret_stack = stack;
-                await taret_stack.online();
 
             } else if (program === "exit") {
                 break;
@@ -589,12 +580,12 @@ async function cat(stack: SharedCyfsStack, target_id: ObjectId, dec_id: ObjectId
 }
 
 async function rm(obj_id: string, stack: SharedCyfsStack, target_id: ObjectId, ep: string) {
-    let prev_value = ObjectId.from_base_58(obj_id).unwrap();
+    // let prev_value = ObjectId.from_base_58(obj_id).unwrap();
 
     console_orig.log(`op_env: ${ep} -> path: /upload_map -> key: ${obj_id} -> target: ${target_id.toString()}`)
 
     const op_env = (await stack.root_state_stub(target_id).create_path_op_env()).unwrap()
-    const r = await op_env.remove_with_key('/upload_map', obj_id, prev_value)
+    const r = await op_env.remove_with_key('/upload_map', obj_id)
     if (r.err) {
         console.error("remove root state err", r.val)
         return
