@@ -511,8 +511,7 @@ export async function run(options:any, default_stack: SharedCyfsStack, config: C
             } else if (program === "rm"){
                 const check = await check_subdir(inner_path, target_id, taret_stack, dec_id);
                 if (!check) {
-                    const ret = await cat(taret_stack, target_id, dec_id, inner_path);
-                    const key =  ret["desc"]["object_id"];
+                    const key = await cat(taret_stack, target_id, dec_id, inner_path); 
                     // const owner_id = ret["desc"]["owner"];
                     // let target = ObjectId.from_base_58(owner_id).unwrap();
                     // await test_op_env(key, taret_stack, target, options.endpoint);
@@ -576,7 +575,7 @@ async function cat(stack: SharedCyfsStack, target_id: ObjectId, dec_id: ObjectId
     }
     const ret = await response.json();
     console.log(`${JSON.stringify(ret, null, 4)}`);
-    return ret;
+    return ret["desc"]["object_id"];
 }
 
 async function rm(obj_id: string, stack: SharedCyfsStack, target_id: ObjectId, ep: string, inner_path: string) {
