@@ -509,20 +509,17 @@ export async function run(options:any, default_stack: SharedCyfsStack, config: C
                 await get.run(makeRLink(target_id, dec_id, inner_path), temp_options, taret_stack, target_id, dec_id, inner_path);
                 
             } else if (program === "rm"){
-                const ret = await cat(taret_stack, target_id, dec_id, inner_path);
-                const key =  ret["desc"]["object_id"];
-                await rm(key, taret_stack, target_id, options.endpoint);
-                // const check = await check_subdir(inner_path, target_id, taret_stack, dec_id);
-                // if (!check) {
-                //     const ret = await cat(taret_stack, target_id, dec_id, inner_path);
-                //     const key =  ret["desc"]["object_id"];
-                //     // const owner_id = ret["desc"]["owner"];
-                //     // let target = ObjectId.from_base_58(owner_id).unwrap();
-                //     // await test_op_env(key, taret_stack, target, options.endpoint);
-                //     await rm(key, taret_stack, target_id, options.endpoint);
-                // } else {
-                //     console_orig.error(`rm: cannot remove ${inner_path}: Is a recurive directory`)
-                // }
+                const check = await check_subdir(inner_path, target_id, taret_stack, dec_id);
+                if (!check) {
+                    const ret = await cat(taret_stack, target_id, dec_id, inner_path);
+                    const key =  ret["desc"]["object_id"];
+                    // const owner_id = ret["desc"]["owner"];
+                    // let target = ObjectId.from_base_58(owner_id).unwrap();
+                    // await test_op_env(key, taret_stack, target, options.endpoint);
+                    await rm(key, taret_stack, target_id, options.endpoint, inner_path);
+                } else {
+                    console_orig.error(`rm: cannot remove ${inner_path}: Is a recurive directory`)
+                }
             } else if (program === "target"){
                 device_list = [];
                 dec_id_list = [];
@@ -582,11 +579,11 @@ async function cat(stack: SharedCyfsStack, target_id: ObjectId, dec_id: ObjectId
     return ret;
 }
 
-async function rm(obj_id: string, stack: SharedCyfsStack, target_id: ObjectId, ep: string) {
-    console_orig.log(`op_env: ${ep} -> path: /upload_map -> key: ${obj_id} -> target: ${target_id.toString()}`)
+async function rm(obj_id: string, stack: SharedCyfsStack, target_id: ObjectId, ep: string, inner_path: string) {
+    console_orig.log(`op_env: ${ep} -> inner_path: ${inner_path} -> key: ${obj_id} -> target: ${target_id.toString()}`)
     // 1. 删除本地的root-state
     const op_env = (await stack.root_state_stub().create_path_op_env()).unwrap()
-    const r = await op_env.remove_with_key('/upload_map', obj_id)
+    const r = await op_env.remove_with_path(inner_path)
     if (r.err) {
         console.error("remove root state err", r.val)
         return
@@ -598,12 +595,12 @@ async function rm(obj_id: string, stack: SharedCyfsStack, target_id: ObjectId, e
     }
 
     // const op_env1 = (await stack.root_state_stub().create_path_op_env()).unwrap()
-    // const ret = await op_env1.get_by_key('/upload_map', obj_id);
+    // const ret = await op_env1.get_object_by_path(inner_path);
     // if (ret.err) {
-    //     console.error("get_by_key root state err", ret.val)
+    //     console.error("get_object_by_path root state err", ret.val)
     //     return
     // } else {
-    //     console_orig.log(`get_by_key ret: ${ret}`)
+    //     console_orig.log(`get_object_by_path ret: ${ret}`)
     // }
 
     // 2. 删除ood上的root state
@@ -624,7 +621,7 @@ async function rm(obj_id: string, stack: SharedCyfsStack, target_id: ObjectId, e
     console.log("rm use target", oods[0].object_id.to_base_58());
 
     const op_env2 = (await stack.root_state_stub(oods[0].object_id).create_path_op_env()).unwrap()
-    const ret1 = await op_env2.remove_with_key('/upload_map', obj_id)
+    const ret1 = await op_env2.remove_with_path(inner_path)
     if (ret1.err) {
         console.error("remove root state err", ret1.val)
         return
@@ -636,12 +633,12 @@ async function rm(obj_id: string, stack: SharedCyfsStack, target_id: ObjectId, e
     }
 
     // const op_env3 = (await stack.root_state_stub(oods[0].object_id).create_path_op_env()).unwrap()
-    // const ret3 = await op_env3.get_by_key('/upload_map', obj_id);
+    // const ret3 = await op_env3.get_object_by_path('/upload_map', obj_id);
     // if (ret3.err) {
-    //     console.error("get_by_key root state err", ret3.val)
+    //     console.error("get_object_by_path root state err", ret3.val)
     //     return
     // } else {
-    //     console_orig.log(`get_by_key ret: ${ret3}`)
+    //     console_orig.log(`get_object_by_path ret: ${ret3}`)
     // }
 }
 
