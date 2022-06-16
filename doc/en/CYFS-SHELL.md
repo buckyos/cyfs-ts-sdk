@@ -119,7 +119,7 @@ save path: e:\, target: 5hLXAcQGjS1hJc88U11Zcwdrk7ZtzSosNmyxzq3jcUdj, dec_id: 9t
 
 ```
 
-## rm: delete node, if node is object map, and there are child nodes, delete fails
+## rm: delete node, if node is object map, and there are child nodes, delete fails (experimental)
 
 ```shell
 5hLXAcQGjS1hJc88U11Zcwdrk7ZtzSosNmyxzq3jcUdj:/upload_map/95RvaS5frxqyKW6BH6dmNAqadhgtQeg2Lwbn4pdNaQYA/..> rm 95RvaS5frxqyKW6BH6dmNAqadhgtQeg2Lwbn4pdNaQYA
@@ -152,7 +152,7 @@ choose dec_id:> 9tGpLNnDpa8deXEk2NaWGccEu4yFQ2DrTZJPLYLT7gj4
   3) cat,以json格式展示该子节点的对象内容
   4) dump,以二进制格式保存该子节点的对象内容,保存路径默认为当前路径,保存文件名为.obj,保存完成后,提示保存的文件全路径
   5) get,保存该节点和后续节点的文件到本地,保存路径默认为当前路径+节点名
-  6) rm,删除节点,如果节点是object map,且还有子节点,删除失败
+  6) rm,删除节点,如果节点是object map,且还有子节点,删除失败(experimental)
   7) target,重新选择target,选择后路径重置为根目录
 (Move up and down to reveal more choices)
 ```
