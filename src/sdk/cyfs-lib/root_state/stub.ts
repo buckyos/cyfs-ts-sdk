@@ -31,6 +31,11 @@ import {
 
 import JSBI from "jsbi";
 
+export interface RootInfo {
+    root: ObjectId;
+    revision: JSBI;
+}
+
 export interface DecRootInfo {
     root: ObjectId;
     revision: JSBI;
@@ -40,18 +45,26 @@ export interface DecRootInfo {
 export class GlobalStateStub {
     private requestor_: GlobalStateRequestor;
     private target_?: ObjectId;
+    private dec_id_: ObjectId;
 
-    constructor(requestor: GlobalStateRequestor, target?: ObjectId) {
+    constructor(requestor: GlobalStateRequestor, target?: ObjectId, dec_id?: ObjectId) {
         this.requestor_ = requestor;
         this.target_ = target;
+
+        if (dec_id) {
+            this.dec_id_ = dec_id;
+        } else {
+            this.dec_id_ = requestor.get_dec_id();
+        }
     }
 
     // return (global_root, revision,)
-    public async get_current_root() {
+    public async get_current_root(): Promise<BuckyResult<RootInfo>> {
         const req: RootStateGetCurrentRootOutputRequest = {
             common: {
                 flags: 0,
                 target: this.target_,
+                dec_id: this.dec_id_,
             },
             root_type: RootStateRootType.Global,
         };
@@ -59,8 +72,13 @@ export class GlobalStateStub {
         if (r.err) {
             return r;
         }
+
         const resp = r.unwrap();
-        return Ok({ root: resp.root, revision: resp.revision });
+        const root: RootInfo = {
+            root: resp.root,
+            revision: resp.revision,
+        };
+        return Ok(root);
     }
 
     // return (global_root, revision, dec_root)
@@ -69,6 +87,7 @@ export class GlobalStateStub {
             common: {
                 flags: 0,
                 target: this.target_,
+                dec_id: this.dec_id_,
             },
             root_type: RootStateRootType.Dec,
         };
@@ -90,6 +109,7 @@ export class GlobalStateStub {
             common: {
                 flags: 0,
                 target: this.target_,
+                dec_id: this.dec_id_,
             },
             op_env_type: ObjectMapOpEnvType.Path,
         };
@@ -99,7 +119,7 @@ export class GlobalStateStub {
         }
         const opEnvRequestor = r.unwrap();
 
-        const stub = new PathOpEnvStub(opEnvRequestor, this.target_);
+        const stub = new PathOpEnvStub(opEnvRequestor, this.target_, this.dec_id_);
         return Ok(stub);
     }
 
@@ -108,6 +128,7 @@ export class GlobalStateStub {
             common: {
                 flags: 0,
                 target: this.target_,
+                dec_id: this.dec_id_,
             },
             op_env_type: ObjectMapOpEnvType.Single,
         };
@@ -117,7 +138,7 @@ export class GlobalStateStub {
         }
         const opEnvRequestor = r.unwrap();
 
-        const stub = new SingleOpEnvStub(opEnvRequestor, this.target_);
+        const stub = new SingleOpEnvStub(opEnvRequestor, this.target_, this.dec_id_);
         return Ok(stub);
     }
 }
@@ -126,21 +147,29 @@ export class SingleOpEnvStub {
     private requestor_: OpEnvRequestor;
     private sid_: JSBI;
     private target_?: ObjectId;
+    private dec_id_: ObjectId;
 
-    public constructor(requestor: OpEnvRequestor, target?: ObjectId) {
+    public constructor(requestor: OpEnvRequestor, target?: ObjectId, dec_id?: ObjectId) {
         this.requestor_ = requestor;
         this.sid_ = requestor.get_sid();
         this.target_ = target;
+
+        if (dec_id) {
+            this.dec_id_ = dec_id;
+        } else {
+            this.dec_id_ = requestor.get_dec_id();
+        }
     }
 
     // methods
     public async create_new(
         content_type: ObjectMapSimpleContentType
-    ): Promise<BuckyResult<{}>> {
+    ): Promise<BuckyResult<void>> {
         const req: OpEnvCreateNewOutputRequest = {
             common: {
                 flags: 0,
                 target: this.target_,
+                dec_id: this.dec_id_,
                 sid: this.sid_,
             },
             content_type,
@@ -149,14 +178,15 @@ export class SingleOpEnvStub {
         if (r.err) {
             return r;
         }
-        return Ok({});
+        return Ok(undefined);
     }
 
-    public async load(target: ObjectId): Promise<BuckyResult<{}>> {
+    public async load(target: ObjectId): Promise<BuckyResult<void>> {
         const req: OpEnvLoadOutputRequest = {
             common: {
                 flags: 0,
                 target: this.target_,
+                dec_id: this.dec_id_,
                 sid: this.sid_,
             },
             target,
@@ -165,14 +195,15 @@ export class SingleOpEnvStub {
         if (r.err) {
             return r;
         }
-        return Ok({});
+        return Ok(undefined);
     }
 
-    public async load_by_path(path: string): Promise<BuckyResult<{}>> {
+    public async load_by_path(path: string): Promise<BuckyResult<void>> {
         const req: OpEnvLoadByPathOutputRequest = {
             common: {
                 flags: 0,
                 target: this.target_,
+                dec_id: this.dec_id_,
                 sid: this.sid_,
             },
             path,
@@ -181,7 +212,7 @@ export class SingleOpEnvStub {
         if (r.err) {
             return r;
         }
-        return Ok({});
+        return Ok(undefined);
     }
 
     // map methods
@@ -192,6 +223,7 @@ export class SingleOpEnvStub {
             common: {
                 flags: 0,
                 target: this.target_,
+                dec_id: this.dec_id_,
                 sid: this.sid_,
             },
             key,
@@ -211,11 +243,12 @@ export class SingleOpEnvStub {
     public async insert_with_key(
         key: string,
         value: ObjectId
-    ): Promise<BuckyResult<{}>> {
+    ): Promise<BuckyResult<void>> {
         const req: OpEnvInsertWithKeyOutputRequest = {
             common: {
                 flags: 0,
                 target: this.target_,
+                dec_id: this.dec_id_,
                 sid: this.sid_,
             },
             key,
@@ -225,7 +258,7 @@ export class SingleOpEnvStub {
         if (r.err) {
             return r;
         }
-        return Ok({});
+        return Ok(undefined);
     }
 
     public async set_with_key(
@@ -238,6 +271,7 @@ export class SingleOpEnvStub {
             common: {
                 flags: 0,
                 target: this.target_,
+                dec_id: this.dec_id_,
                 sid: this.sid_,
             },
             key,
@@ -265,6 +299,7 @@ export class SingleOpEnvStub {
             common: {
                 flags: 0,
                 target: this.target_,
+                dec_id: this.dec_id_,
                 sid: this.sid_,
             },
             key,
@@ -288,6 +323,7 @@ export class SingleOpEnvStub {
             common: {
                 flags: 0,
                 target: this.target_,
+                dec_id: this.dec_id_,
                 sid: this.sid_,
             },
             value: object_id,
@@ -305,6 +341,7 @@ export class SingleOpEnvStub {
             common: {
                 flags: 0,
                 target: this.target_,
+                dec_id: this.dec_id_,
                 sid: this.sid_,
             },
             value: object_id,
@@ -322,6 +359,7 @@ export class SingleOpEnvStub {
             common: {
                 flags: 0,
                 target: this.target_,
+                dec_id: this.dec_id_,
                 sid: this.sid_,
             },
             value: object_id,
@@ -340,6 +378,7 @@ export class SingleOpEnvStub {
             common: {
                 flags: 0,
                 target: this.target_,
+                dec_id: this.dec_id_,
                 sid: this.sid_,
             },
         };
@@ -357,11 +396,12 @@ export class SingleOpEnvStub {
         return Ok(info);
     }
 
-    public async abort(): Promise<BuckyResult<{}>> {
+    public async abort(): Promise<BuckyResult<void>> {
         const req: OpEnvAbortOutputRequest = {
             common: {
                 flags: 0,
                 target: this.target_,
+                dec_id: this.dec_id_,
                 sid: this.sid_,
             },
         };
@@ -369,7 +409,7 @@ export class SingleOpEnvStub {
         if (r.err) {
             return r;
         }
-        return Ok({});
+        return Ok(undefined);
     }
 
     // iterator
@@ -380,6 +420,7 @@ export class SingleOpEnvStub {
             common: {
                 flags: 0,
                 target: this.target_,
+                dec_id: this.dec_id_,
                 sid: this.sid_,
             },
             step,
@@ -398,10 +439,11 @@ export class SingleOpEnvStub {
             common: {
                 flags: 0,
                 target: this.target_,
+                dec_id: this.dec_id_,
                 sid: this.sid_,
             },
         };
-        let r = await this.requestor_.metadata(req);
+        const r = await this.requestor_.metadata(req);
         if (r.err) {
             return r;
         }
@@ -422,25 +464,32 @@ export class PathOpEnvStub {
     private requestor_: OpEnvRequestor;
     private sid_: JSBI;
     private target_?: ObjectId;
+    private dec_id_: ObjectId;
 
-    public constructor(requestor: OpEnvRequestor, target?: ObjectId) {
+    public constructor(requestor: OpEnvRequestor, target?: ObjectId, dec_id?: ObjectId) {
         this.requestor_ = requestor;
         this.sid_ = requestor.get_sid();
         this.target_ = target;
+
+        if (dec_id) {
+            this.dec_id_ = dec_id;
+        } else {
+            this.dec_id_ = requestor.get_dec_id();
+        }
     }
 
     // lock
     public async lock(
         path_list: string[],
         duration_in_millsecs: JSBI,
-    ): Promise<BuckyResult<{}>> {
+    ): Promise<BuckyResult<void>> {
         return await this.lock_impl(path_list, duration_in_millsecs, false);
     }
 
     public async try_lock(
         path_list: string[],
         duration_in_millsecs: JSBI,
-    ): Promise<BuckyResult<{}>> {
+    ): Promise<BuckyResult<void>> {
         return await this.lock_impl(path_list, duration_in_millsecs, true);
     }
 
@@ -448,11 +497,12 @@ export class PathOpEnvStub {
         path_list: string[],
         duration_in_millsecs: JSBI,
         try_lock: boolean,
-    ): Promise<BuckyResult<{}>> {
+    ): Promise<BuckyResult<void>> {
         const req: OpEnvLockOutputRequest = {
             common: {
                 flags: 0,
                 target: this.target_,
+                dec_id: this.dec_id_,
                 sid: this.sid_,
             },
             path_list,
@@ -463,7 +513,7 @@ export class PathOpEnvStub {
         if (r.err) {
             return r;
         }
-        return Ok({});
+        return Ok(undefined);
     }
 
     public async get_by_key(
@@ -474,6 +524,7 @@ export class PathOpEnvStub {
             common: {
                 flags: 0,
                 target: this.target_,
+                dec_id: this.dec_id_,
                 sid: this.sid_,
             },
             key,
@@ -495,11 +546,12 @@ export class PathOpEnvStub {
         path: string,
         key: string,
         content_type: ObjectMapSimpleContentType,
-    ): Promise<BuckyResult<{}>> {
+    ): Promise<BuckyResult<void>> {
         const req: OpEnvCreateNewOutputRequest = {
             common: {
                 flags: 0,
                 target: this.target_,
+                dec_id: this.dec_id_,
                 sid: this.sid_,
             },
             path,
@@ -510,18 +562,19 @@ export class PathOpEnvStub {
         if (r.err) {
             return r;
         }
-        return Ok({});
+        return Ok(undefined);
     }
 
     public async insert_with_key(
         path: string,
         key: string,
         value: ObjectId
-    ): Promise<BuckyResult<{}>> {
+    ): Promise<BuckyResult<void>> {
         const req: OpEnvInsertWithKeyOutputRequest = {
             common: {
                 flags: 0,
                 target: this.target_,
+                dec_id: this.dec_id_,
                 sid: this.sid_,
             },
             key,
@@ -532,7 +585,7 @@ export class PathOpEnvStub {
         if (r.err) {
             return r;
         }
-        return Ok({});
+        return Ok(undefined);
     }
 
     public async set_with_key(
@@ -546,6 +599,7 @@ export class PathOpEnvStub {
             common: {
                 flags: 0,
                 target: this.target_,
+                dec_id: this.dec_id_,
                 sid: this.sid_,
             },
             path,
@@ -575,6 +629,7 @@ export class PathOpEnvStub {
             common: {
                 flags: 0,
                 target: this.target_,
+                dec_id: this.dec_id_,
                 sid: this.sid_,
             },
             key,
@@ -601,6 +656,7 @@ export class PathOpEnvStub {
             common: {
                 flags: 0,
                 target: this.target_,
+                dec_id: this.dec_id_,
                 sid: this.sid_,
             },
             key: full_path,
@@ -620,11 +676,12 @@ export class PathOpEnvStub {
     public async create_new_with_path(
         full_path: string,
         content_type: ObjectMapSimpleContentType,
-    ): Promise<BuckyResult<{}>> {
+    ): Promise<BuckyResult<void>> {
         const req: OpEnvCreateNewOutputRequest = {
             common: {
                 flags: 0,
                 target: this.target_,
+                dec_id: this.dec_id_,
                 sid: this.sid_,
             },
             key: full_path,
@@ -634,17 +691,18 @@ export class PathOpEnvStub {
         if (r.err) {
             return r;
         }
-        return Ok({});
+        return Ok(undefined);
     }
 
     public async insert_with_path(
         full_path: string,
         value: ObjectId
-    ): Promise<BuckyResult<{}>> {
+    ): Promise<BuckyResult<void>> {
         const req: OpEnvInsertWithKeyOutputRequest = {
             common: {
                 flags: 0,
                 target: this.target_,
+                dec_id: this.dec_id_,
                 sid: this.sid_,
             },
             key: full_path,
@@ -654,7 +712,7 @@ export class PathOpEnvStub {
         if (resp.err) {
             return resp;
         }
-        return Ok({});
+        return Ok(undefined);
     }
 
     public async set_with_path(
@@ -667,6 +725,7 @@ export class PathOpEnvStub {
             common: {
                 flags: 0,
                 target: this.target_,
+                dec_id: this.dec_id_,
                 sid: this.sid_,
             },
             value,
@@ -693,6 +752,7 @@ export class PathOpEnvStub {
             common: {
                 flags: 0,
                 target: this.target_,
+                dec_id: this.dec_id_,
                 sid: this.sid_,
             },
             key: full_path,
@@ -718,6 +778,7 @@ export class PathOpEnvStub {
             common: {
                 flags: 0,
                 target: this.target_,
+                dec_id: this.dec_id_,
                 sid: this.sid_,
             },
             value: object_id,
@@ -738,6 +799,7 @@ export class PathOpEnvStub {
             common: {
                 flags: 0,
                 target: this.target_,
+                dec_id: this.dec_id_,
                 sid: this.sid_,
             },
             value: object_id,
@@ -758,6 +820,7 @@ export class PathOpEnvStub {
             common: {
                 flags: 0,
                 target: this.target_,
+                dec_id: this.dec_id_,
                 sid: this.sid_,
             },
             value: object_id,
@@ -776,6 +839,7 @@ export class PathOpEnvStub {
             common: {
                 flags: 0,
                 target: this.target_,
+                dec_id: this.dec_id_,
                 sid: this.sid_,
             },
         };
@@ -794,11 +858,12 @@ export class PathOpEnvStub {
         return Ok(info);
     }
 
-    public async abort(): Promise<BuckyResult<{}>> {
+    public async abort(): Promise<BuckyResult<void>> {
         const req: OpEnvAbortOutputRequest = {
             common: {
                 flags: 0,
                 target: this.target_,
+                dec_id: this.dec_id_,
                 sid: this.sid_,
             },
         };
@@ -807,7 +872,7 @@ export class PathOpEnvStub {
             return resp;
         }
 
-        return Ok({});
+        return Ok(undefined);
     }
 
     // metadata
@@ -816,6 +881,7 @@ export class PathOpEnvStub {
             common: {
                 flags: 0,
                 target: this.target_,
+                dec_id: this.dec_id_,
                 sid: this.sid_,
             },
             path,
@@ -855,7 +921,7 @@ export class GlobalStateAccessStub {
 
     public async get_object_by_path(
         inner_path: string
-    ): Promise<BuckyResult<NONGetObjectOutputResponse>>{
+    ): Promise<BuckyResult<NONGetObjectOutputResponse>> {
         const req: RootStateAccessGetObjectByPathOutputRequest = {
             common: {
                 flags: 0,

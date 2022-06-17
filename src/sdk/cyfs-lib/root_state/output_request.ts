@@ -14,7 +14,7 @@ import {
     ObjectMapSimpleContentType,
 } from "../../cyfs-base";
 import { JsonCodec } from "../base/codec";
-import { NONGetObjectOutputResponse, NONGetObjectOutputResponseJsonCodec } from "../non/output_request";
+import { NONGetObjectOutputResponse } from "../non/output_request";
 
 import JSBI from "jsbi";
 
@@ -199,7 +199,7 @@ export class OpEnvOutputRequestCommonJsonCodec extends JsonCodec<OpEnvOutputRequ
         super();
     }
     encode_object(param: OpEnvOutputRequestCommon): any {
-        return { 
+        return {
             dec_id: param.dec_id ? param.dec_id.to_base_58() : undefined,
             target: param.target ? param.target.to_base_58() : undefined,
             flags: param.flags,
@@ -330,11 +330,11 @@ export class OpEnvCreateNewOutputRequestJsonCodec extends JsonCodec<OpEnvCreateN
             return common;
         }
 
-        return Ok({ 
-            common: common.unwrap(), 
+        return Ok({
+            common: common.unwrap(),
             content_type: o.content_type,
             path: o.path,
-            key: o.key, 
+            key: o.key,
         });
     }
 }
@@ -919,13 +919,12 @@ export class ObjectMapMapItemJsonCodec extends JsonCodec<ObjectMapMapItem> {
         };
     }
     decode_object(o: any): BuckyResult<ObjectMapMapItem> {
-        let value;
         const result = ObjectId.from_base_58(o.value);
         if (result.err) {
             return result;
         }
-        value = result.unwrap();
-        return Ok({ key: o.key, value: value });
+        const value = result.unwrap();
+        return Ok({ key: o.key, value, });
     }
 }
 
@@ -943,13 +942,12 @@ export class ObjectMapSetItemJsonCodec extends JsonCodec<ObjectMapSetItem> {
         };
     }
     decode_object(o: any): BuckyResult<ObjectMapSetItem> {
-        let value;
         const result = ObjectId.from_base_58(o.value);
         if (result.err) {
             return result;
         }
-        value = result.unwrap();
-        return Ok({ value: value });
+        const value = result.unwrap();
+        return Ok({ value, });
     }
 }
 

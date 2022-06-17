@@ -331,8 +331,8 @@ export class SharedCyfsStack {
         return this.m_root_state;
     }
 
-    root_state_stub(target?: ObjectId): GlobalStateStub {
-        return new GlobalStateStub(this.root_state(), target);
+    root_state_stub(target?: ObjectId, dec_id?: ObjectId): GlobalStateStub {
+        return new GlobalStateStub(this.root_state(), target, dec_id);
     }
 
     // local_cache methods
@@ -340,11 +340,11 @@ export class SharedCyfsStack {
         return this.m_local_cache;
     }
 
-    local_cache_stub(target?: ObjectId): GlobalStateStub {
-        return new GlobalStateStub(this.local_cache(), target);
+    local_cache_stub(target?: ObjectId, dec_id?: ObjectId): GlobalStateStub {
+        return new GlobalStateStub(this.local_cache(), target, dec_id);
     }
 
-    root_state_access() {
+    root_state_access(): GlobalStateAccessRequestor {
         return this.m_root_state_access;
     }
 
@@ -352,7 +352,7 @@ export class SharedCyfsStack {
         return new GlobalStateAccessStub(this.root_state_access(), target, dec_id);
     }
 
-    local_cache_access() {
+    local_cache_access(): GlobalStateAccessRequestor {
         return this.m_local_cache_access;
     }
 

@@ -78,7 +78,7 @@ import {
 import { BaseRequestor, RequestorHelper } from "../base/base_requestor";
 import { HttpRequest } from "../base/http_request";
 import { RootStateAction, ObjectMapOpEnvType, OpEnvAction, GlobalStateCategory } from "./def";
-import { NONGetObjectOutputResponseJsonCodec, NONGetObjectOutputResponse } from '../non/output_request';
+import { NONGetObjectOutputResponse } from '../non/output_request';
 import { NONRequestorHelper } from "../non/requestor";
 import JSBI from "jsbi";
 
@@ -99,11 +99,11 @@ export class GlobalStateRequestor {
         return this.category_;
     }
 
-    public get_base_requestor() {
+    public get_base_requestor(): BaseRequestor {
         return this.requestor_;
     }
 
-    public get_dec_id() {
+    public get_dec_id(): ObjectId {
         return this.dec_id_;
     }
 
@@ -267,6 +267,10 @@ export class OpEnvRequestor {
         return this.sid_;
     }
 
+    public get_dec_id(): ObjectId {
+        return this.dec_id_;
+    }
+
     public get_category(): GlobalStateCategory {
         return this.category_;
     }
@@ -294,11 +298,11 @@ export class OpEnvRequestor {
 
     // load
     // op_env/init/target
-    public async load(req: OpEnvLoadOutputRequest): Promise<BuckyResult<{}>> {
+    public async load(req: OpEnvLoadOutputRequest): Promise<BuckyResult<void>> {
         if (this.op_env_type_ !== ObjectMapOpEnvType.Single) {
             const err_msg = `load method only valid for single_op_env! sid = ${this.sid_}`;
             console.log(err_msg);
-            return Ok({});
+            return Ok(undefined);
         }
 
         console.info(
@@ -320,7 +324,7 @@ export class OpEnvRequestor {
                 `load for path_op_env success: sid=${this.sid_}, target=${req.target}`
             );
 
-            return Ok({});
+            return Ok(undefined);
         } else {
             const e = await RequestorHelper.error_from_resp(resp);
             console.error(
@@ -342,7 +346,7 @@ export class OpEnvRequestor {
     // load_by_path
     public async load_by_path(
         req: OpEnvLoadByPathOutputRequest
-    ): Promise<BuckyResult<{}>> {
+    ): Promise<BuckyResult<void>> {
         if (this.op_env_type_ !== ObjectMapOpEnvType.Single) {
             const msg = `load_by_path method only valid for single_op_env! sid={self.sid_}`;
             console.error(msg);
@@ -369,7 +373,7 @@ export class OpEnvRequestor {
                 `load_by_path for single_op_env success: path=${req.path}, sid=${this.sid_}`
             );
 
-            return Ok({});
+            return Ok(undefined);
         } else {
             const e = await RequestorHelper.error_from_resp(resp);
             console.error(
@@ -397,7 +401,7 @@ export class OpEnvRequestor {
     // create_new
     public async create_new(
         req: OpEnvCreateNewOutputRequest
-    ): Promise<BuckyResult<{}>> {
+    ): Promise<BuckyResult<void>> {
         if (this.op_env_type_ !== ObjectMapOpEnvType.Single) {
             const msg = `create_new method only valid for single_op_env! sid={self.sid_}`;
             console.error(msg);
@@ -415,7 +419,7 @@ export class OpEnvRequestor {
         if (resp.status === 200) {
             console.log(`create_new for single_op_env success: sid=${this.sid_}`);
 
-            return Ok({});
+            return Ok(undefined);
         } else {
             const e = await RequestorHelper.error_from_resp(resp);
             console.error(`create_new for single_op_env failed: sid=${this.sid_}, err=${e}`);
@@ -440,7 +444,7 @@ export class OpEnvRequestor {
 
     // lock
     // op_env/{op_env_type}/lock
-    public async lock(req: OpEnvLockOutputRequest): Promise<BuckyResult<{}>> {
+    public async lock(req: OpEnvLockOutputRequest): Promise<BuckyResult<void>> {
         if (this.op_env_type_ !== ObjectMapOpEnvType.Path) {
             const msg = `lock method only valid for path_op_env! sid={self.sid_}`;
             console.error(msg);
@@ -460,7 +464,7 @@ export class OpEnvRequestor {
         if (resp.status === 200) {
             console.log(`lock for path_op_env success: sid=${this.sid_}`);
 
-            return Ok({});
+            return Ok(undefined);
         } else {
             const e = await RequestorHelper.error_from_resp(resp);
             console.error(`lock for path_op_env failed: sid=${this.sid_}, err=${e}`);
@@ -530,7 +534,7 @@ export class OpEnvRequestor {
     }
 
     // abort
-    public async abort(req: OpEnvAbortOutputRequest): Promise<BuckyResult<{}>> {
+    public async abort(req: OpEnvAbortOutputRequest): Promise<BuckyResult<void>> {
         console.info(`will abort for op_env: sid=${this.sid_}`);
 
         const http_req = this.encode_abort_request(req);
@@ -545,7 +549,7 @@ export class OpEnvRequestor {
         if (resp.status === 200) {
             console.log(`abort for path_op_env success: sid=${this.sid_}`);
 
-            return Ok({});
+            return Ok(undefined);
         } else {
             const e = await RequestorHelper.error_from_resp(resp);
             console.error(`abort for path_op_env failed: sid=${this.sid_}, err=${e}`);
@@ -664,7 +668,7 @@ export class OpEnvRequestor {
     // insert_with_key
     public async insert_with_key(
         req: OpEnvInsertWithKeyOutputRequest
-    ): Promise<BuckyResult<{}>> {
+    ): Promise<BuckyResult<void>> {
         console.info(`will insert_with_key, sid=${this.sid_}, key=${req.path ? req.path : req.key}, value=${req.value}`);
 
         const http_req = this.encode_insert_with_key_request(req);
@@ -677,7 +681,7 @@ export class OpEnvRequestor {
         const resp = r.unwrap();
         if (resp.status === 200) {
             console.log(`insert_with_key for op_env success: sid=${this.sid_}, key=${req.path ? req.path : req.key}`);
-            return Ok({});
+            return Ok(undefined);
         } else {
             const e = await RequestorHelper.error_from_resp(resp);
             console.error(`insert_with_key for op_env failed: sid=${this.sid_}, key=${req.path ? req.path : req.key}`);
@@ -1018,9 +1022,9 @@ export class GlobalStateAccessRequestor {
         return this.category_;
     }
 
-    private gen_url(inner_path: string) : string {
+    private gen_url(inner_path: string): string {
         const str = inner_path.startsWith('/') ? inner_path.substring(1) : inner_path;
-        return this.service_url_.concat(str)+"?mode=object";
+        return this.service_url_.concat(str) + "?mode=object";
     }
 
     private encode_common_headers(
@@ -1042,7 +1046,7 @@ export class GlobalStateAccessRequestor {
 
     private encode_get_object_by_path_request(
         req: RootStateAccessGetObjectByPathOutputRequest
-    ) : HttpRequest {
+    ): HttpRequest {
         const url = this.gen_url(req.inner_path);
         const http_req = new HttpRequest("Get", url);
         this.encode_common_headers(req.common, http_req);
@@ -1096,18 +1100,18 @@ export class GlobalStateAccessRequestor {
 
     private encode_list_request(
         req: RootStateAccessListOutputRequest
-    ) : HttpRequest {
-        let url = new URL(this.gen_url(req.inner_path));
+    ): HttpRequest {
+        const url = new URL(this.gen_url(req.inner_path));
         url.searchParams.append("action", "list");
 
         if (req.page_index != null) {
             url.searchParams.append("page_index", req.page_index.toString());
         }
-        
+
         if (req.page_size != null) {
             url.searchParams.append("page_size", req.page_size.toString());
         }
-        
+
         const http_req = new HttpRequest("Get", url.toString());
         this.encode_common_headers(req.common, http_req);
         return http_req;
