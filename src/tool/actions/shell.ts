@@ -15,9 +15,6 @@ inquirer.registerPrompt(
 
 const  parseArgs = require('minimist');
 
-
-const default_dec_id = ObjectId.from_base_58('9tGpLNnDpa8deXEk2NaWGccEu4yFQ2DrTZJPLYLT7gj4').unwrap()
-
 let local_device_index = 0;
 let device_list = [];
 
@@ -76,7 +73,7 @@ async function perpare_dec_list(stack: SharedCyfsStack, to: ObjectId) {
 }
 
 // FIXME: 默认最大1024
-async function tree_list(inner_path: string, to: ObjectId, stack: SharedCyfsStack, dec_id: ObjectId) {
+async function tree_list(inner_path: string, to: ObjectId, stack: SharedCyfsStack, dec_id?: ObjectId) {
     const treeLists = await listRootTree(stack, inner_path, to, 0, 1024, dec_id);
     if (treeLists.items && treeLists.items.length ) {
         treeLists.items.forEach(element => {
@@ -403,7 +400,7 @@ export function makeCommand(config: CyfsToolConfig): Command {
         .action(async (options) => {
             clog.restore_console();
             console_orig.log("options:", options)
-            const [stack, writable] = await create_stack(options.endpoint, config, default_dec_id)
+            const [stack, writable] = await create_stack(options.endpoint, config)
             await stack.online();
             await perpare_device_list(stack);
             await run(options, stack, config);
@@ -553,10 +550,7 @@ export async function run(options:any, default_stack: SharedCyfsStack, config: C
                 }
                 const check = await check_subdir(inner_path, target_id, taret_stack, dec_id);
                 if (!check) {
-                    // const owner_id = ret["desc"]["owner"];
-                    // let target = ObjectId.from_base_58(owner_id).unwrap();
-                    // await test_op_env(key, taret_stack, target, options.endpoint);
-                    await rm(taret_stack, target_id, options.endpoint, inner_path);
+                    await rm(taret_stack, target_id, dec_id, options.endpoint, inner_path);
                 } else {
                     console_orig.error(`rm: cannot remove ${inner_path}: Is a recurive directory`)
                 }
@@ -586,7 +580,7 @@ export async function run(options:any, default_stack: SharedCyfsStack, config: C
     }
 }
 
-async function ls(inner_path: string, target_id: ObjectId, stack: SharedCyfsStack, dec_id: ObjectId) {
+async function ls(inner_path: string, target_id: ObjectId, stack: SharedCyfsStack, dec_id?: ObjectId) {
     await tree_list(inner_path, target_id, stack, dec_id);
 }
 
@@ -618,10 +612,10 @@ async function cat(stack: SharedCyfsStack, target_id: ObjectId, dec_id: ObjectId
     return ret["desc"]["object_id"];
 }
 
-async function rm(stack: SharedCyfsStack, target_id: ObjectId, ep: string, inner_path: string) {
-    console_orig.log(`op_env: ${ep} -> inner_path: ${inner_path} -> target: ${target_id.toString()}`)
+async function rm(stack: SharedCyfsStack, target_id: ObjectId, dec_id: ObjectId, ep: string, inner_path: string) {
+    console_orig.log(`op_env: ${ep} -> dec_id: ${dec_id} -> inner_path: ${inner_path} -> target: ${target_id.toString()}`)
     // 删除目标的root-state
-    const op_env = (await stack.root_state_stub(target_id).create_path_op_env()).unwrap()
+    const op_env = (await stack.root_state_stub(target_id, dec_id).create_path_op_env()).unwrap()
     const r = await op_env.remove_with_path(inner_path)
     if (r.err) {
         console.error("remove root state err", r.val)
@@ -633,7 +627,7 @@ async function rm(stack: SharedCyfsStack, target_id: ObjectId, ep: string, inner
         return
     }
 
-    const op_env1 = (await stack.root_state_stub().create_path_op_env()).unwrap()
+    const op_env1 = (await stack.root_state_stub(target_id, dec_id).create_path_op_env()).unwrap()
     const ret = await op_env1.get_by_path(inner_path);
     if (ret.err) {
         console.error("get_by_path root state err", ret.val)
