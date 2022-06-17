@@ -1,9 +1,11 @@
 import { Command } from "commander";
-import { ObjectId, ObjectTypeCode, SharedCyfsStack, clog, NONObjectInfo, ObjectMapSimpleContentType, ObjectMapContentItem, AnyNamedObjectDecoder } from "../../sdk";
+import { ObjectId, SharedCyfsStack, clog, ObjectMapSimpleContentType, ObjectMapContentItem, AnyNamedObjectDecoder } from "../../sdk";
 import { create_stack, CyfsToolConfig, getObject, get_final_owner, stop_runtime } from "../lib/util";
 import * as dump from './dump';
 import * as get from './get';
 import fetch from 'node-fetch';
+import { BooleanCoder } from "../../sdk/ethabi/coders/boolean";
+import path from "path";
 
 const inquirer = require('inquirer')
 inquirer.registerPrompt(
@@ -18,8 +20,6 @@ const default_dec_id = ObjectId.from_base_58('9tGpLNnDpa8deXEk2NaWGccEu4yFQ2DrTZ
 
 let local_device_index = 0;
 let device_list = [];
-let dec_id_list = [];
-const dec_id_index = 0;
 
 const console_orig = (console as any).origin;
 
@@ -52,21 +52,30 @@ async function perpare_device_list(stack: SharedCyfsStack) {
     }
 }
 
-// FIXME: 默认最大256 
+interface List {
+    name: string,
+    value: ObjectId,
+}
+
+let dec_id_list = {
+    list: [] as Array<List>
+}
+
+// FIXME: 默认最大1024 
 async function perpare_dec_list(stack: SharedCyfsStack, to: ObjectId) {
     const treeLists = await listRootTree(stack, "/", to, 0, 1024);
     if (treeLists.items && treeLists.items.length ) {
         treeLists.items.forEach(element => {
             if (element != undefined) {
-                const dec_id = `${element.dec_id}`;
-                console_orig.log(`dec_id: ${dec_id}`);
-                dec_id_list.push({name: element.dec_id, value: ObjectId.from_base_58(element.dec_id).unwrap()});
+                // const dec_id = `${element.dec_id}`;
+                // console_orig.log(`dec_id: ${dec_id}`);
+                dec_id_list.list.push({name: element.dec_id.toString(), value: element.dec_id});
             }
         });
     }   
 }
 
-// FIXME: 默认最大256
+// FIXME: 默认最大1024
 async function tree_list(inner_path: string, to: ObjectId, stack: SharedCyfsStack, dec_id: ObjectId) {
     const treeLists = await listRootTree(stack, inner_path, to, 0, 1024, dec_id);
     if (treeLists.items && treeLists.items.length ) {
@@ -111,12 +120,12 @@ interface ObjectContentItem {
     object_id: ObjectId,
     type: string,
     owner_info: string,
-    dec_id: string,
+    dec_id: ObjectId,
 }
 
 export interface CategoryTree {
     name: string;
-    items: ObjectContentItem[];
+    items: (ObjectContentItem | undefined)[];
 }
 
 /**
@@ -148,9 +157,8 @@ export async function listObjectMapSetInPath(
     page_index: number,
     page_size: number,
     dec_id?: ObjectId,
-): Promise<{ items: ObjectContentItem[]}> {
-    let items: ObjectContentItem[] = [];
-    items = await listObjectSetInPath(stack, path, to, page_index, page_size, dec_id);
+): Promise<{ items: (ObjectContentItem | undefined)[]}> {
+    const items = await listObjectSetInPath(stack, path, to, page_index, page_size, dec_id);
     return { items };
 }
 
@@ -167,7 +175,7 @@ async function listMapSetInPath(
     page_index: number,
     page_size: number,
     dec_id?: ObjectId,
-): Promise<ObjectContentItem[]> {
+): Promise<(ObjectContentItem | undefined)[]> {
 
     const access = stack.root_state_access_stub(to, dec_id);
 
@@ -204,14 +212,14 @@ async function listMapSetInPath(
                     //     let nonce = ret_info.object.nonce().unwrap();
                     //     console_orig.log('----------------nonce', nonce)
                     // }
-                    let decid = '';
+                    let decid = ObjectId.default();
                     if(ret_info.object?.desc().dec_id().is_some()){
-                        decid = ret_info.object?.desc().dec_id().unwrap().toString();
+                        decid = ret_info.object?.desc().dec_id().unwrap();
                     }
                     
                     const ret: ObjectContentItem = {
                         name: item.set!.value.toString(),
-                        object_id: ret_info.object?.desc().calculate_id(),
+                        object_id: ret_info.object?.desc().calculate_id()!,
                         type: type.toString(),
                         owner_info: owner_info,
                         dec_id: decid,
@@ -244,14 +252,14 @@ async function listMapSetInPath(
                         //     let nonce = ret_info.object.nonce().unwrap();
                         //     console_orig.log('----------------nonce', nonce)
                         // }
-                        let decid = '';
+                        let decid = ObjectId.default();
                         if(ret_info.object?.desc().dec_id().is_some()){
-                            decid = ret_info.object?.desc().dec_id().unwrap().toString();
+                            decid = ret_info.object?.desc().dec_id().unwrap();
                         }
                         
                         const ret: ObjectContentItem = {
                             name: item.map!.key,
-                            object_id: ret_info.object?.desc().calculate_id(),
+                            object_id: ret_info.object?.desc().calculate_id()!,
                             type: type.toString(),
                             owner_info: owner_info,
                             dec_id: decid,
@@ -284,53 +292,44 @@ async function select_target() {
     return resp["target"].object_id;
 }
 
-async function select_dec_id() {
-    const resp = await inquirer.prompt([
-        {
-            type:"rawlist",
-            name:"dec_id",
-            message:"choose dec_id:",
-            choices: dec_id_list,
-            default: dec_id_index,
-            prefix: "",
-            suffix: ">"
-        }
-    ])
-    return resp["dec_id"];
-}
-
-
 async function help(){
-    const list = [];
-    let num = '列出该目录下所有子节点';
-    list.push({ name: 'ls' + `,${num}`, value: num, descript: '列出该目录下所有子节点' });
+  interface List {
+    name: string,
+    value: string,
+    descript: string,
+  }
+  let data = {
+    list: [] as Array<List>
+  }
+    const ls = '列出该目录下所有子节点';
+    data.list.push({ name: 'ls' + `,${ls}`, value: ls, descript: '列出该目录下所有子节点' });
 
-    num = '进入该子节点,如果子节点不是ObjectMap,提示错误,并留在当前目录';
-    list.push({ name: 'cd' + `,${num}`, value: num, descript: '进入子节点后,命令行为{target id}:{current path}>' });
+    const cd = '进入该子节点,如果子节点不是ObjectMap,提示错误,并留在当前目录';
+    data.list.push({ name: 'cd' + `,${cd}`, value: cd, descript: '进入子节点后,命令行为{target id}:{current path}>' });
 
-    num = '以json格式展示该子节点的对象内容';
-    list.push({ name: 'cat' + `,${num}`, value: num, descript: '以json格式展示该子节点的对象内容' });
+    const cat = '以json格式展示该子节点的对象内容';
+    data.list.push({ name: 'cat' + `,${cat}`, value: cat, descript: '以json格式展示该子节点的对象内容' });
 
-    num = '以二进制格式保存该子节点的对象内容,保存路径默认为当前路径,保存文件名为.obj,保存完成后,提示保存的文件全路径';
-    list.push({ name: 'dump' + `,${num}`, value: num, descript: '以二进制格式保存该子节点的对象内容,保存路径默认为当前路径,保存文件名为.obj,保存完成后,提示保存的文件全路径' });
+    const dump = '以二进制格式保存该子节点的对象内容,保存路径默认为当前路径,保存文件名为.obj,保存完成后,提示保存的文件全路径';
+    data.list.push({ name: 'dump' + `,${dump}`, value: dump, descript: '以二进制格式保存该子节点的对象内容,保存路径默认为当前路径,保存文件名为.obj,保存完成后,提示保存的文件全路径' });
 
-    num = '保存该节点和后续节点的文件到本地,保存路径默认为当前路径+节点名';
-    list.push({ name: 'get' + `,${num}`, value: num, descript: '保存该节点和后续节点的文件到本地,保存路径默认为当前路径+节点名' });
+    const get = '保存该节点和后续节点的文件到本地,保存路径默认为当前路径+节点名';
+    data.list.push({ name: 'get' + `,${get}`, value: get, descript: '保存该节点和后续节点的文件到本地,保存路径默认为当前路径+节点名' });
 
-    num = '删除节点,如果节点是object map,且还有子节点,删除失败';
-    list.push({ name: 'rm' + `,${num}`, value: num, descript: '删除节点,如果节点是object map,且还有子节点,删除失败' });
+    const rm = '删除节点,如果节点是object map,且还有子节点,删除失败';
+    data.list.push({ name: 'rm' + `,${rm}`, value: rm, descript: '删除节点,如果节点是object map,且还有子节点,删除失败' });
 
-    num = '重新选择target,选择后路径重置为根目录';
-    list.push({ name: 'target' + `,${num}`, value: num, descript: '重新选择target,选择后路径重置为根目录' });
+    const target = '重新选择target,选择后路径重置为根目录';
+    data.list.push({ name: 'target' + `,${target}`, value: target, descript: '重新选择target,选择后路径重置为根目录' });
 
-    num = '清除屏幕';
-    list.push({ name: 'clear' + `,${num}`, value: num, descript: '清除屏幕' });
+    const clear = '清除屏幕';
+    data.list.push({ name: 'clear' + `,${clear}`, value: clear, descript: '清除屏幕' });
 
-    num = '帮助信息';
-    list.push({ name: 'help' + `,${num}`, value: num, descript: '帮助信息' });
+    const help = '帮助信息';
+    data.list.push({ name: 'help' + `,${help}`, value: help, descript: '帮助信息' });
 
-    num = '退出shell';
-    list.push({ name: 'exit' + `,${num}`, value: num, descript: '退出shell' });
+    const exit = '退出shell';
+    data.list.push({ name: 'exit' + `,${exit}`, value: exit, descript: '退出shell' });
 
     await inquirer.prompt([
         {
@@ -338,7 +337,7 @@ async function help(){
             name: 'help',
             message: 'Help',
             default: 0,
-            choices: list,
+            choices: data.list,
         }
     ])
         .then(answers => {
@@ -423,8 +422,6 @@ export async function run(options:any, default_stack: SharedCyfsStack, config: C
         if (target_id === undefined) {
             target_id = await select_target();
             await perpare_dec_list(default_stack, target_id);
-            dec_id = await select_dec_id();
-            console_orig.log(`dec_id: ${dec_id}`);
 
         } else {
             const cmd = await runPrompt(target_id, current_path, device_list);
@@ -444,6 +441,7 @@ export async function run(options:any, default_stack: SharedCyfsStack, config: C
             //windows下  ls e:
             const program = argv._[0];
             let inner_path;
+            let dec_id_str;
             if (argv._.length < 2) {
                 inner_path = current_path;
             } else {
@@ -453,22 +451,55 @@ export async function run(options:any, default_stack: SharedCyfsStack, config: C
                 let trim_double_quota_path = tmp_path.replace("\"","").replace("\"","");
                 let trim_single_quota_path = trim_double_quota_path.replace("\'","").replace("\'","");
 
-                if (-1 != trim_single_quota_path.indexOf("/")) {
-                    inner_path = trim_single_quota_path;
+                if (dec_id === undefined) {
+                    dec_id_str = trim_single_quota_path;
                 } else {
-                    if (current_path === "/") {
-                        inner_path = current_path + trim_single_quota_path;
+                    if (-1 != trim_single_quota_path.indexOf("/")) {
+                        inner_path = trim_single_quota_path;
                     } else {
-                        inner_path = current_path + "/" + trim_single_quota_path;
+                        if (current_path === "/") {
+                            inner_path = current_path + trim_single_quota_path;
+                        } else {
+                            inner_path = current_path + "/" + trim_single_quota_path;
+                        }
                     }
-
                 }
             }
-            if (program === "ls") {
-                // console_orig.log(`RUN: ${program} ${args} ${inner_path}`);
-                await ls(inner_path, target_id, taret_stack, dec_id);
 
+            if (dec_id !== undefined) {
+                inner_path = path.posix.normalize(inner_path);
+            }
+
+            if (program === "ls") {
+                if (dec_id === undefined) {
+                    if (dec_id_list && dec_id_list.list.length ) {
+                        dec_id_list.list.forEach(element => {
+                            if (element != undefined) {
+                                console_orig.log(`${element.name}`);
+                            }
+                        });
+                    } else {
+                        console_orig.error(`No available dec_id, must least have one`);
+                    }
+                } else {
+                    // console_orig.log(`RUN: ${program} ${args} ${inner_path}`);
+                    await ls(inner_path, target_id, taret_stack, dec_id);
+                }
             } else if (program === "cd") {
+                let flags = false;
+                // 选择dec_id
+                if (dec_id_list && dec_id_list.list.length ) {
+                    dec_id_list.list.forEach(element => {
+                        if (dec_id_str === element.name) {
+                            dec_id = element.value;
+                            flags = true;
+                        }
+                    });
+                }
+                if (dec_id === undefined || flags) {
+                    continue;
+                }
+
                 // check tmp path existed(ObjectMap)
                 const check = await check_dir(inner_path, target_id, taret_stack, dec_id);
                 if (!check) {
@@ -476,11 +507,16 @@ export async function run(options:any, default_stack: SharedCyfsStack, config: C
                     continue;
                 }
                 current_path = inner_path;
-
             } else if (program === "cat"){
+                if (dec_id === undefined) {
+                    continue;
+                }
                 await cat(taret_stack, target_id, dec_id, inner_path);
                 
             } else if (program === "dump"){
+                if (dec_id === undefined) {
+                    continue;
+                }
                 const temp_options = options;
                 temp_options.save = "./";
                 if (argv.s !== undefined) {
@@ -492,6 +528,9 @@ export async function run(options:any, default_stack: SharedCyfsStack, config: C
                 await dump.run(makeRLink(target_id, dec_id, inner_path), temp_options, taret_stack);
 
             } else if (program === "get"){
+                if (dec_id === undefined) {
+                    continue;
+                }
                 const temp_options = options;
                 if (argv._.length < 2) {
                     console_orig.log(`Usage: get [objectmap option] [-s absolute path option]`)
@@ -509,19 +548,22 @@ export async function run(options:any, default_stack: SharedCyfsStack, config: C
                 await get.run(makeRLink(target_id, dec_id, inner_path), temp_options, taret_stack, target_id, dec_id, inner_path);
                 
             } else if (program === "rm"){
+                if (dec_id === undefined) {
+                    continue;
+                }
                 const check = await check_subdir(inner_path, target_id, taret_stack, dec_id);
                 if (!check) {
-                    const key = await cat(taret_stack, target_id, dec_id, inner_path); 
                     // const owner_id = ret["desc"]["owner"];
                     // let target = ObjectId.from_base_58(owner_id).unwrap();
                     // await test_op_env(key, taret_stack, target, options.endpoint);
-                    await rm(key, taret_stack, target_id, options.endpoint, inner_path);
+                    await rm(taret_stack, target_id, options.endpoint, inner_path);
                 } else {
                     console_orig.error(`rm: cannot remove ${inner_path}: Is a recurive directory`)
                 }
             } else if (program === "target"){
                 device_list = [];
-                dec_id_list = [];
+                dec_id_list.list = [];
+                dec_id = undefined;
                 current_path = "/"
                 if (argv.e === "ood") {
                     options.endpoint = "ood";
@@ -532,7 +574,6 @@ export async function run(options:any, default_stack: SharedCyfsStack, config: C
                 await perpare_device_list(taret_stack);
                 target_id = await select_target();
                 await perpare_dec_list(taret_stack, target_id);
-                dec_id = await select_dec_id();
 
             } else if (program === "exit") {
                 break;
@@ -544,7 +585,6 @@ export async function run(options:any, default_stack: SharedCyfsStack, config: C
         }
     }
 }
-
 
 async function ls(inner_path: string, target_id: ObjectId, stack: SharedCyfsStack, dec_id: ObjectId) {
     await tree_list(inner_path, target_id, stack, dec_id);
@@ -578,8 +618,8 @@ async function cat(stack: SharedCyfsStack, target_id: ObjectId, dec_id: ObjectId
     return ret["desc"]["object_id"];
 }
 
-async function rm(obj_id: string, stack: SharedCyfsStack, target_id: ObjectId, ep: string, inner_path: string) {
-    console_orig.log(`op_env: ${ep} -> inner_path: ${inner_path} -> key: ${obj_id} -> target: ${target_id.toString()}`)
+async function rm(stack: SharedCyfsStack, target_id: ObjectId, ep: string, inner_path: string) {
+    console_orig.log(`op_env: ${ep} -> inner_path: ${inner_path} -> target: ${target_id.toString()}`)
     // 1. 删除本地的root-state
     const op_env = (await stack.root_state_stub().create_path_op_env()).unwrap()
     const r = await op_env.remove_with_path(inner_path)
