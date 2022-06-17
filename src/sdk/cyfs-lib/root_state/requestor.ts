@@ -118,6 +118,10 @@ export class GlobalStateRequestor {
             http_req.insert_header(CYFS_DEC_ID, this.dec_id_.to_string());
         }
 
+        if (com_req.target) {
+            http_req.insert_header(CYFS_TARGET, com_req.target.to_string());
+        }
+
         http_req.insert_header(CYFS_FLAGS, com_req.flags.toString());
         http_req.insert_header(CYFS_ROOT_STATE_ACTION, action);
     }
@@ -284,6 +288,10 @@ export class OpEnvRequestor {
             http_req.insert_header(CYFS_DEC_ID, com_req.dec_id.to_string());
         } else if (this.dec_id_) {
             http_req.insert_header(CYFS_DEC_ID, this.dec_id_.to_string());
+        }
+
+        if (com_req.target) {
+            http_req.insert_header(CYFS_TARGET, com_req.target.to_string())
         }
 
         http_req.insert_header(CYFS_FLAGS, com_req.flags.toString());

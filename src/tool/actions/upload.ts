@@ -34,7 +34,7 @@ export function makeCommand(config: CyfsToolConfig): Command {
 // 从一个已经挂到path上的对象起，将后续的对象树全部上传到target
 async function upload_obj(stack: SharedCyfsStack, target: ObjectId, path: string): Promise<ObjectId[] | undefined> {
     console.log("upload obj from root state path", path)
-    let files = [];
+    let files: ObjectId[] = [];
     const stub = stack.root_state_access_stub();
     const r = await stub.get_object_by_path(path);
     if (r.err) {
@@ -78,7 +78,7 @@ async function upload_obj(stack: SharedCyfsStack, target: ObjectId, path: string
                 return;
             }
             for (const item of items) {
-                const inner_path = path + "/" + item.map.key;
+                const inner_path = path + "/" + item.map!.key;
                 const upload_files = await upload_obj(stack, target, inner_path);
                 console.error(`upload path ${inner_path} failed`)
                 if (upload_files === undefined) {
