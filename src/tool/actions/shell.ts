@@ -620,8 +620,8 @@ async function cat(stack: SharedCyfsStack, target_id: ObjectId, dec_id: ObjectId
 
 async function rm(stack: SharedCyfsStack, target_id: ObjectId, ep: string, inner_path: string) {
     console_orig.log(`op_env: ${ep} -> inner_path: ${inner_path} -> target: ${target_id.toString()}`)
-    // 1. 删除本地的root-state
-    const op_env = (await stack.root_state_stub().create_path_op_env()).unwrap()
+    // 删除目标的root-state
+    const op_env = (await stack.root_state_stub(target_id).create_path_op_env()).unwrap()
     const r = await op_env.remove_with_path(inner_path)
     if (r.err) {
         console.error("remove root state err", r.val)
@@ -633,52 +633,15 @@ async function rm(stack: SharedCyfsStack, target_id: ObjectId, ep: string, inner
         return
     }
 
-    // const op_env1 = (await stack.root_state_stub().create_path_op_env()).unwrap()
-    // const ret = await op_env1.get_object_by_path(inner_path);
-    // if (ret.err) {
-    //     console.error("get_object_by_path root state err", ret.val)
-    //     return
-    // } else {
-    //     console_orig.log(`get_object_by_path ret: ${ret}`)
-    // }
-
-    // 2. 删除ood上的root state
-    const owner_r = await get_final_owner(stack.local_device_id().object_id, stack);
-    if (owner_r.err) {
-        console.error("get stack owner failed, err", owner_r.val);
-        return owner_r;
-    }
-    const owner_id = owner_r.unwrap();
-    console.log("rm use owner", owner_id.to_base_58());
-
-    // 取OOD信息
-    const oods = (await stack.util().resolve_ood({
-        common: {flags: 0},
-        object_id: owner_id
-    })).unwrap().device_list;
-
-    console.log("rm use target", oods[0].object_id.to_base_58());
-
-    const op_env2 = (await stack.root_state_stub(oods[0].object_id).create_path_op_env()).unwrap()
-    const ret1 = await op_env2.remove_with_path(inner_path)
-    if (ret1.err) {
-        console.error("remove root state err", ret1.val)
+    const op_env1 = (await stack.root_state_stub().create_path_op_env()).unwrap()
+    const ret = await op_env1.get_by_path(inner_path);
+    if (ret.err) {
+        console.error("get_by_path root state err", ret.val)
         return
-    }
-    const ret2 = await op_env2.commit()
-    if (ret2.err) {
-        console.error("commit obj to root state err", ret2.val)
-        return
+    } else {
+        console_orig.log(`get_by_path ret: ${ret}`)
     }
 
-    // const op_env3 = (await stack.root_state_stub(oods[0].object_id).create_path_op_env()).unwrap()
-    // const ret3 = await op_env3.get_object_by_path('/upload_map', obj_id);
-    // if (ret3.err) {
-    //     console.error("get_object_by_path root state err", ret3.val)
-    //     return
-    // } else {
-    //     console_orig.log(`get_object_by_path ret: ${ret3}`)
-    // }
 }
 
 async function test_op_env(obj_id: string, stack: SharedCyfsStack, target_id: ObjectId, ep: string) {
