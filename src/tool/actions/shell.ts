@@ -1,22 +1,19 @@
 import { Command } from "commander";
 import { ObjectId, SharedCyfsStack, clog, ObjectMapSimpleContentType, ObjectMapContentItem, AnyNamedObjectDecoder } from "../../sdk";
-import { create_stack, CyfsToolConfig, getObject, get_final_owner, stop_runtime } from "../lib/util";
+import { create_stack, CyfsToolConfig, getObject, stop_runtime } from "../lib/util";
 import * as dump from './dump';
 import * as get from './get';
 import fetch from 'node-fetch';
-import { BooleanCoder } from "../../sdk/ethabi/coders/boolean";
 import path from "path";
 
-const inquirer = require('inquirer')
+import * as inquirer from 'inquirer'
 inquirer.registerPrompt(
     'command',
     require('inquirer-command-prompt')
- )
-
-const  parseArgs = require('minimist');
+)
 
 let local_device_index = 0;
-let device_list = [];
+let device_list: any[] = [];
 
 const console_orig = (console as any).origin;
 
@@ -29,11 +26,11 @@ async function perpare_device_list(stack: SharedCyfsStack) {
     })).unwrap()
     device_list.push(new inquirer.Separator("------OOD-----"))
     for (const device of zone.zone.ood_list()) {
-        device_list.push({name: device.to_base_58(), value: device})
+        device_list.push({ name: device.to_base_58(), value: device })
     }
     device_list.push(new inquirer.Separator("------Device-----"))
     for (const device of zone.zone.known_device_list()) {
-        device_list.push({name: device.to_base_58(), value: device})
+        device_list.push({ name: device.to_base_58(), value: device })
     }
 
     for (const item of device_list) {
@@ -54,40 +51,40 @@ interface List {
     value: ObjectId,
 }
 
-let dec_id_list = {
+const dec_id_list = {
     list: [] as Array<List>
 }
 
 // FIXME: 默认最大1024 
 async function perpare_dec_list(stack: SharedCyfsStack, to: ObjectId) {
     const treeLists = await listRootTree(stack, "/", to, 0, 1024);
-    if (treeLists.items && treeLists.items.length ) {
+    if (treeLists.items && treeLists.items.length) {
         treeLists.items.forEach(element => {
             if (element != undefined) {
                 // const dec_id = `${element.dec_id}`;
                 // console_orig.log(`dec_id: ${dec_id}`);
-                dec_id_list.list.push({name: element.dec_id.toString(), value: element.dec_id});
+                dec_id_list.list.push({ name: element.dec_id.toString(), value: element.dec_id });
             }
         });
-    }   
+    }
 }
 
 // FIXME: 默认最大1024
 async function tree_list(inner_path: string, to: ObjectId, stack: SharedCyfsStack, dec_id?: ObjectId) {
     const treeLists = await listRootTree(stack, inner_path, to, 0, 1024, dec_id);
-    if (treeLists.items && treeLists.items.length ) {
+    if (treeLists.items && treeLists.items.length) {
         treeLists.items.forEach(element => {
             if (element != undefined) {
                 console_orig.log(`${element.name}`);
             }
         });
-    }  
+    }
 }
 
 async function check_dir(inner_path: string, to: ObjectId, stack: SharedCyfsStack, dec_id: ObjectId) {
     const treeLists = await listRootTree(stack, inner_path, to, 0, 1024, dec_id);
-    if (treeLists.items && treeLists.items.length ) {
-      return true;
+    if (treeLists.items && treeLists.items.length) {
+        return true;
     }
 
     return false;
@@ -96,7 +93,7 @@ async function check_dir(inner_path: string, to: ObjectId, stack: SharedCyfsStac
 async function check_subdir(inner_path: string, to: ObjectId, stack: SharedCyfsStack, dec_id: ObjectId) {
     let check = false;
     const treeLists = await listRootTree(stack, inner_path, to, 0, 1024, dec_id);
-    if (treeLists.items && treeLists.items.length ) {
+    if (treeLists.items && treeLists.items.length) {
         treeLists.items.forEach(element => {
             if (element != undefined) {
                 // ObjectTypeCode.ObjectMap
@@ -154,7 +151,7 @@ export async function listObjectMapSetInPath(
     page_index: number,
     page_size: number,
     dec_id?: ObjectId,
-): Promise<{ items: (ObjectContentItem | undefined)[]}> {
+): Promise<{ items: (ObjectContentItem | undefined)[] }> {
     const items = await listObjectSetInPath(stack, path, to, page_index, page_size, dec_id);
     return { items };
 }
@@ -184,39 +181,33 @@ async function listMapSetInPath(
     }
 
     const contentsRetRow = lr.unwrap();
-    
+
     const contentsRet = await Promise.all(
         contentsRetRow.map(async (item: ObjectMapContentItem) => {
             if (item.content_type === ObjectMapSimpleContentType.Set) {
-                const ret_result = await getObject({ stack, id: item.set!.value!})
+                const ret_result = await getObject({ stack, id: item.set!.value! })
                 if (ret_result.err) {
                     // do sth?
-                } else{
+                } else {
                     const ret_info = ret_result.unwrap().object;
 
                     const obj = ret_info.object || new AnyNamedObjectDecoder().from_raw(ret_info.object_raw).unwrap()
-                    const objectId = obj.desc().calculate_id().to_base_58();
                     const type = obj.desc().obj_type_code();
                     //所有者
                     let owner_info = "-";
-                    if (ret_info.object?.desc().owner()) {
-                        owner_info = ret_info.object!.desc().owner()!.unwrap().toString();
+                    const owner = obj.desc().owner();
+                    if (owner && owner.is_some()) {
+                        owner_info = owner.unwrap().to_base_58();
                     }
 
-                    // nonce
-                    const nonce = '--';
-                    // if (ret_info.object.nonce().is_some()) {
-                    //     let nonce = ret_info.object.nonce().unwrap();
-                    //     console_orig.log('----------------nonce', nonce)
-                    // }
                     let decid = ObjectId.default();
-                    if(ret_info.object?.desc().dec_id().is_some()){
-                        decid = ret_info.object?.desc().dec_id().unwrap();
+                    if (obj.desc().dec_id().is_some()) {
+                        decid = obj.desc().dec_id().unwrap();
                     }
-                    
+
                     const ret: ObjectContentItem = {
                         name: item.set!.value.toString(),
-                        object_id: ret_info.object?.desc().calculate_id()!,
+                        object_id: obj.desc().calculate_id(),
                         type: type.toString(),
                         owner_info: owner_info,
                         dec_id: decid,
@@ -226,45 +217,34 @@ async function listMapSetInPath(
 
                 }
             } else if (item.content_type === ObjectMapSimpleContentType.Map) {
-                const ret_result = await getObject({ stack, id: item.map!.value!})
+                const ret_result = await getObject({ stack, id: item.map!.value! })
                 if (ret_result.err) {
                     // do sth?
-                }else
-                {
+                } else {
                     const ret_info = ret_result.unwrap().object;
                     const obj = ret_info.object || new AnyNamedObjectDecoder().from_raw(ret_info.object_raw).unwrap()
-                    if(obj){
-
-                        const objectId = obj.desc().calculate_id().to_base_58();
-                        const type = obj.desc().obj_type_code();
-                        //所有者
-                        let owner_info = "-";
-                        if (ret_info.object?.desc().owner()) {
-                            owner_info = ret_info.object!.desc().owner()!.unwrap().toString();
-                        }
-
-                        // nonce
-                        const nonce = '--';
-                        // if (ret_info.object.nonce().is_some()) {
-                        //     let nonce = ret_info.object.nonce().unwrap();
-                        //     console_orig.log('----------------nonce', nonce)
-                        // }
-                        let decid = ObjectId.default();
-                        if(ret_info.object?.desc().dec_id().is_some()){
-                            decid = ret_info.object?.desc().dec_id().unwrap();
-                        }
-                        
-                        const ret: ObjectContentItem = {
-                            name: item.map!.key,
-                            object_id: ret_info.object?.desc().calculate_id()!,
-                            type: type.toString(),
-                            owner_info: owner_info,
-                            dec_id: decid,
-                        }
-
-                        return ret;
-                        
+                    const type = obj.desc().obj_type_code();
+                    //所有者
+                    let owner_info = "-";
+                    const owner = obj.desc().owner();
+                    if (owner && owner.is_some()) {
+                        owner_info = owner.unwrap().to_base_58();
                     }
+
+                    let decid = ObjectId.default();
+                    if (obj.desc().dec_id().is_some()) {
+                        decid = obj.desc().dec_id().unwrap();
+                    }
+
+                    const ret: ObjectContentItem = {
+                        name: item.map!.key,
+                        object_id: obj.desc().calculate_id(),
+                        type: type.toString(),
+                        owner_info: owner_info,
+                        dec_id: decid,
+                    }
+
+                    return ret;
 
                 }
             }
@@ -277,9 +257,9 @@ async function listMapSetInPath(
 async function select_target() {
     const resp = await inquirer.prompt([
         {
-            type:"rawlist",
-            name:"target",
-            message:"choose device:",
+            type: "rawlist",
+            name: "target",
+            message: "choose device:",
             choices: device_list,
             default: local_device_index,
             prefix: "",
@@ -289,15 +269,15 @@ async function select_target() {
     return resp["target"].object_id;
 }
 
-async function help(){
-  interface List {
-    name: string,
-    value: string,
-    descript: string,
-  }
-  let data = {
-    list: [] as Array<List>
-  }
+async function help() {
+    interface List {
+        name: string,
+        value: string,
+        descript: string,
+    }
+    const data = {
+        list: [] as Array<List>
+    }
     const ls = '列出该目录下所有子节点';
     data.list.push({ name: 'ls' + `,${ls}`, value: ls, descript: '列出该目录下所有子节点' });
 
@@ -337,9 +317,9 @@ async function help(){
             choices: data.list,
         }
     ])
-        .then(answers => {
-            // console_orig.log(JSON.stringify(answers, null, '  '));
-        });
+    .then(answers => {
+        // console_orig.log(JSON.stringify(answers, null, '  '));
+    });
 }
 
 function makeRLink(
@@ -351,54 +331,46 @@ function makeRLink(
 }
 
 
-async function runPrompt(target_id, current_path, device_list) {
+async function runPrompt(target_id, current_path, device_list): Promise<string[]> {
 
     const availableCommands = [
-      {
-        filter: function (str) {
-          return str.replace(/ \[.*$/, '')
-        }
-      },
-      'ls', 'ls /', 'ls /a/b', 'cd', 'cd [inner_path option]', 'cd /a', 'cat [object option]', 'exit', 'quit', 'dump [object option]', 'dump [object option] -s savepath', "rm [object]", "target [-e runtime/ood]", "help"
-    ]
-  
-    return inquirer.prompt([
-      {
-        type: 'command',
-        name: 'cmd',
-        autoCompletion: availableCommands,
-        message: `${target_id}:${current_path}`,
-        choices: device_list,
-        context: 0,
-        prefix: "",
-        suffix: ">",
-        validate: val => {
-          // Enter \r\n support
-          if (val === "") {
-              return true
-          }
-          return val ? true : `Press TAB for suggestions val`
+        {
+            filter: function (str) {
+                return str.replace(/ \[.*$/, '')
+            }
         },
-        short: true
-      }
-    ]).then(answers => {
-      if (!~'ls,cd,cat,dump,get,rm,target,help,exit,quit'.split(',').indexOf(answers.cmd)) {
-          // console_orig.log(`answers: ${answers}`)
-      }
-      return answers.cmd;
+        'ls', 'ls /', 'ls /a/b', 'cd', 'cd [inner_path option]', 'cd /a', 'cat [object option]', 'exit', 'quit', 'dump [object option]', 'dump [object option] -s savepath', "rm [object]", "target [-e runtime/ood]", "help"
+    ]
 
-    }).catch(err => {
-      console_orig.error(err.stack)
-    })
-  
-  }
+    const answer = await inquirer.prompt([
+        {
+            type: 'command',
+            name: 'cmd',
+            autoCompletion: availableCommands,
+            message: `${target_id}:${current_path}`,
+            choices: device_list,
+            context: 0,
+            prefix: "",
+            suffix: ">",
+            validate: val => {
+                // Enter \r\n support
+                if (val === "") {
+                    return true
+                }
+                return val ? true : `Press TAB for suggestions val`
+            },
+            short: true
+        }
+    ]);
+
+    return (answer.cmd as string).split(' ')
+}
 
 export function makeCommand(config: CyfsToolConfig): Command {
     return new Command("shell")
         .description("interactive shell")
         .requiredOption("-e, --endpoint <target>", "cyfs shell endpoint, ood or runtime", "runtime")
         .action(async (options) => {
-            clog.restore_console();
             console_orig.log("options:", options)
             const [stack, writable] = await create_stack(options.endpoint, config)
             await stack.online();
@@ -409,32 +381,55 @@ export function makeCommand(config: CyfsToolConfig): Command {
         })
 }
 
-export async function run(options:any, default_stack: SharedCyfsStack, config: CyfsToolConfig) {
+export async function run(options: any, default_stack: SharedCyfsStack, config: CyfsToolConfig) {
     let target_id;
     let dec_id;
     let current_path = "/"
 
-    let taret_stack = default_stack;
+    const taret_stack = default_stack;
+    // 创建一个Commander实例，名称就用shell先
+    const shell_prog = new Command('shell');
+    shell_prog
+        .addCommand(new Command('ls').description('list objects in current root state path').action((options) => {
+            console_orig.log('call ls command, option', JSON.stringify(options))
+        }))
+        .addCommand(new Command('cd').description('change current root state path').action((options) => {
+            console_orig.log('call cd command, option', JSON.stringify(options))
+        }))
+        .addCommand(new Command('cat').description('show object info in json format').action((options) => {
+            console_orig.log('call cat command, option', JSON.stringify(options))
+        }))
+        .addCommand(new Command('dump').description('save object data to local').option('-s, --save', "save path", ".").action((options) => {
+            console_orig.log('call dump command, option', JSON.stringify(options))
+        }))
+        .addCommand(new Command('get').description('download files to local').option('-s, --save', "save path", ".").action((options) => {
+            console_orig.log('call get command, option', JSON.stringify(options))
+        }))
+        .addCommand(new Command('target').description('change shell`s target').action((options) => {
+            console_orig.log('call target command, option', JSON.stringify(options))
+        }))
+        .addCommand(new Command('rm').description('delete path from root state path').action((options) => {
+            console_orig.log('call rm command, option', JSON.stringify(options))
+        }))
+        .addCommand(new Command('clear').description('clear screen output').action((options) => {
+            console_orig.log('call clear command, option', JSON.stringify(options))
+        }))
+        .addCommand(new Command('exit').description('exit cyfs shell').action((options) => {
+            console_orig.log('call exit command, option', JSON.stringify(options))
+        })).showSuggestionAfterError().exitOverride()
     while (true) {
         if (target_id === undefined) {
             target_id = await select_target();
             await perpare_dec_list(default_stack, target_id);
-
         } else {
-            const cmd = await runPrompt(target_id, current_path, device_list);
-            var regex = /"([^"]*)"|(\S+)/g;
-            var arr = (cmd.match(regex) || []).map(m => m.replace(regex, '$1$2'));
-            const args = arr.filter(el => {
-                return el != null && el != '';
-            });
-            // ls -a avalue -b bvalue --name=xiaoming -abc 10 --save-dev --age 20 arg
-            // const args = ['--name=xiaoming', '-abc', '10', '--save-dev', '--age', '20'];
-            const argv = parseArgs(args);
-            // console_orig.log(`prorgam: ${argv._[0]}, args: ${argv._[1]}, a: ${argv.a}, b: ${argv.b}`)
-            // 校验参数
-            if (argv._.length < 1) {
-                continue;
+            const cmds = await runPrompt(target_id, current_path, device_list);
+            try {
+                shell_prog.parse(cmds, { from: 'user' })
+            } catch {
+                //
             }
+            continue;
+
             //windows下  ls e:
             const program = argv._[0];
             let inner_path;
@@ -445,19 +440,18 @@ export async function run(options:any, default_stack: SharedCyfsStack, config: C
                 const args = argv._.slice(1);  // skip argv[0]
                 const tmp_path = args.join("/");
                 // console_orig.log(`tmp_path: ${tmp_path}`);
-                let trim_double_quota_path = tmp_path.replace("\"","").replace("\"","");
-                let trim_single_quota_path = trim_double_quota_path.replace("\'","").replace("\'","");
+                const trimed_path = tmp_path.replace("\"", "").replace("'", "");
 
                 if (dec_id === undefined) {
-                    dec_id_str = trim_single_quota_path;
+                    dec_id_str = trimed_path;
                 } else {
-                    if (-1 != trim_single_quota_path.indexOf("/")) {
-                        inner_path = trim_single_quota_path;
+                    if (-1 != trimed_path.indexOf("/")) {
+                        inner_path = trimed_path;
                     } else {
                         if (current_path === "/") {
-                            inner_path = current_path + trim_single_quota_path;
+                            inner_path = current_path + trimed_path;
                         } else {
-                            inner_path = current_path + "/" + trim_single_quota_path;
+                            inner_path = current_path + "/" + trimed_path;
                         }
                     }
                 }
@@ -469,7 +463,7 @@ export async function run(options:any, default_stack: SharedCyfsStack, config: C
 
             if (program === "ls") {
                 if (dec_id === undefined) {
-                    if (dec_id_list && dec_id_list.list.length ) {
+                    if (dec_id_list && dec_id_list.list.length) {
                         dec_id_list.list.forEach(element => {
                             if (element != undefined) {
                                 console_orig.log(`${element.name}`);
@@ -485,7 +479,7 @@ export async function run(options:any, default_stack: SharedCyfsStack, config: C
             } else if (program === "cd") {
                 let flags = false;
                 // 选择dec_id
-                if (dec_id_list && dec_id_list.list.length ) {
+                if (dec_id_list && dec_id_list.list.length) {
                     dec_id_list.list.forEach(element => {
                         if (dec_id_str === element.name) {
                             dec_id = element.value;
@@ -504,27 +498,26 @@ export async function run(options:any, default_stack: SharedCyfsStack, config: C
                     continue;
                 }
                 current_path = inner_path;
-            } else if (program === "cat"){
+            } else if (program === "cat") {
                 if (dec_id === undefined) {
                     continue;
                 }
                 await cat(taret_stack, target_id, dec_id, inner_path);
-                
-            } else if (program === "dump"){
+
+            } else if (program === "dump") {
                 if (dec_id === undefined) {
                     continue;
                 }
                 const temp_options = options;
                 temp_options.save = "./";
                 if (argv.s !== undefined) {
-                    let ref = argv.s.replace("\"","").replace("\"","");
-                    let trim_quota = ref.replace("\'","").replace("\'","");
-                    temp_options.save = trim_quota;
+                    const trimed_quota = argv.s.replace("\"", "").replace("'", "");
+                    temp_options.save = trimed_quota;
                 }
 
                 await dump.run(makeRLink(target_id, dec_id, inner_path), temp_options, taret_stack);
 
-            } else if (program === "get"){
+            } else if (program === "get") {
                 if (dec_id === undefined) {
                     continue;
                 }
@@ -534,8 +527,7 @@ export async function run(options:any, default_stack: SharedCyfsStack, config: C
                     continue;
                 }
                 if (argv.s !== undefined) {
-                    let ref = argv.s.replace("\"","").replace("\"","");
-                    let trim_quota = ref.replace("\'","").replace("\'","");
+                    const trim_quota = argv.s.replace("\"", "").replace("'", "");
                     temp_options.save = trim_quota;
                 } else {
                     temp_options.save = "./";
@@ -543,8 +535,8 @@ export async function run(options:any, default_stack: SharedCyfsStack, config: C
 
                 console.log(`save path: ${temp_options.save}, target: ${target_id.to_string()}, dec_id: ${dec_id}, inner_path: ${inner_path}`)
                 await get.run(makeRLink(target_id, dec_id, inner_path), temp_options, taret_stack, target_id, dec_id, inner_path);
-                
-            } else if (program === "rm"){
+
+            } else if (program === "rm") {
                 if (dec_id === undefined) {
                     continue;
                 }
@@ -554,7 +546,7 @@ export async function run(options:any, default_stack: SharedCyfsStack, config: C
                 } else {
                     console_orig.error(`rm: cannot remove ${inner_path}: Is a recurive directory`)
                 }
-            } else if (program === "target"){
+            } else if (program === "target") {
                 device_list = [];
                 dec_id_list.list = [];
                 dec_id = undefined;
@@ -602,7 +594,7 @@ async function cat(stack: SharedCyfsStack, target_id: ObjectId, dec_id: ObjectId
     url.searchParams.set("format", "json");
     const new_url_str = url.toString();
     // console.log(`convert cyfs url: ${cyfs_rlink} to non url: ${new_url_str}`);
-    const response  = await fetch(new_url_str, {headers: {CYFS_REMOTE_DEVICE: local_device_id.toString()}});
+    const response = await fetch(new_url_str, { headers: { CYFS_REMOTE_DEVICE: local_device_id.toString() } });
     if (!response.ok) {
         console.error(`response error code ${response.status}, msg ${response.statusText}`)
         return;
@@ -634,36 +626,6 @@ async function rm(stack: SharedCyfsStack, target_id: ObjectId, dec_id: ObjectId,
         return
     } else {
         console_orig.log(`get_by_path ret: ${ret}`)
-    }
-
-}
-
-async function test_op_env(obj_id: string, stack: SharedCyfsStack, target_id: ObjectId, ep: string) {
-
-    let object_id = ObjectId.from_base_58(obj_id).unwrap();
-
-    console_orig.log(`op_env: ${ep} -> path: /upload_map -> key: ${obj_id} -> target: ${target_id.toString()}`)
-
-    const op_env = (await stack.root_state_stub(target_id).create_path_op_env()).unwrap()
-    const ret = await op_env.set_with_key('/upload_map', object_id.to_base_58(), object_id, undefined, true)
-    if (ret.err) {
-        console.error("insert obj to root state err", ret.val)
-        return
-    }
-
-    const commit_ret = await op_env.commit()
-    if (commit_ret.err) {
-        console.error("commit obj to root state err", commit_ret.val)
-        return
-    }
-
-    const op_env1 = (await stack.root_state_stub(target_id).create_path_op_env()).unwrap()
-    const ret1 = await op_env1.get_by_key("/upload_map", obj_id);
-    if (ret1.err) {
-        console.error("get_by_key root state err", ret.val)
-        return
-    } else {
-        console_orig.log(`get_by_key ret: ${ret}`)
     }
 
 }

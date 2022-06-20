@@ -7,7 +7,7 @@ import { BuckyResult, get_channel, MetaClient,
     NONAPILevel, None, NONGetObjectOutputRequest, 
     NONGetObjectOutputResponse, ObjectId, Ok, PrivateKey, 
     PrivatekeyDecoder, SavedMetaObject, SharedCyfsStack, 
-    StandardObject, StandardObjectDecoder, Data, TxId, create_meta_client, AnyNamedObjectDecoder } from '../../sdk';
+    StandardObject, StandardObjectDecoder, Data, TxId, BuckyErrorCode, AnyNamedObjectDecoder, Err, BuckyError } from '../../sdk';
 import { CyfsToolContext } from './ctx';
 import JSBI from 'jsbi';
 
@@ -42,7 +42,7 @@ export function exec(cmd: string, workspace: string): void {
     child_process.execSync(cmd, { stdio: 'inherit', cwd: workspace })
 }
 
-export function get_owner_path(option_value: any, config: CyfsToolConfig, ctx: CyfsToolContext): string {
+export function get_owner_path(option_value: any, config: CyfsToolConfig|undefined, ctx: CyfsToolContext): string|undefined {
     // 优先使用 option_value
     // 如果没有，使用ctx.owner
     // 如果还没有，使用default
@@ -54,7 +54,11 @@ export function get_owner_path(option_value: any, config: CyfsToolConfig, ctx: C
         return ctx.try_get_app_owner() as string
     }
 
-    return path.join(config.user_profile_dir, 'people')
+    if (config) {
+        return path.join(config.user_profile_dir, 'people')
+    }
+
+    return undefined
 }
 
 export function load_desc_and_sec(path: string): [StandardObject, PrivateKey] {
@@ -66,7 +70,7 @@ export function load_desc_and_sec(path: string): [StandardObject, PrivateKey] {
 export function check_channel(config: CyfsToolConfig): boolean {
     const output = child_process.execSync(`"${config.cyfs_client}" --version`, { encoding: 'utf-8' })
     const versions = output.match(/^cyfs-client (.+)-(.+) .+/m);
-    const channel = versions[2];
+    const channel = versions![2];
     // const version = versions[1];
     if (channel === undefined) {
         console.log("cannot find runtime tools channel!")
@@ -94,8 +98,8 @@ export async function get_final_owner(id: ObjectId, stack: SharedCyfsStack): Pro
 
         const obj = r.unwrap().object.object!;
         // 如果obj没有owner，它就是最终owner了，返回这个id
-        if (obj.desc().owner() && obj.desc().owner().is_some()) {
-            obj_id = obj.desc().owner().unwrap()
+        if (obj.desc().owner() && obj.desc().owner()!.is_some()) {
+            obj_id = obj.desc().owner()!.unwrap()
         } else {
             return Ok(obj_id);
         }
@@ -150,6 +154,10 @@ export async function put_obj_to_meta(meta_client: MetaClient, id: ObjectId, buf
 
     const owner_path = get_owner_path(undefined, undefined, ctx);
     console.info(`use owner at path ${owner_path}`)
+    if (owner_path === undefined) {
+        console.error('cannot found owner path in project config.')
+        return Err(new BuckyError(BuckyErrorCode.InvalidParam, 'cannot found owner path in project config'))
+    }
     const [owner, owner_sec] = load_desc_and_sec(owner_path)
     const saved_data = SavedMetaObject.Data(new Data(id, buf));
     let r;
