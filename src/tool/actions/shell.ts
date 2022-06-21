@@ -1,5 +1,5 @@
 import { Command } from "commander";
-import { ObjectId, SharedCyfsStack, ObjectMapSimpleContentType, ObjectMapContentItem, AnyNamedObjectDecoder, ObjectTypeCode, BuckyResult, Ok } from "../../sdk";
+import { ObjectId, SharedCyfsStack, ObjectMapSimpleContentType, ObjectMapContentItem, AnyNamedObjectDecoder, ObjectTypeCode, BuckyResult, Ok, clog } from "../../sdk";
 import { create_stack, CyfsToolConfig, getObject, stop_runtime } from "../lib/util";
 import { dump_object } from './dump';
 import {run as get_run} from './get';
@@ -201,7 +201,7 @@ export function makeCommand(config: CyfsToolConfig): Command {
         .description("interactive shell")
         .requiredOption("-e, --endpoint <target>", "cyfs shell endpoint, ood or runtime", "runtime")
         .action(async (options) => {
-            console_orig.log("options:", options)
+            clog.setLevel(4)
             const [stack, writable] = await create_stack(options.endpoint, config)
             await stack.online();
             await perpare_device_list(stack);
@@ -220,8 +220,8 @@ async function run(options: any, default_stack: SharedCyfsStack, config: CyfsToo
     // 创建一个Commander实例，名称就用shell先
     const shell_prog = new Command('shell');
     shell_prog
-        .addCommand(new Command('ls').description('list objects in current root state path').option('-l, --list', "list objects detail").action(async (options) => {
-            await ls(current_path, target_id, default_stack, options.list)
+        .addCommand(new Command('ls').description('list objects in current root state path').argument('[path]').option('-l, --list', "list objects detail").action(async (dst_path, options) => {
+            await ls(current_path, dst_path, target_id, default_stack, options.list)
         }))
         .addCommand(new Command('cd').description('change current root state path').argument('<dest path>').action(async (dest_path, options) => {
             // cd切换路径，检查路径是否存在。如果不存在，报错。返回current_path，如果存在，返回新路径
@@ -286,7 +286,10 @@ function make_r_link(target_id: ObjectId, full_path: string):string {
 }
 
 // ls先不提供分页功能，全部取回再全部显示。以后可能支持分页。分页行为仿照less命令
-async function ls(cur_path: string, target_id: ObjectId, stack: SharedCyfsStack, show_detail: boolean) {
+async function ls(cur_path: string, dst_path: string|undefined, target_id: ObjectId, stack: SharedCyfsStack, show_detail: boolean) {
+    if (dst_path) {
+        cur_path = path.resolve(cur_path, dst_path);
+    }
     // 先取回objects列表
     let objects: ObjectInfo[] = []
     let page_index = 0;
