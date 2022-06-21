@@ -3,11 +3,11 @@ import { BuckyResult, NONAPILevel, ObjectId, Ok, SharedCyfsStack } from "../../s
 import { create_stack, CyfsToolConfig, stop_runtime } from "../lib/util";
 
 export function makeCommand(config: CyfsToolConfig): Command {
-    return new Command("dump")
-        .description("dump any object from ood/runtime")
+    return new Command("del")
+        .description("delobject from cyfs stack`s noc")
         .argument("<objectid>", "delete object from noc")
         .requiredOption("-e, --endpoint <target>", "cyfs dump endpoint, ood or runtime", "runtime")
-        .option('-t, --target <target>', "target cyfs stack, default is endpoint stack")
+        .option('-t, --target <target>', "target cyfs stack, default is endpoint self")
         .action(async (objectid, options) => {
             console.log("options:", options)
             const [stack, writable] = await create_stack(options.endpoint, config)
