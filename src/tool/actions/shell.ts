@@ -281,6 +281,10 @@ function extract_path(pathstr: string): [ObjectId|undefined, string] {
     return [dec_id, path.sep + path_parts.slice(2).join(path.sep)]
 }
 
+function make_r_link(target_id: ObjectId, full_path: string):string {
+    return `cyfs://r/${target_id}${full_path}`;
+}
+
 // ls先不提供分页功能，全部取回再全部显示。以后可能支持分页。分页行为仿照less命令
 async function ls(cur_path: string, target_id: ObjectId, stack: SharedCyfsStack, show_detail: boolean) {
     // 先取回objects列表
@@ -361,7 +365,7 @@ async function cd(cur_path: string, dst_path: string, target_id: ObjectId, stack
 async function cat(cur_path: string, dst_path: string, target_id: ObjectId, stack: SharedCyfsStack): Promise<void> {
     const new_path = path.resolve(cur_path, dst_path)
     // cyfs://r/5r4MYfFMPYJr5UqgAh2XcM4kdui5TZrhdssWpQ7XCp2y/95RvaS5gwV5SFnT38UXXNuujFBE3Pk8QQDrKVGdcncB4
-    const cyfs_link = `cyfs://r/${target_id}${new_path}`;
+    const cyfs_link = make_r_link(target_id, new_path);
     const obj = await dump_object(stack, cyfs_link, true);
     if (obj) {
         console_orig.log(JSON.stringify(obj, undefined, 4))
@@ -371,7 +375,7 @@ async function cat(cur_path: string, dst_path: string, target_id: ObjectId, stac
 async function dump(cur_path: string, dst_path: string, target_id: ObjectId, stack: SharedCyfsStack, local_path: string): Promise<void> {
     const new_path = path.resolve(cur_path, dst_path)
     // cyfs://r/5r4MYfFMPYJr5UqgAh2XcM4kdui5TZrhdssWpQ7XCp2y/95RvaS5gwV5SFnT38UXXNuujFBE3Pk8QQDrKVGdcncB4
-    const cyfs_link = `cyfs://r/${target_id}${new_path}`;
+    const cyfs_link = make_r_link(target_id, new_path);
     const ret = await dump_object(stack, cyfs_link, false);
     if (ret) {
         const [obj_raw, obj_id] = (ret as [Uint8Array, ObjectId]);
@@ -395,7 +399,7 @@ async function get(cur_path: string, dst_path: string, target_id: ObjectId, stac
         return
     }
 
-    const cyfs_link = `cyfs://r/${target_id}${new_path}`;
+    const cyfs_link = make_r_link(target_id, new_path);
     console.log(`save path: ${local_path}, target: ${target_id.to_string()}, dec_id: ${dec_id}, inner_path: ${sub_path}`)
     await get_run(cyfs_link, {save: local_path}, stack, target_id, dec_id, sub_path);
 }

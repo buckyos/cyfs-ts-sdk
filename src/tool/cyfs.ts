@@ -50,6 +50,7 @@ async function main(){
         .addCommand(action.get.makeCommand(config))
         .addCommand(action.dump.makeCommand(config))
         .addCommand(action.shell.makeCommand(config))
+        .addCommand(action.del.makeCommand(config))
         .showHelpAfterError(true)
         .parseAsync();
 
