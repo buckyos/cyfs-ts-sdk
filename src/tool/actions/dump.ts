@@ -1,6 +1,6 @@
 import { Command } from "commander";
 import path from "path";
-import { NONAPILevel, ObjectId, SharedCyfsStack, AnyNamedObjectDecoder, AnyNamedObject, obj_type_code_raw_check } from "../../sdk";
+import {ObjectId, SharedCyfsStack, AnyNamedObjectDecoder } from "../../sdk";
 import * as fs from 'fs-extra';
 
 import fetch from 'node-fetch';
@@ -15,6 +15,7 @@ export function makeCommand(config: CyfsToolConfig): Command {
         .requiredOption("-e, --endpoint <target>", "cyfs dump endpoint, ood or runtime", "runtime")
         .option("-s, --save <save_path>", "save obj to path")
         .option("--json", "show object as json format, dont save to local")
+        .option("--data", "show object as text format, save to local")
         .action(async (olink_or_objectid, options) => {
             console.log("options:", options)
             const [stack, writable] = await create_stack(options.endpoint, config, dec_id)
@@ -24,7 +25,7 @@ export function makeCommand(config: CyfsToolConfig): Command {
         })
 }
 
-export async function dump_object(stack: SharedCyfsStack, olink: string, json: boolean): Promise<any|[Uint8Array, ObjectId]|undefined> {
+export async function dump_object(stack: SharedCyfsStack, olink: string, json: boolean, data?: boolean): Promise<any|[Uint8Array, ObjectId]|undefined> {
     const local_device_id = stack.local_device_id();
     const non_service_url = stack.non_service().service_url;
 
@@ -39,7 +40,12 @@ export async function dump_object(stack: SharedCyfsStack, olink: string, json: b
     } else {
         url.pathname = path_seg.slice(1).join("/");
     }
-    url.searchParams.set("mode", "object");
+    if (data) {
+        url.searchParams.set("mode", "data");
+    } else {
+        url.searchParams.set("mode", "object");
+    }
+
     if (json) {
         url.searchParams.set("format", "json");
     } else {
@@ -56,7 +62,10 @@ export async function dump_object(stack: SharedCyfsStack, olink: string, json: b
 
     if (json) {
         return await response.json()
-    } else {
+    } else if (data) {
+        return await response.text()
+    }
+    else {
         const obj_raw = new Uint8Array(await response.buffer());
         // 取回的数据一定是个Object
         const obj_ret = new AnyNamedObjectDecoder().from_raw(obj_raw);
@@ -69,7 +78,7 @@ export async function dump_object(stack: SharedCyfsStack, olink: string, json: b
     }
 }
 
-export async function run(olink_or_objectid: string, options:any, stack: SharedCyfsStack) {
+export async function run(olink_or_objectid: string, options:any, stack: SharedCyfsStack): Promise<void> {
     if (olink_or_objectid === undefined || olink_or_objectid === "") {
         console.error('no args olink or objectid. exit');
         return
@@ -90,7 +99,7 @@ export async function run(olink_or_objectid: string, options:any, stack: SharedC
         olink = `cyfs://${olink_or_objectid}`
     }
 
-    const ret = await dump_object(stack, olink, options.json)
+    const ret = await dump_object(stack, olink, options.json, options.data)
     if (ret === undefined) {
         return;
     }
@@ -98,7 +107,13 @@ export async function run(olink_or_objectid: string, options:any, stack: SharedC
         // 返回json文本格式，直接输出
         console.origin.log(`\nobject json:\n`)
         console.origin.log(JSON.stringify(ret, undefined, 4))
-    } else {        
+    } else if (options.data) {
+        if (options.save) {
+            fs.writeFileSync(options.save, ret);
+            console.origin.log(`get obj对象为${options.save}`);
+        }
+    }
+    else {        
         const [obj_raw, obj_id] = (ret as [Uint8Array, ObjectId]);
         let file_path = `${obj_id.to_base_58()}.obj`;
         if (options.save) {

@@ -1,12 +1,12 @@
 import { Command } from "commander";
 import path from "path";
-import { ObjectId, ObjectTypeCode, SharedCyfsStack, ObjectMapSimpleContentType, NDNAPILevel, TransTaskState, sleep } from "../../sdk";
+import { ObjectId, ObjectTypeCode, SharedCyfsStack, NDNAPILevel, TransTaskState, sleep } from "../../sdk";
 import * as fs from 'fs-extra';
 
 import fetch from 'node-fetch';
-import { create_stack, CyfsToolConfig, get_final_owner, stop_runtime } from "../lib/util";
+import { create_stack, CyfsToolConfig, get_final_owner, makeOLink, stop_runtime } from "../lib/util";
 
-import { dump_object } from "./dump";
+import * as dump from "./dump";
 
 
 const default_dec_id = ObjectId.from_base_58('9tGpLNnDpa8deXEk2NaWGccEu4yFQ2DrTZJPLYLT7gj4').unwrap()
@@ -28,8 +28,8 @@ export function makeCommand(config: CyfsToolConfig): Command {
 }
 
 function objToStrMap(obj){
-    let strMap = new Map();
-    for (let k of Object.keys(obj)) {
+    const strMap = new Map();
+    for (const k of Object.keys(obj)) {
         strMap.set(k,obj[k]);
     }
     return strMap;
@@ -40,10 +40,10 @@ async function download_obj(stack: SharedCyfsStack, link: string, target?: Objec
     console.log(`target: ${target}, download obj from root state path, ${inner_path}`)
     let files = new Map();
 
-    let json = await dump_object(stack, link, true);
+    const json = await dump.dump_object(stack, link, true);
     console.log(`ret: `, json);
-    let obj_id = json["desc"]["object_id"];
-    let object_id = ObjectId.from_base_58(obj_id).unwrap();
+    const obj_id = json["desc"]["object_id"];
+    const object_id = ObjectId.from_base_58(obj_id).unwrap();
     
     if (object_id.obj_type_code() === ObjectTypeCode.File) {
         files.set(inner_path, object_id);
@@ -54,7 +54,7 @@ async function download_obj(stack: SharedCyfsStack, link: string, target?: Objec
         for (const item of items) {
             const reletive = "/" + item[0];
             const sub_inner_path = inner_path + reletive;
-            let sub_link = link + reletive;
+            const sub_link = link + reletive;
             const download_files = await download_obj(stack, sub_link, target, dec_id, sub_inner_path, options);
             if (download_files === undefined) {
                 return;
@@ -83,7 +83,7 @@ function isFileExisted(path_way) {
         }
       })
     })
-};
+}
 
 function isEmptyDir(path) {
     return fs.readdirSync(path).length === 0;
@@ -94,23 +94,23 @@ function isDirectory(path) {
 }
 
 
-async function download_files(stack: SharedCyfsStack, options: any, files, file_object_id, dec_id, relative_root, is_dir: boolean) {  
-    const owner_r = await get_final_owner(file_object_id, stack);
+async function download_files(stack: SharedCyfsStack, options: any, files, file_target_id, dec_id, relative_root, is_dir: boolean) {  
+    const owner_r = await get_final_owner(file_target_id, stack);
     if (owner_r.err) {
         console.error("get stack owner failed, err", owner_r.val);
         return owner_r;
     }
     const owner_id = owner_r.unwrap();
-    console.log("upload use owner", owner_id);
     
     // 取OOD信息
     const oods = (await stack.util().resolve_ood({
         common: {flags: 0},
         object_id: owner_id
     })).unwrap().device_list;
+    console.log(`download use owner: ${owner_id}, device: ${oods[0].toString()}`);
 
     let base_save = options.save;
-    const option_str: String = options.save;
+    const option_str: string = options.save;
     if (!path.isAbsolute(options.save)) {
         base_save = path.normalize(path.join(process.cwd(), options.save));
     }
@@ -139,7 +139,7 @@ async function download_files(stack: SharedCyfsStack, options: any, files, file_
     // 在本地上开启下载
     for (const file of files) {
         // 这里以 relative_root 分割, 裁剪路径
-        let ipos = file[0].indexOf(relative_root);//指定开始的字符串
+        const ipos = file[0].indexOf(relative_root);//指定开始的字符串
         let file_path = file[0].substring(ipos, file[0].length);//取后部分(指定开始的字符串(包括)的之后)
         if (flags === 1) {
             // 缺省
@@ -150,7 +150,7 @@ async function download_files(stack: SharedCyfsStack, options: any, files, file_
         } else if (flags === 4) {
             file_path = "";
         }
-        let save_path = path.join(base_save, `${file_path}`);
+        const save_path = path.join(base_save, `${file_path}`);
         if (!fs.existsSync(path.dirname(save_path))) {
             fs.ensureDirSync(path.dirname(save_path));
         }
@@ -177,7 +177,7 @@ async function download_files(stack: SharedCyfsStack, options: any, files, file_
             // 保存到的本地目录or文件
             local_path: save_path,
             // 这里需要填文件源
-            device_list: [oods[0]],
+            device_list: oods,
             auto_start: true
         });
         if (r.err) {
@@ -215,10 +215,73 @@ async function download_files(stack: SharedCyfsStack, options: any, files, file_
     }
 }
 
-export async function run(link: string, options:any, stack: SharedCyfsStack, target_id?: ObjectId, dec_id?: ObjectId, inner_path?: string) {
+
+async function download_files_from_data(stack: SharedCyfsStack, options: any, files, file_target_id, dec_id, relative_root, is_dir: boolean) {  
+    let base_save = options.save;
+    const option_str: string = options.save;
+    if (!path.isAbsolute(options.save)) {
+        base_save = path.normalize(path.join(process.cwd(), options.save));
+    }
+
+    let flags = 0;
+    // obj_dor | 目录存在+目录不为空
+    if (is_dir) {
+        if (fs.existsSync(base_save) && !isEmptyDir(base_save)) {
+            flags = 1;
+        } else {
+            flags = 2;
+        }
+    } else {
+       if ((fs.existsSync(base_save) && isDirectory(base_save)) || option_str.endsWith("/") || option_str.endsWith("\\")) {
+            flags = 3;
+       } else {
+            flags = 4;
+       }
+    }
+
+    if (!fs.existsSync(path.dirname(base_save))) {
+        fs.ensureDirSync(path.dirname(base_save));
+    }
+    
+    // 在本地上开启下载
+    for (const file of files) {
+        // 这里以 relative_root 分割, 裁剪路径
+        const ipos = file[0].indexOf(relative_root);//指定开始的字符串
+        let file_path = file[0].substring(ipos, file[0].length);//取后部分(指定开始的字符串(包括)的之后)
+        if (flags === 1) {
+            // 缺省
+        } else if (flags === 2) {
+            file_path = file[0].substring(ipos + relative_root.length, file[0].length);//取后部分(指定开始的字符串(排除)的之后)
+        } else if (flags === 3) {
+            // 缺省
+        } else if (flags === 4) {
+            file_path = "";
+        }
+        const save_path = path.join(base_save, `${file_path}`);
+        if (!fs.existsSync(path.dirname(save_path))) {
+            fs.ensureDirSync(path.dirname(save_path));
+        }
+        
+        try{
+            const isExisted = await isFileExisted(save_path);
+            if (isExisted) {
+                console.error(`${save_path} already exists`);
+                continue;
+            }
+        }catch (error){
+            // ignore
+        }
+        console.log(`download file ${save_path} object: ${file[1]}`);
+        options.data = true;
+        options.save = save_path;
+        await dump.run(makeOLink(file_target_id, file[1], file_path), options, stack);
+    }
+
+}
+
+export async function run(link: string, options:any, stack: SharedCyfsStack, target_id?: ObjectId, dec_id?: ObjectId, inner_path?: string): Promise<void>{
     const local_device_id = stack.local_device_id();
     const non_service_url = stack.non_service().service_url;
-    const mode = "data";
     let obj_id, target, relative_root;
     if (link.indexOf("cyfs://") != -1) {      
         // 把cyfs链接参照runtime的proxy.rs逻辑，转换成non的标准协议，直接用http请求
@@ -245,7 +308,7 @@ export async function run(link: string, options:any, stack: SharedCyfsStack, tar
             console.error(`response error code ${response.status}, msg ${response.statusText}`)
             return;
         }
-        let ret = await response.json();
+        const ret = await response.json();
         console.log(`ret: `, ret);
         obj_id = ret["desc"]["object_id"];
         target = ret["desc"]["owner"];
@@ -255,7 +318,7 @@ export async function run(link: string, options:any, stack: SharedCyfsStack, tar
         return;
     }
 
-    let object_id = ObjectId.from_base_58(obj_id).unwrap();
+    const object_id = ObjectId.from_base_58(obj_id).unwrap();
     const is_dir = object_id.obj_type_code() === ObjectTypeCode.ObjectMap;
 
     if (target_id !== undefined && dec_id !== undefined && inner_path !== undefined) {
@@ -271,7 +334,7 @@ export async function run(link: string, options:any, stack: SharedCyfsStack, tar
 
             await download_files(stack, options, files, target_id, dec_id, relative_root, is_dir)
         } else {
-            let files = new Map();
+            const files = new Map();
             const file_name = `${relative_root}.file`;
             files.set(file_name, object_id);
             await download_files(stack, options, files, target_id, dec_id, relative_root, is_dir)
@@ -279,23 +342,23 @@ export async function run(link: string, options:any, stack: SharedCyfsStack, tar
 
     } else {
         console.log(`target: ${target}, object_id: ${obj_id}`);
-        let target_id = ObjectId.from_base_58(target).unwrap();
+        const target_id = ObjectId.from_base_58(target).unwrap();
 
         if (is_dir) {
             // 遍历对象，下载整个对象树到本地
-            let files = await download_obj(stack, link, target_id, undefined, "/upload_map/"+obj_id, options);
+            const files = await download_obj(stack, link, target_id, undefined, "/upload_map/"+obj_id, options);
             if (files === undefined) {
                 console.log("search not found files");
                 return;
             }
 
-            await download_files(stack, options, files, target_id, default_dec_id, relative_root, is_dir)
+            await download_files_from_data(stack, options, files, target_id, default_dec_id, relative_root, is_dir)
 
         } else {
-            let files = new Map();
-            const file_name = `${relative_root}.file`;
+            const files = new Map();
+            const file_name = `${relative_root}`;
             files.set(file_name, object_id);
-            await download_files(stack, options, files, target_id, default_dec_id, relative_root, is_dir);
+            await download_files_from_data(stack, options, files, target_id, default_dec_id, relative_root, is_dir);
 
         }
 

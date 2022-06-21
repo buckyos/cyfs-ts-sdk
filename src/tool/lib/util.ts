@@ -106,6 +106,42 @@ export async function get_final_owner(id: ObjectId, stack: SharedCyfsStack): Pro
     }
 }
 
+export function makeRLink(
+    ownerId: ObjectId,
+    dec_id: ObjectId,
+    inner_path: string
+): string {
+    return [`cyfs://r`, ownerId.to_base_58(), dec_id.to_base_58(), inner_path].join("/");
+}
+
+export function makeOLink(
+    ownerId: ObjectId,
+    object_id: ObjectId,
+    inner_path: string
+): string {
+    return [`cyfs://o`, ownerId.to_base_58(), object_id.to_base_58(), inner_path].join("/");
+}
+
+// 时间格式转换
+export function formatDate(date: number | string | Date, isfoleder?: boolean): string{
+    if (Number(date) > 0) {
+      date = new Date(Number(date))
+      const years = date.getFullYear() > 9 ? date.getFullYear() : '0' + date.getFullYear();
+      const months = (date.getMonth() + 1) > 9 ? (date.getMonth() + 1) : '0' + (date.getMonth() + 1);
+      const dates = date.getDate() > 9 ? date.getDate() : '0' + date.getDate();
+      const hours = date.getHours() > 9 ? date.getHours() : '0' + date.getHours();
+      const minutes = date.getMinutes() > 9 ? date.getMinutes() : '0' + date.getMinutes();
+      const seconds = date.getSeconds() > 9 ? date.getSeconds() : '0' + date.getSeconds();
+      if (isfoleder) {
+        return years + '-' + months + '-' + dates + '<br/>' + hours + ':' + minutes + ':' + seconds;
+      } else {
+        return years + '-' + months + '-' + dates + ' ' + hours + ':' + minutes + ':' + seconds;
+      }
+    } else {
+      return '-';
+    }
+  }
+
 export async function getObject(params: {
     stack: SharedCyfsStack,
     id: ObjectId | string,
