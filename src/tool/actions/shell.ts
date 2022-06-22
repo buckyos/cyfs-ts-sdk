@@ -234,19 +234,19 @@ async function run(options: any, default_stack: SharedCyfsStack, config: CyfsToo
         .addCommand(new Command('cat').description('show object info in json format').argument('<object path>').action(async (obj_path, options) => {
             await cat(current_path, obj_path, target_id, default_stack)
         }).exitOverride())
-        .addCommand(new Command('dump').description('save object data to local').argument('<object path>').option('-s, --save', "save path", ".").action(async (obj_path, options) => {
+        .addCommand(new Command('dump').description('save object data to local').argument('<object path>').option('-s, --save <local_path>', "save path", ".").action(async (obj_path, options) => {
             await dump(current_path, obj_path, target_id, default_stack, options.save)
         }).exitOverride().hook("postAction", (thisCommand, actionCommand) => {
             // 由于command类没有考虑到多次parse不同命令行，再次用没有参数的命令行parse时，不会清除上一次有参数时的结果，这里我们手动清除所有参数
             // 增加参数时，需要在这里手工清除这个参数
             actionCommand.setOptionValue('save', undefined)
         }))
-        .addCommand(new Command('get').description('download files to local').argument('<object path>').option('-s, --save', "save path", ".").action(async (obj_path, options) => {
+        .addCommand(new Command('get').description('download files to local').argument('<object path>').option('-s, --save <local_path>', "save path", ".").action(async (obj_path, options) => {
             await get(current_path, obj_path, target_id, default_stack, options.save)
         }).exitOverride().hook("postAction", (thisCommand, actionCommand) => {
             // 由于command类没有考虑到多次parse不同命令行，再次用没有参数的命令行parse时，不会清除上一次有参数时的结果，这里我们手动清除所有参数
             // 增加参数时，需要在这里手工清除这个参数
-            actionCommand.setOptionValue('save', undefined)
+            actionCommand.setOptionValue('save', '.')
         }))
         .addCommand(new Command('target').description('change shell`s target').action(async () => {
             target_id = await select_target()
@@ -256,7 +256,7 @@ async function run(options: any, default_stack: SharedCyfsStack, config: CyfsToo
         }).exitOverride().hook("postAction", (thisCommand, actionCommand) => {
             // 由于command类没有考虑到多次parse不同命令行，再次用没有参数的命令行parse时，不会清除上一次有参数时的结果，这里我们手动清除所有参数
             // 增加参数时，需要在这里手工清除这个参数
-            actionCommand.setOptionValue('force', undefined)
+            actionCommand.setOptionValue('force', '.')
         }))
         .addCommand(new Command('ln').description('create a root_state path link to object id')
             .addArgument(new Argument('<rpath>', "root_state path"))

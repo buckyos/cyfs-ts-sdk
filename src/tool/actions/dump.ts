@@ -15,7 +15,6 @@ export function makeCommand(config: CyfsToolConfig): Command {
         .requiredOption("-e, --endpoint <target>", "cyfs dump endpoint, ood or runtime", "runtime")
         .option("-s, --save <save_path>", "save obj to path")
         .option("--json", "show object as json format, dont save to local")
-        .option("--data", "show object as text format, save to local")
         .action(async (olink_or_objectid, options) => {
             console.log("options:", options)
             const [stack, writable] = await create_stack(options.endpoint, config, dec_id)
@@ -63,7 +62,7 @@ export async function dump_object(stack: SharedCyfsStack, olink: string, json: b
     if (json) {
         return await response.json()
     } else if (data) {
-        return await response.text()
+        return await response.buffer()
     }
     else {
         const obj_raw = new Uint8Array(await response.buffer());
