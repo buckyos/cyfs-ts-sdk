@@ -220,34 +220,50 @@ async function run(options: any, default_stack: SharedCyfsStack, config: CyfsToo
     // 创建一个Commander实例，名称就用shell先
     const shell_prog = new Command('shell');
     shell_prog
-        .addCommand(new Command('ls').description('list objects in current root state path').argument('[path]').option('-l, --list', "list objects detail").action(async (dst_path, options) => {
+        .addCommand(new Command('ls').description('list objects in current root state path').argument('[path]').option('-l, --list', "list objects detail", false).action(async (dst_path, options) => {
             await ls(current_path, dst_path, target_id, default_stack, options.list)
+        }).exitOverride().hook("postAction", (thisCommand, actionCommand) => {
+            // 由于command类没有考虑到多次parse不同命令行，再次用没有参数的命令行parse时，不会清除上一次有参数时的结果，这里我们手动清除所有参数
+            // 增加参数时，需要在这里手工清除这个参数
+            actionCommand.setOptionValue('list', undefined)
         }))
         .addCommand(new Command('cd').description('change current root state path').argument('<dest path>').action(async (dest_path, options) => {
             // cd切换路径，检查路径是否存在。如果不存在，报错。返回current_path，如果存在，返回新路径
             current_path = await cd(current_path, dest_path, target_id, default_stack)
-        }))
+        }).exitOverride())
         .addCommand(new Command('cat').description('show object info in json format').argument('<object path>').action(async (obj_path, options) => {
             await cat(current_path, obj_path, target_id, default_stack)
-        }))
+        }).exitOverride())
         .addCommand(new Command('dump').description('save object data to local').argument('<object path>').option('-s, --save', "save path", ".").action(async (obj_path, options) => {
             await dump(current_path, obj_path, target_id, default_stack, options.save)
+        }).exitOverride().hook("postAction", (thisCommand, actionCommand) => {
+            // 由于command类没有考虑到多次parse不同命令行，再次用没有参数的命令行parse时，不会清除上一次有参数时的结果，这里我们手动清除所有参数
+            // 增加参数时，需要在这里手工清除这个参数
+            actionCommand.setOptionValue('save', undefined)
         }))
         .addCommand(new Command('get').description('download files to local').argument('<object path>').option('-s, --save', "save path", ".").action(async (obj_path, options) => {
             await get(current_path, obj_path, target_id, default_stack, options.save)
+        }).exitOverride().hook("postAction", (thisCommand, actionCommand) => {
+            // 由于command类没有考虑到多次parse不同命令行，再次用没有参数的命令行parse时，不会清除上一次有参数时的结果，这里我们手动清除所有参数
+            // 增加参数时，需要在这里手工清除这个参数
+            actionCommand.setOptionValue('save', undefined)
         }))
         .addCommand(new Command('target').description('change shell`s target').action(async () => {
             target_id = await select_target()
         }))
         .addCommand(new Command('rm').description('delete path from root state path').argument('<dest path>').option('-f, --force', "force delete entire paths").action(async (dest_path, options) => {
             await rm(current_path, dest_path, target_id, default_stack, options.force)
+        }).exitOverride().hook("postAction", (thisCommand, actionCommand) => {
+            // 由于command类没有考虑到多次parse不同命令行，再次用没有参数的命令行parse时，不会清除上一次有参数时的结果，这里我们手动清除所有参数
+            // 增加参数时，需要在这里手工清除这个参数
+            actionCommand.setOptionValue('force', undefined)
         }))
         .addCommand(new Command('clear').description('clear screen output').action(() => {
             console.clear();
-        }))
+        }).exitOverride())
         .addCommand(new Command('exit').description('exit cyfs shell').action(() => {
             process.exit(0)
-        })).showSuggestionAfterError().exitOverride()
+        }).exitOverride()).showSuggestionAfterError().exitOverride()
     while (true) {
         if (target_id === undefined) {
             target_id = await select_target();
@@ -310,6 +326,7 @@ async function ls(cur_path: string, dst_path: string|undefined, target_id: Objec
     // TODO: 如果要显示详细信息，在这里再取详细信息
     if (show_detail) {
         // 显示表头
+        console_orig.log('use detail mode')
     }
     // 通用显示,现在只显示key -> objectid信息
     for (const object of objects) {
