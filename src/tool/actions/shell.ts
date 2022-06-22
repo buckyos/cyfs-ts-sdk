@@ -1,4 +1,4 @@
-import { Command } from "commander";
+import { Argument, Command } from "commander";
 import { ObjectId, SharedCyfsStack, ObjectMapSimpleContentType, ObjectMapContentItem, AnyNamedObjectDecoder, ObjectTypeCode, BuckyResult, Ok, clog } from "../../sdk";
 import { create_stack, CyfsToolConfig, getObject, stop_runtime } from "../lib/util";
 import { dump_object } from './dump';
@@ -258,6 +258,12 @@ async function run(options: any, default_stack: SharedCyfsStack, config: CyfsToo
             // 增加参数时，需要在这里手工清除这个参数
             actionCommand.setOptionValue('force', undefined)
         }))
+        .addCommand(new Command('ln').description('create a root_state path link to object id')
+            .addArgument(new Argument('<rpath>', "root_state path"))
+            .addArgument(new Argument('<object_id>', "object id for link"))
+            .action(async (dst_path, objectid) => {
+                await ln(current_path, dst_path, target_id, default_stack, objectid)
+        }).exitOverride())
         .addCommand(new Command('clear').description('clear screen output').action(() => {
             console.clear();
         }).exitOverride())
@@ -291,7 +297,10 @@ function extract_path(pathstr: string): [ObjectId|undefined, string] {
     const path_parts = pathstr.split(path.sep)
     let dec_id: ObjectId|undefined = undefined;
     if (path_parts[1].length > 0) {
-        dec_id = ObjectId.from_base_58(path_parts[1]).unwrap()
+        const r = ObjectId.from_base_58(path_parts[1])
+        if (r.ok) {
+            dec_id = r.unwrap()
+        }
     }
 
     return [dec_id, path.sep + path_parts.slice(2).join(path.sep)]
@@ -445,4 +454,32 @@ async function rm(cur_path:string, dst_path:string, target_id: ObjectId, stack: 
         console_orig.error("commit obj to root state err", r1.val)
         return
     }
+}
+
+async function ln(cur_path: string, dst_path: string, target: ObjectId, stack: SharedCyfsStack, objid: string): Promise<void> {
+    const object_id = ObjectId.from_base_58(objid);
+    if (object_id.err) {
+        console_orig.error('invalid object id', objid);
+    }
+
+    const new_path = path.resolve(cur_path, dst_path);
+    // 先只支持map，直接用path来操作
+    const [dec_id, sub_path] = extract_path(new_path);
+    if (dec_id === undefined) {
+        console_orig.error(`cannot create path in root`)
+        return;
+    }
+
+    const op_env = (await stack.root_state_stub(target, dec_id).create_path_op_env()).unwrap()
+    const r = await op_env.set_with_path(sub_path, object_id.unwrap(), undefined, true)
+    if (r.err) {
+        console_orig.error(`link ${new_path} to ${objid} err`, r.val)
+        return
+    }
+    const r1 = await op_env.commit()
+    if (r1.err) {
+        console_orig.error(`commit link ${new_path} to ${objid} err`, r1.val)
+        return
+    }
+    
 }
