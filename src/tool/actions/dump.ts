@@ -13,7 +13,7 @@ export function makeCommand(config: CyfsToolConfig): Command {
         .description("dump any object from ood/runtime")
         .argument("<olink or objectid>", "dump object raw data")
         .requiredOption("-e, --endpoint <target>", "cyfs dump endpoint, ood or runtime", "runtime")
-        .option("-s, --save <save_path>", "save obj to path")
+        .option("-s, --save <save_path>", "save obj to path", ".")
         .option("--json", "show object as json format, dont save to local")
         .action(async (olink_or_objectid, options) => {
             console.log("options:", options)
@@ -114,18 +114,13 @@ export async function run(olink_or_objectid: string, options:any, stack: SharedC
     }
     else {        
         const [obj_raw, obj_id] = (ret as [Uint8Array, ObjectId]);
-        let file_path = `${obj_id.to_base_58()}.obj`;
-        if (options.save) {
-            if (!fs.existsSync(options.save)) {
-                console.error(`save path not existed: ${options.save}`);
-                console.origin.log('object hex:', obj_raw.toHex())
-                return;
-            }
-            file_path = path.join(options.save, file_path);
+        let save_path = path.resolve(process.cwd(), options.save);
+        if (fs.existsSync(save_path) && fs.statSync(save_path).isDirectory()) {
+            save_path = path.join(save_path, `${obj_id.to_base_58()}.obj`)
         }
 
-        fs.writeFileSync(file_path, obj_raw);
-        console.origin.log(`dump obj对象为${file_path}`);
+        fs.writeFileSync(save_path, obj_raw);
+        console.origin.log(`dump obj对象为${save_path}`);
     }
     
 }
