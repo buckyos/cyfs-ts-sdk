@@ -52,7 +52,7 @@ export async function dump_object(stack: SharedCyfsStack, olink: string, json: b
     }
     
     const new_url_str = url.toString();
-    console.log(`convert cyfs url: ${olink} to non url: ${new_url_str}`);
+    // console.log(`convert cyfs url: ${olink} to non url: ${new_url_str}`);
     const response  = await fetch(new_url_str, {headers: {CYFS_REMOTE_DEVICE: local_device_id.toString()}});
     if (!response.ok) {
         console.error(`response error code ${response.status}, msg ${response.statusText}`)

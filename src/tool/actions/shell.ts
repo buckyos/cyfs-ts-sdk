@@ -1,8 +1,10 @@
 import { Argument, Command } from "commander";
-import { ObjectId, SharedCyfsStack, ObjectMapSimpleContentType, ObjectMapContentItem, AnyNamedObjectDecoder, ObjectTypeCode, BuckyResult, Ok, clog } from "../../sdk";
-import { create_stack, CyfsToolConfig, getObject, stop_runtime } from "../lib/util";
+
+import { ObjectId, SharedCyfsStack, ObjectMapSimpleContentType, ObjectTypeCode, BuckyResult, Ok, clog, get_system_dec_app, AnyNamedObjectDecoder, DecAppDecoder, bucky_time_2_js_time, number_2_obj_type_code_name } from "../../sdk";
+import { create_stack, CyfsToolConfig, formatDate, getObject, stop_runtime } from "../lib/util";
 import { dump_object } from './dump';
 import {run as get_run} from './get';
+import { delete_object as del} from './del';
 import * as fs from 'fs'
 import {posix as path} from "path";
 
@@ -11,6 +13,8 @@ inquirer.registerPrompt(
     'command',
     require('inquirer-command-prompt')
 )
+
+const colors = require('colors-console')
 
 let local_device_index = 0;
 const device_list: any[] = [];
@@ -46,106 +50,6 @@ async function perpare_device_list(stack: SharedCyfsStack) {
     }
 }
 
-interface ObjectContentItem {
-    name: string,
-    object_id: ObjectId,
-    type: string,
-    owner_info: string,
-    dec_id: ObjectId,
-}
-
-async function listMapSetInPath(
-    stack: SharedCyfsStack,
-    path: string,
-    to: ObjectId,
-    page_index: number,
-    page_size: number,
-    dec_id?: ObjectId,
-): Promise<(ObjectContentItem | undefined)[]> {
-
-    const access = stack.root_state_access_stub(to, dec_id);
-
-    const lr = await access.list(path, page_index, page_size);
-
-    if (lr.err) {
-        console.error(`list-texts in(${path}) io failed, ${lr}`);
-        return [];
-    }
-
-    const contentsRetRow = lr.unwrap();
-
-    const contentsRet = await Promise.all(
-        contentsRetRow.map(async (item: ObjectMapContentItem) => {
-            if (item.content_type === ObjectMapSimpleContentType.Set) {
-                const ret_result = await getObject({ stack, id: item.set!.value! })
-                if (ret_result.err) {
-                    // do sth?
-                } else {
-                    const ret_info = ret_result.unwrap().object;
-
-                    const obj = ret_info.object || new AnyNamedObjectDecoder().from_raw(ret_info.object_raw).unwrap()
-                    const type = obj.desc().obj_type_code();
-                    //所有者
-                    let owner_info = "-";
-                    const owner = obj.desc().owner();
-                    if (owner && owner.is_some()) {
-                        owner_info = owner.unwrap().to_base_58();
-                    }
-
-                    let decid = ObjectId.default();
-                    if (obj.desc().dec_id().is_some()) {
-                        decid = obj.desc().dec_id().unwrap();
-                    }
-
-                    const ret: ObjectContentItem = {
-                        name: item.set!.value.toString(),
-                        object_id: obj.desc().calculate_id(),
-                        type: type.toString(),
-                        owner_info: owner_info,
-                        dec_id: decid,
-                    }
-
-                    return ret;
-
-                }
-            } else if (item.content_type === ObjectMapSimpleContentType.Map) {
-                const ret_result = await getObject({ stack, id: item.map!.value! })
-                if (ret_result.err) {
-                    // do sth?
-                } else {
-                    const ret_info = ret_result.unwrap().object;
-                    const obj = ret_info.object || new AnyNamedObjectDecoder().from_raw(ret_info.object_raw).unwrap()
-                    const type = obj.desc().obj_type_code();
-                    //所有者
-                    let owner_info = "-";
-                    const owner = obj.desc().owner();
-                    if (owner && owner.is_some()) {
-                        owner_info = owner.unwrap().to_base_58();
-                    }
-
-                    let decid = ObjectId.default();
-                    if (obj.desc().dec_id().is_some()) {
-                        decid = obj.desc().dec_id().unwrap();
-                    }
-
-                    const ret: ObjectContentItem = {
-                        name: item.map!.key,
-                        object_id: obj.desc().calculate_id(),
-                        type: type.toString(),
-                        owner_info: owner_info,
-                        dec_id: decid,
-                    }
-
-                    return ret;
-
-                }
-            }
-        })
-    );
-
-    return contentsRet;
-}
-
 async function select_target(): Promise<ObjectId> {
     const resp = await inquirer.prompt([
         {
@@ -169,7 +73,7 @@ async function runPrompt(target_id, current_path, device_list): Promise<string[]
                 return str.replace(/ \[.*$/, '')
             }
         },
-        'ls', 'ls /', 'ls /a/b', 'cd', 'cd [inner_path option]', 'cd /a', 'cat [object option]', 'exit', 'quit', 'dump [object option]', 'dump [object option] -s savepath', "rm [object]", "target [-e runtime/ood]", "help"
+        'ls', 'ls /', 'ls -l', 'cd', 'cd [inner_path option]', 'cd /', 'cat [object option]', 'exit', 'quit', 'dump [object option]', 'dump [object option] -s savepath', "rm -r", "rm [object]", "target", "help"
     ]
 
     const answer = await inquirer.prompt([
@@ -181,7 +85,7 @@ async function runPrompt(target_id, current_path, device_list): Promise<string[]
             choices: device_list,
             context: 0,
             prefix: "",
-            suffix: ">",
+            suffix: ">>>",
             validate: val => {
                 // Enter \r\n support
                 if (val === "") {
@@ -193,7 +97,14 @@ async function runPrompt(target_id, current_path, device_list): Promise<string[]
         }
     ]);
 
-    return (answer.cmd as string).split(' ')
+    // 这里要处理复杂的如文件名空格
+    const regex = /"([^"]*)"|(\S+)/g;
+    const arr = (answer.cmd.match(regex) || []).map((m: string) => m.replace(regex, '$1$2'));
+    const args = arr.filter((el: string | null) => {
+        return el != null && el != '';
+    });
+
+    return args;
 }
 
 export function makeCommand(config: CyfsToolConfig): Command {
@@ -201,7 +112,7 @@ export function makeCommand(config: CyfsToolConfig): Command {
         .description("interactive shell")
         .requiredOption("-e, --endpoint <target>", "cyfs shell endpoint, ood or runtime", "runtime")
         .action(async (options) => {
-            clog.setLevel(4)
+            clog.setLevel(4) // warn level log message
             const [stack, writable] = await create_stack(options.endpoint, config)
             await stack.online();
             await perpare_device_list(stack);
@@ -216,20 +127,32 @@ export function makeCommand(config: CyfsToolConfig): Command {
 async function run(options: any, default_stack: SharedCyfsStack, config: CyfsToolConfig): Promise<void> {
     let target_id;
     let current_path = "/"
-
+    // let friendly_cur_path = current_path;
     // 创建一个Commander实例，名称就用shell先
     const shell_prog = new Command('shell');
     shell_prog
-        .addCommand(new Command('ls').description('list objects in current root state path').argument('[path]').option('-l, --list', "list objects detail", false).action(async (dst_path, options) => {
-            await ls(current_path, dst_path, target_id, default_stack, options.list)
+        .addCommand(new Command('ls').description('list objects in current root state path')
+        .argument('[path]')
+        .option('-d, --decid', "list objects dec_id", false)
+        .option('-o, --owner', "list objects owner", false)
+        .option('-l, --list', "list objects detail", false)
+        .action(async (dst_path, options) => {
+            await ls(current_path, dst_path, target_id, default_stack, options.list, options.decid, options.owner)
         }).exitOverride().hook("postAction", (thisCommand, actionCommand) => {
             // 由于command类没有考虑到多次parse不同命令行，再次用没有参数的命令行parse时，不会清除上一次有参数时的结果，这里我们手动清除所有参数
             // 增加参数时，需要在这里手工清除这个参数
-            actionCommand.setOptionValue('list', undefined)
+            actionCommand.setOptionValue('list', false)
+            actionCommand.setOptionValue('owner', false)
+            actionCommand.setOptionValue('decid', false)
         }))
         .addCommand(new Command('cd').description('change current root state path').argument('<dest path>').action(async (dest_path, options) => {
             // cd切换路径，检查路径是否存在。如果不存在，报错。返回current_path，如果存在，返回新路径
             current_path = await cd(current_path, dest_path, target_id, default_stack)
+            // const [dec_id, sub_path] = extract_path(current_path);
+            // if (dec_id !== undefined) {
+            //     const dec_name = await get_dec_app_name(default_stack, dec_id);
+            //     friendly_cur_path = path.resolve(dec_name, sub_path);
+            // }
         }).exitOverride())
         .addCommand(new Command('cat').description('show object info in json format').argument('<object path>').action(async (obj_path, options) => {
             await cat(current_path, obj_path, target_id, default_stack)
@@ -246,17 +169,24 @@ async function run(options: any, default_stack: SharedCyfsStack, config: CyfsToo
         }).exitOverride().hook("postAction", (thisCommand, actionCommand) => {
             // 由于command类没有考虑到多次parse不同命令行，再次用没有参数的命令行parse时，不会清除上一次有参数时的结果，这里我们手动清除所有参数
             // 增加参数时，需要在这里手工清除这个参数
-            actionCommand.setOptionValue('save', '.')
+
+            actionCommand.setOptionValue('save', undefined)
         }))
         .addCommand(new Command('target').description('change shell`s target').action(async () => {
             target_id = await select_target()
+            current_path = "/";
         }))
-        .addCommand(new Command('rm').description('delete path from root state path').argument('<dest path>').option('-f, --force', "force delete entire paths").action(async (dest_path, options) => {
-            await rm(current_path, dest_path, target_id, default_stack, options.force)
+        .addCommand(new Command('rm').description('delete path from root state path').argument('<dest path>')
+        .option('-r, --recursive', "force delete entire paths", false)
+        .option('-o, --object', "delete path belongs to objects", false)
+        .action(async (dest_path, options) => {
+            await rm(current_path, dest_path, target_id, default_stack, options.recursive, options.object)
+
         }).exitOverride().hook("postAction", (thisCommand, actionCommand) => {
             // 由于command类没有考虑到多次parse不同命令行，再次用没有参数的命令行parse时，不会清除上一次有参数时的结果，这里我们手动清除所有参数
             // 增加参数时，需要在这里手工清除这个参数
-            actionCommand.setOptionValue('force', '.')
+            actionCommand.setOptionValue('recursive', false)
+            actionCommand.setOptionValue('object', false)
         }))
         .addCommand(new Command('ln').description('create a root_state path link to object id')
             .addArgument(new Argument('<rpath>', "root_state path"))
@@ -287,9 +217,12 @@ async function run(options: any, default_stack: SharedCyfsStack, config: CyfsToo
 interface ObjectInfo {
     key: string,
     object_id: ObjectId,
-    type?: string,
+    object_type?: string,
     owner_info?: string,
-    dec_id?: ObjectId,
+    dec_name?:string,
+    dec_id?: string,
+    dec_info?: string,
+    create_time?: string,
 }
 
 // 从一个绝对路径解出dec_id和其他部分。如果没有dec_id，返回undefined
@@ -311,7 +244,7 @@ function make_r_link(target_id: ObjectId, full_path: string):string {
 }
 
 // ls先不提供分页功能，全部取回再全部显示。以后可能支持分页。分页行为仿照less命令
-async function ls(cur_path: string, dst_path: string|undefined, target_id: ObjectId, stack: SharedCyfsStack, show_detail: boolean) {
+async function ls(cur_path: string, dst_path: string|undefined, target_id: ObjectId, stack: SharedCyfsStack, show_detail: boolean, show_dec_id: boolean, show_owner: boolean) {
     if (dst_path) {
         cur_path = path.resolve(cur_path, dst_path);
     }
@@ -332,15 +265,108 @@ async function ls(cur_path: string, dst_path: string|undefined, target_id: Objec
         page_index++;
     }
 
-    // TODO: 如果要显示详细信息，在这里再取详细信息
+    //如果要显示详细信息，在这里再取详细信息
     if (show_detail) {
-        // 显示表头
-        console_orig.log('use detail mode')
+        //表头|ObjectTypeCode|DecId|Owner|CreateTime|Key
+        const detail_list = await object_detail(cur_path, stack, objects);
+        if (detail_list.err) {
+            return;
+        }
+        let dec_id_column = "";
+        let dec_name_column = "";
+        let owner_column = "";
+        if (show_dec_id) {
+            dec_id_column = `\t\t\tDecId`;
+            dec_name_column = `\t\tDecName\t`;
+        }
+        if (show_owner) {
+            owner_column = `\t\tOwner\t\t\t\t`;
+        }
+        console_orig.log(`ObjectType\t${dec_id_column}\t${dec_name_column}\t${owner_column}\tCreateTime\t\tKey`);
+        console_orig.log("-".repeat(160));
+        for (const object of detail_list.unwrap()) {
+            const dec_id = show_dec_id ? `${object.dec_id}\t` : '';
+            const dec_name = show_dec_id ? `${object.dec_name}\t` : '';
+            const owner_info = show_owner ? `\t${object.owner_info}` : '';
+            console_orig.log(`${object.object_type}\t${dec_id}\t${dec_name.trim()}\t${owner_info}\t${object.create_time}\t${object.key}`)
+        }
+
+    } else {
+        // 通用显示,现在只显示key -> objectid信息
+        console_orig.log(`path\t\t\t\t\t\tobject`);
+        console_orig.log("-".repeat(160));
+        for (const object of objects) {
+            console_orig.log(`${object.key} -> ${object.object_id.to_base_58()}`)
+        }
     }
-    // 通用显示,现在只显示key -> objectid信息
+
+}
+
+async function object_detail(cur_path: string, stack: SharedCyfsStack, objects: ObjectInfo[]): Promise<BuckyResult<ObjectInfo[]>> {
+    let [dec_id] = extract_path(cur_path);
+    const result: ObjectInfo[] = [];
+
     for (const object of objects) {
-        console_orig.log(`${object.key} -> ${object.object_id.to_base_58()}`)
+        const ret_result = await getObject({ stack, id: object.object_id})
+        if (ret_result.err) {
+            continue;
+        }
+
+        const ret_info = ret_result.unwrap().object;
+    
+        const obj = ret_info.object || new AnyNamedObjectDecoder().from_raw(ret_info.object_raw).unwrap()
+        const obj_type = obj.desc().obj_type_code();
+
+        //所有者
+        let owner_info = "-";
+        if (ret_info.object?.desc().owner()?.is_some()) {
+            owner_info = ret_info.object!.desc().owner()!.unwrap().toString();
+        }
+
+        //创建时间
+        const create_time = formatDate(bucky_time_2_js_time(obj.desc().create_time()))
+
+        if (dec_id === undefined) {
+            if(ret_info.object?.desc().dec_id().is_some()){
+                dec_id = ret_info.object?.desc().dec_id().unwrap();
+            }
+        }
+
+        // dec_app_name
+        let dec_id_str = dec_id!.to_base_58();
+        if (cur_path === "/") {
+            dec_id_str = object.key;
+        }
+        const dec_app_name = await get_dec_app_name(stack, dec_id_str);
+
+        let object_key = "-";
+        if (obj_type === ObjectTypeCode.ObjectMap) {
+            object_key = `${colors('blue', `${object.key}`)}`;
+        } else if(obj_type === ObjectTypeCode.File) {
+            object_key = `${colors('gray', `${object.key}`)}`;
+        } else {
+            object_key = `${colors('white', `${object.key}`)}`;
+        }
+        const dec_info = `${dec_id?.to_base_58()}(${dec_app_name})`
+        let object_type = number_2_obj_type_code_name(obj_type as number);
+        const simple_type = object_type.split('.')
+        if (simple_type[1].length > 0) {
+            object_type = simple_type[1];
+        }
+        result.push({
+            key: object_key,
+            object_id: object.object_id,
+            object_type: object_type,
+            owner_info: owner_info,
+            dec_info: dec_info,
+            dec_name: dec_app_name,
+            dec_id: dec_id?.to_base_58(),
+            create_time: create_time,
+        })
     }
+
+
+    return Ok(result)
 }
 
 async function list(cur_path: string, target_id: ObjectId, stack: SharedCyfsStack, page_index: number, page_size: number): Promise<BuckyResult<ObjectInfo[]>> {
@@ -374,6 +400,35 @@ async function list(cur_path: string, target_id: ObjectId, stack: SharedCyfsStac
     
 }
 
+
+async function get_dec_app_name(stack: SharedCyfsStack, object_id: string): Promise<string>{
+    let dec_app_name = `-`;
+    
+    if (object_id === get_system_dec_app().object_id.to_base_58()) {
+        dec_app_name = `system`;
+    }
+    const ret_result = await getObject({ stack, id: object_id})
+    if (ret_result.err) {
+        return dec_app_name;
+    } else{
+        const ret_info = ret_result.unwrap().object;
+
+        const obj = ret_info.object || new AnyNamedObjectDecoder().from_raw(ret_info.object_raw).unwrap();
+        const type = obj.desc().obj_type_code();
+        if (type == ObjectTypeCode.Custom) {
+            const r = new DecAppDecoder().from_raw(ret_info.object_raw);
+            if (r.err) {
+                return dec_app_name;
+            }
+            const app = r.unwrap();
+            dec_app_name = `${app.name()}`;
+        }
+    }
+
+    return dec_app_name;
+
+}
+
 async function cd(cur_path: string, dst_path: string, target_id: ObjectId, stack: SharedCyfsStack): Promise<string> {
     const new_path = path.resolve(cur_path, dst_path);
     // 如果这个path存在，且是ObjectMap，返回new_path。否则返回cur_path
@@ -402,6 +457,9 @@ async function cat(cur_path: string, dst_path: string, target_id: ObjectId, stac
 }
 
 async function dump(cur_path: string, dst_path: string, target_id: ObjectId, stack: SharedCyfsStack, local_path: string): Promise<void> {
+    if (local_path === undefined) {
+        local_path = "./";
+    }
     const new_path = path.resolve(cur_path, dst_path)
     // cyfs://r/5r4MYfFMPYJr5UqgAh2XcM4kdui5TZrhdssWpQ7XCp2y/95RvaS5gwV5SFnT38UXXNuujFBE3Pk8QQDrKVGdcncB4
     const cyfs_link = make_r_link(target_id, new_path);
@@ -427,13 +485,16 @@ async function get(cur_path: string, dst_path: string, target_id: ObjectId, stac
     if (dec_id === undefined) {
         return
     }
+    if (local_path === undefined) {
+        local_path = "./";
+    }
 
     const cyfs_link = make_r_link(target_id, new_path);
     console.log(`save path: ${local_path}, target: ${target_id.to_string()}, dec_id: ${dec_id}, inner_path: ${sub_path}`)
     await get_run(cyfs_link, {save: local_path}, stack, target_id, dec_id, sub_path);
 }
 
-async function rm(cur_path:string, dst_path:string, target_id: ObjectId, stack: SharedCyfsStack, force_delete: boolean) {
+async function rm(cur_path:string, dst_path:string, target_id: ObjectId, stack: SharedCyfsStack, recursive_delete: boolean, delete_object: boolean) {
     // 删除目标的root-state
     const new_path = path.resolve(cur_path, dst_path);
     const [dec_id, sub_path] = extract_path(new_path);
@@ -442,19 +503,57 @@ async function rm(cur_path:string, dst_path:string, target_id: ObjectId, stack: 
         return;
     }
 
-    // TODO: 正确实现rm，不加-f参数，只能删除空ObjectMap。
-    const op_env = (await stack.root_state_stub(target_id, dec_id).create_path_op_env()).unwrap()
-    const r = await op_env.remove_with_path(sub_path)
+    if (sub_path === "/") {
+        console_orig.error(`rm: cannot remove '${sub_path}': Is a root path`);
+        return;
+    }
+    // 正确实现rm，不加-r参数，只能删除空ObjectMap。
+    if (!recursive_delete) {
+        let flags = true;
+        const cyfs_link = make_r_link(target_id, new_path);
+        const obj = await dump_object(stack, cyfs_link, true);
+        if (obj["desc"]["object_type"] === 14) {
+            const list_ret = await list(new_path, target_id, stack, 0, 10);
+            if (list_ret.unwrap().length > 0) {
+                flags = false;
+            }
+        }
+
+        // 不为空, 直接返回了
+        if (!flags) {
+            console_orig.error(`rm: cannot remove '${sub_path}': Is a directory`);
+            return;
+        }
+    }
+
+    const op_env = (await stack.root_state_stub(target_id, dec_id).create_path_op_env()).unwrap();
+
+    const r = await op_env.remove_with_path(sub_path);
     if (r.err) {
-        console_orig.error("remove root state err", r.val)
-        return
+        console_orig.error("remove root state err", r.val);
+        return;
     }
-    const r1 = await op_env.commit()
+    const r1 = await op_env.commit();
     if (r1.err) {
-        console_orig.error("commit obj to root state err", r1.val)
-        return
+        console_orig.error("commit obj to root state err", r1.val);
+        return;
     }
+
+    if (delete_object) {
+        const cyfs_link = make_r_link(target_id, new_path);
+        const ret = await dump_object(stack, cyfs_link, true);
+        if (ret) {
+            const object_id = ObjectId.from_base_58(ret["desc"]["object_id"]).unwrap();
+            const del_ret = await del(object_id, target_id, stack);
+            console_orig.log(`delete object: ${object_id}, del_ret: ${del_ret}`);
+        }
+
+    }
+
+    // console_orig.log(`new_path: ${new_path}, delete_object: ${delete_object}, recursive_delete: ${recursive_delete}`);
+
 }
+
 
 async function ln(cur_path: string, dst_path: string, target: ObjectId, stack: SharedCyfsStack, objid: string): Promise<void> {
     const object_id = ObjectId.from_base_58(objid);
@@ -480,6 +579,5 @@ async function ln(cur_path: string, dst_path: string, target: ObjectId, stack: S
     if (r1.err) {
         console_orig.error(`commit link ${new_path} to ${objid} err`, r1.val)
         return
-    }
-    
+    }    
 }
