@@ -25,3 +25,4 @@ non_sdk.js
 /out/
 /dist/
 /package-lock.json
+/web/

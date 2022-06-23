@@ -48,6 +48,8 @@ module.exports = {
         "inquirer": 'commonjs2 inquirer',
         "inquirer-command-prompt": 'commonjs2 inquirer-command-prompt',
         "minimist": 'commonjs2 minimist',
+        "colors-console": 'commonjs2 colors-console',
+        "table": 'commonjs2 table',
     },
     optimization: {
         // TODO 暂时不开启优化，方便调试诊断

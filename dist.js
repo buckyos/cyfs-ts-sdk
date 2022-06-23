@@ -80,7 +80,9 @@ const tool_only_deps = [
     "inquirer-command-prompt",
     "minimist",
     "commander",
-    "qrcode-terminal"
+    "qrcode-terminal",
+    "colors-console",
+    "table"
 ]
 
 const sdk_only_deps = [

@@ -1,6 +1,6 @@
 import { Argument, Command } from "commander";
 
-import { ObjectId, SharedCyfsStack, ObjectMapSimpleContentType, ObjectTypeCode, BuckyResult, Ok, clog, get_system_dec_app, AnyNamedObjectDecoder, DecAppDecoder, bucky_time_2_js_time, number_2_obj_type_code_name } from "../../sdk";
+import { ObjectId, SharedCyfsStack, ObjectMapSimpleContentType, ObjectTypeCode, BuckyResult, Ok, clog, get_system_dec_app, DecAppDecoder, bucky_time_2_js_time, number_2_obj_type_code_name, OBJECT_TYPE_CORE_START, OBJECT_TYPE_CORE_END, number_2_core_object_name } from "../../sdk";
 import { create_stack, CyfsToolConfig, formatDate, getObject, stop_runtime } from "../lib/util";
 import { dump_object } from './dump';
 import {run as get_run} from './get';
@@ -18,6 +18,7 @@ const colors = require('colors-console')
 
 let local_device_index = 0;
 const device_list: any[] = [];
+const dec_name_cache = new Map<string, string|undefined>();
 
 const console_orig = (console as any).origin;
 
@@ -65,8 +66,7 @@ async function select_target(): Promise<ObjectId> {
     return resp["target"].object_id;
 }
 
-async function runPrompt(target_id, friendly_path, device_list): Promise<string[]> {
-
+async function runPrompt(target_id: ObjectId, cur_path: string, stack: SharedCyfsStack): Promise<string[]> {
     const availableCommands = [
         {
             filter: function (str) {
@@ -76,16 +76,17 @@ async function runPrompt(target_id, friendly_path, device_list): Promise<string[
         'ls', 'ls /', 'ls -l', 'cd', 'cd [inner_path option]', 'cd /', 'cat [object option]', 'exit', 'quit', 'dump [object option]', 'dump [object option] -s savepath', "rm -r", "rm [object]", "target", "help"
     ]
 
+    const friendly_path = await decorate_decid(cur_path, stack)
+
     const answer = await inquirer.prompt([
         {
             type: 'command',
             name: 'cmd',
             autoCompletion: availableCommands,
             message: `${target_id}:${friendly_path}`,
-            choices: device_list,
             context: 0,
             prefix: "",
-            suffix: ">>>",
+            suffix: ">",
             validate: val => {
                 // Enter \r\n support
                 if (val === "") {
@@ -122,14 +123,14 @@ export function makeCommand(config: CyfsToolConfig): Command {
         })
 }
 
-
+function init_known_dec_name() {
+    dec_name_cache.set(get_system_dec_app().object_id.to_base_58(), 'system')
+}
 
 async function run(options: any, default_stack: SharedCyfsStack): Promise<void> {
+    init_known_dec_name()
     let target_id;
     let current_path = "/"
-    let cur_dec_id = ObjectId.default();
-    let cur_dec_name = "-";
-    let friendly_path = "/";
     // 创建一个Commander实例，名称就用shell先
     const shell_prog = new Command('shell');
     shell_prog
@@ -150,19 +151,6 @@ async function run(options: any, default_stack: SharedCyfsStack): Promise<void> 
         .addCommand(new Command('cd').description('change current root state path').argument('<dest path>').action(async (dest_path, options) => {
             // cd切换路径，检查路径是否存在。如果不存在，报错。返回current_path，如果存在，返回新路径
             current_path = await cd(current_path, dest_path, target_id, default_stack)
-            const [dec_id, sub_path] = extract_path(current_path);
-            if (dec_id !== undefined) {
-                if (!dec_id.equals(cur_dec_id)) {
-                    const dec_name = await get_dec_app_name(default_stack, dec_id.to_base_58());
-                    cur_dec_name = dec_name;
-                    cur_dec_id = dec_id;
-                }
-                friendly_path = `${dec_id.to_base_58()}(${cur_dec_name})${sub_path}`;
-            }
-            if (current_path === "/") {
-                friendly_path = current_path;
-            }
-
         }).exitOverride())
         .addCommand(new Command('cat').description('show object info in json format').argument('<object path>').action(async (obj_path, options) => {
             await cat(current_path, obj_path, target_id, default_stack)
@@ -214,7 +202,7 @@ async function run(options: any, default_stack: SharedCyfsStack): Promise<void> 
         if (target_id === undefined) {
             target_id = await select_target();
         } else {
-            const cmds = await runPrompt(target_id, friendly_path, device_list);
+            const cmds = await runPrompt(target_id, current_path, default_stack);
             try {
                 await shell_prog.parseAsync(cmds, { from: 'user' })
             } catch {
@@ -227,11 +215,9 @@ async function run(options: any, default_stack: SharedCyfsStack): Promise<void> 
 interface ObjectInfo {
     key: string,
     object_id: ObjectId,
-    object_type?: string,
-    owner_info?: string,
-    dec_name?:string,
-    dec_id?: string,
-    dec_info?: string,
+    object_type?: number,
+    owner_info?: ObjectId,
+    dec_id?: ObjectId,
     create_time?: string,
 }
 
@@ -251,6 +237,85 @@ function extract_path(pathstr: string): [ObjectId|undefined, string] {
 
 function make_r_link(target_id: ObjectId, full_path: string):string {
     return `cyfs://r/${target_id}${full_path}`;
+}
+
+function show_table_sep() {
+    console_orig.log('-'.repeat(process.stdout.columns))
+}
+
+async function get_dec_name(dec_id: string, stack: SharedCyfsStack): Promise<string | undefined> {
+    if (dec_name_cache.has(dec_id)) {
+        return dec_name_cache.get(dec_id)
+    }
+    if (dec_id.length < 32) {
+        return
+    }
+    const id_ret = ObjectId.from_base_58(dec_id);
+    if (id_ret.err) {
+        return;
+    }
+    if (!id_ret.unwrap().is_core_object()) {
+        return
+    }
+    
+    const ret_result = await getObject({ stack, id: id_ret.unwrap()})
+    if (ret_result.err) {
+        dec_name_cache.set(dec_id, undefined)
+        return;
+    } else{
+        const app_ret = new DecAppDecoder().from_raw(ret_result.unwrap().object.object_raw)
+        if (app_ret.err) {
+            return;
+        }
+        const name = app_ret.unwrap().name()
+        dec_name_cache.set(dec_id, name)
+        return name
+    }
+}
+
+async function decorate_decid(old_path: string|undefined, stack: SharedCyfsStack): Promise<string> {
+    if (!old_path) {
+        return '-'
+    }
+    const parts = old_path.split(path.sep)
+    for (let i = 0; i < parts.length; i++) {
+        const name = await get_dec_name(parts[i], stack);
+        if (name) {
+            parts[i] += `(${name})`
+        }
+    }
+    
+    return parts.join(path.sep)
+}
+
+function show_key(obj_type: number, key: string): string {
+    if (obj_type === ObjectTypeCode.ObjectMap) {
+       return colors('blue', key);
+    } else if(obj_type === ObjectTypeCode.File) {
+        return colors('gray', key);
+    }
+
+    return key
+}
+
+function show_obj_type(obj_type: number): string {
+    if (obj_type <= ObjectTypeCode.Custom) {
+        return number_2_obj_type_code_name(obj_type).split('.')[1]
+    } else if (obj_type >= OBJECT_TYPE_CORE_START && obj_type < OBJECT_TYPE_CORE_END) {
+        return number_2_core_object_name(obj_type).split('.')[1]
+    } else {
+        return obj_type.toString()
+    }
+}
+
+import {table, getBorderCharacters} from 'table';
+
+function show_table(table_head: string[], table_data: string[][]) {
+    console_orig.log(table([table_head].concat(table_data), {
+        border: getBorderCharacters('ramac'),
+        drawVerticalLine: () => false,
+        drawHorizontalLine: (line) => line === 1
+    }))
 }
 
 // ls先不提供分页功能，全部取回再全部显示。以后可能支持分页。分页行为仿照less命令
@@ -277,108 +342,75 @@ async function ls(cur_path: string, dst_path: string|undefined, target_id: Objec
 
     //如果要显示详细信息，在这里再取详细信息
     if (show_detail) {
-        console_orig.log("-".repeat(160));
+        const table_head = ["ObjectType"]
         //表头|ObjectTyp|DecId|Owner|CreateTime|ObjectId|Key
-        const detail_list = await object_detail(cur_path, stack, objects);
-        if (detail_list.err) {
-            return;
-        }
-        let dec_id_column = "";
-        let dec_name_column = "";
-        let owner_column = "";
+        await object_detail(stack, target_id, objects);
         if (show_dec_id) {
-            dec_id_column = `\t\t\tDecId`;
-            dec_name_column = `\t\tDecName\t`;
+            table_head.push('DecId')
         }
         if (show_owner) {
-            owner_column = `\t\tOwner\t\t\t\t`;
+            table_head.push('Owner')
         }
-        console_orig.log(`ObjectType\t${dec_id_column}\t${dec_name_column}\t${owner_column}\tCreateTime\tObjectId\t\t\t\tKey`);
-        console_orig.log("-".repeat(160));
-        for (const object of detail_list.unwrap()) {
-            const dec_id = show_dec_id ? `${object.dec_id}` : '';
-            const dec_name = show_dec_id ? `${object.dec_name}` : '';
-            const owner_info = show_owner ? `${object.owner_info}` : '';
-            console_orig.log(`${object.object_type}\t${dec_id}\t${dec_name.trim()}\t${owner_info}\t${object.create_time}\t${object.object_id}\t${object.key}`)
+        table_head.push("CreateTime", "ObjectId", "path")
+        const table_data: any[] = []
+        for (const object of objects) {
+            const object_data:any[] = [];
+            object_data.push(show_obj_type(object.object_type!))
+            if (show_dec_id) {
+                object_data.push(await decorate_decid(object.dec_id?.to_base_58(), stack))
+            }
+            if (show_owner) {
+                object_data.push(object.owner_info)
+            }
+            
+            const show_key_str = show_key(object.object_type!, await decorate_decid(object.key, stack))
+            object_data.push(object.create_time, object.object_id,show_key_str)
+
+            table_data.push(object_data)
         }
 
+        show_table(table_head, table_data)
+
     } else {
-        // 通用显示,现在只显示key -> objectid信息
-        console_orig.log("-".repeat(160));
-        console_orig.log(`key\t\t\t\t\t\tobject`);
-        console_orig.log("-".repeat(160));
+        // 通用显示,现在只显示path -> objectid信息
+        const table_data: any[] = [];
+        const table_head = ["ObjectId", "path"]
         for (const object of objects) {
-            console_orig.log(`${object.key} -> ${object.object_id.to_base_58()}`)
+            table_data.push([object.object_id, show_key(object.object_id.obj_type_code(), await decorate_decid(object.key, stack))])
+            //const show_key_str = show_key(object.object_id.obj_type_code(), await decorate_decid(object.key, stack))
+            //console_orig.log(`${object.object_id.to_base_58()}\t\t${show_key_str}`);
         }
+
+        show_table(table_head, table_data)
     }
 
 }
 
-async function object_detail(cur_path: string, stack: SharedCyfsStack, objects: ObjectInfo[]): Promise<BuckyResult<ObjectInfo[]>> {
-    let [dec_id] = extract_path(cur_path);
-    const result: ObjectInfo[] = [];
-
-    for (const object of objects) {
-        const ret_result = await getObject({ stack, id: object.object_id})
+async function object_detail(stack: SharedCyfsStack, target: ObjectId, objects: ObjectInfo[]): Promise<void> {
+    for (let i = 0; i < objects.length; i++) {
+        const object = objects[i];
+        const ret_result = await getObject({ stack, id: object.object_id, target})
         if (ret_result.err) {
             continue;
         }
-
-        const ret_info = ret_result.unwrap().object;
+        const obj_info = ret_result.unwrap().object;
+        obj_info.try_decode()
     
-        const obj = ret_info.object || new AnyNamedObjectDecoder().from_raw(ret_info.object_raw).unwrap()
-        const obj_type = obj.desc().obj_type_code();
+        const obj = obj_info.object!;
+        object.object_type = obj.desc().obj_type();
 
         //所有者
-        let owner_info = "-";
-        if (ret_info.object?.desc().owner()?.is_some()) {
-            owner_info = ret_info.object!.desc().owner()!.unwrap().toString();
+        if (obj.desc().owner() && obj.desc().owner()!.is_some()) {
+            object.owner_info = obj.desc().owner()!.unwrap()
         }
 
         //创建时间
-        const create_time = formatDate(bucky_time_2_js_time(obj.desc().create_time()))
+        object.create_time = formatDate(bucky_time_2_js_time(obj.desc().create_time()))
 
-        if (dec_id === undefined) {
-            if(ret_info.object?.desc().dec_id().is_some()){
-                dec_id = ret_info.object?.desc().dec_id().unwrap();
-            }
+        if(obj.desc().dec_id().is_some()){
+            object.dec_id = obj.desc().dec_id().unwrap();
         }
-
-        // dec_app_name
-        let dec_id_str = dec_id!.to_base_58();
-        if (cur_path === "/") {
-            dec_id_str = object.key;
-        }
-        const dec_app_name = await get_dec_app_name(stack, dec_id_str);
-
-        let object_key = "-";
-        if (obj_type === ObjectTypeCode.ObjectMap) {
-            object_key = `${colors('blue', `${object.key}`)}`;
-        } else if(obj_type === ObjectTypeCode.File) {
-            object_key = `${colors('gray', `${object.key}`)}`;
-        } else {
-            object_key = `${colors('white', `${object.key}`)}`;
-        }
-        const dec_info = `${dec_id?.to_base_58()}(${dec_app_name})`
-        let object_type = number_2_obj_type_code_name(obj_type as number);
-        const simple_type = object_type.split('.')
-        if (simple_type[1].length > 0) {
-            object_type = simple_type[1];
-        }
-        result.push({
-            key: object_key,
-            object_id: object.object_id,
-            object_type: object_type,
-            owner_info: owner_info,
-            dec_info: dec_info,
-            dec_name: dec_app_name,
-            dec_id: dec_id?.to_base_58(),
-            create_time: create_time,
-        })
     }
-
-
-    return Ok(result)
 }
 
 async function list(cur_path: string, target_id: ObjectId, stack: SharedCyfsStack, page_index: number, page_size: number): Promise<BuckyResult<ObjectInfo[]>> {
@@ -410,35 +442,6 @@ async function list(cur_path: string, target_id: ObjectId, stack: SharedCyfsStac
 
     return Ok(result)
     
-}
-
-
-async function get_dec_app_name(stack: SharedCyfsStack, object_id: string): Promise<string>{
-    let dec_app_name = `-`;
-    
-    if (object_id === get_system_dec_app().object_id.to_base_58()) {
-        dec_app_name = `system`;
-    }
-    const ret_result = await getObject({ stack, id: object_id})
-    if (ret_result.err) {
-        return dec_app_name;
-    } else{
-        const ret_info = ret_result.unwrap().object;
-
-        const obj = ret_info.object || new AnyNamedObjectDecoder().from_raw(ret_info.object_raw).unwrap();
-        const type = obj.desc().obj_type_code();
-        if (type == ObjectTypeCode.Custom) {
-            const r = new DecAppDecoder().from_raw(ret_info.object_raw);
-            if (r.err) {
-                return dec_app_name;
-            }
-            const app = r.unwrap();
-            dec_app_name = `${app.name()}`;
-        }
-    }
-
-    return dec_app_name;
-
 }
 
 async function cd(cur_path: string, dst_path: string, target_id: ObjectId, stack: SharedCyfsStack): Promise<string> {
