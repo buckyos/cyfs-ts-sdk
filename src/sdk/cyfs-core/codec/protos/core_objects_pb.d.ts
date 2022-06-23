@@ -336,6 +336,9 @@ export class AppLocalStatusDesc extends jspb.Message {
   getSubError(): number;
   setSubError(value: number): void;
 
+  getAutoUpdate(): boolean;
+  setAutoUpdate(value: boolean): void;
+
   serializeBinary(): Uint8Array;
   toObject(includeInstance?: boolean): AppLocalStatusDesc.AsObject;
   static toObject(includeInstance: boolean, msg: AppLocalStatusDesc): AppLocalStatusDesc.AsObject;
@@ -356,6 +359,7 @@ export namespace AppLocalStatusDesc {
     quota?: AppQuota.AsObject,
     lastStatusUpdateTime: string,
     subError: number,
+    autoUpdate: boolean,
   }
 }
 
@@ -579,6 +583,11 @@ export class CmdCode extends jspb.Message {
   getAppQuota(): AppQuota | undefined;
   setAppQuota(value?: AppQuota): void;
 
+  hasAutoUpdate(): boolean;
+  clearAutoUpdate(): void;
+  getAutoUpdate(): boolean;
+  setAutoUpdate(value: boolean): void;
+
   serializeBinary(): Uint8Array;
   toObject(includeInstance?: boolean): CmdCode.AsObject;
   static toObject(includeInstance: boolean, msg: CmdCode): CmdCode.AsObject;
@@ -596,6 +605,7 @@ export namespace CmdCode {
     installApp?: InstallApp.AsObject,
     appPermission?: ModifyAppPermission.AsObject,
     appQuota?: AppQuota.AsObject,
+    autoUpdate: boolean,
   }
 }
 

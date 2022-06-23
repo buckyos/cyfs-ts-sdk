@@ -153,45 +153,46 @@ export class AppQuota {
 }
 
 class CmdCode {
-    constructor(public code: AppCmdCode, public add?: AddApp, public install?: InstallApp, public permission?: ModifyAppPermission, public qupta?: AppQuota) { }
+    constructor(
+        public code: AppCmdCode,
+        public add?: AddApp,
+        public install?: InstallApp,
+        public permission?: ModifyAppPermission,
+        public quota?: AppQuota,
+        public auto_update?: boolean,
+    ) { }
 
     try_to_proto(): BuckyResult<protos.CmdCode> {
         const ret = new protos.CmdCode()
 
-        ret.setCode(this.code)
+        ret.setCode(this.code);
 
-        let install_app, app_permission, app_quota
-        {
-            const r = this.add?.try_to_proto();
-            if (r?.err) {
+        if (this.code == AppCmdCode.Add) {
+            const r = this.add!.try_to_proto();
+            if (r.err) {
                 return r;
             }
-            ret.setAddApp(r?.unwrap())
-        }
-
-
-        {
-            const r = this.install?.try_to_proto();
-            if (r?.err) {
+            ret.setAddApp(r.unwrap())
+        } else if (this.code == AppCmdCode.Install) {
+            const r = this.install!.try_to_proto();
+            if (r.err) {
                 return r;
             }
-            ret.setInstallApp(r?.unwrap())
-        }
-
-        {
-            const r = this.permission?.try_to_proto();
-            if (r?.err) {
+            ret.setInstallApp(r.unwrap())
+        } else if (this.code == AppCmdCode.SetPermission) {
+            const r = this.permission!.try_to_proto();
+            if (r.err) {
                 return r;
             }
-            ret.setAppPermission(r?.unwrap())
-        }
-
-        {
-            const r = this.qupta?.try_to_proto();
-            if (r?.err) {
+            ret.setAppPermission(r.unwrap())
+        } else if (this.code == AppCmdCode.SetQuota) {
+            const r = this.quota!.try_to_proto();
+            if (r.err) {
                 return r;
             }
-            ret.setAppQuota(r?.unwrap());
+            ret.setAppQuota(r.unwrap());
+        } else if (this.code == AppCmdCode.SetAutoUpdate) {
+            ret.setAutoUpdate(this.auto_update!);
         }
 
         return Ok(ret);
@@ -199,7 +200,7 @@ class CmdCode {
 
     static try_from_proto(value: protos.CmdCode): BuckyResult<CmdCode> {
         const code = value.getCode() as AppCmdCode;
-        let add, install, permission, quota
+        let add, install, permission, quota, auto_update;
         if (value.hasAddApp()) {
             const r = AddApp.try_from_proto(value.getAddApp()!)
             if (r.err) {
@@ -231,12 +232,16 @@ class CmdCode {
             }
             quota = r.unwrap()
         }
+        if (value.hasAutoUpdate()) {
+            auto_update = value.getAutoUpdate();
+        }
         return Ok(new CmdCode(
             code,
             add,
             install,
             permission,
-            quota
+            quota,
+            auto_update
         ));
     }
 }
@@ -299,6 +304,7 @@ export enum AppCmdCode {
     Stop = 5, //停止
     SetPermission = 6, //设置权限
     SetQuota = 7, //设置配额
+    SetAutoUpdate = 8,
 
     Unknown = 255,
 }
@@ -378,6 +384,10 @@ export class AppCmd extends NamedObject<AppCmdDesc, EmptyProtobufBodyContent> {
         quota: Map<AppQuotaType, JSBI>
     ): AppCmd {
         return AppCmd.create(owner, id, new CmdCode(AppCmdCode.SetQuota, undefined, undefined, undefined, AppQuota.from(quota)));
+    }
+
+    static set_auto_update(owner: ObjectId, id: DecAppId, auto_update: boolean): AppCmd {
+        return AppCmd.create(owner, id, new CmdCode(AppCmdCode.SetAutoUpdate, undefined, undefined, undefined, undefined, auto_update));
     }
 
     app_id(): DecAppId {

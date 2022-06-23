@@ -3134,7 +3134,8 @@ proto.AppLocalStatusDesc.toObject = function(includeInstance, msg) {
     proto.AppPermission.toObject, includeInstance),
     quota: (f = msg.getQuota()) && proto.AppQuota.toObject(includeInstance, f),
     lastStatusUpdateTime: jspb.Message.getFieldWithDefault(msg, 7, ""),
-    subError: jspb.Message.getFieldWithDefault(msg, 8, 0)
+    subError: jspb.Message.getFieldWithDefault(msg, 8, 0),
+    autoUpdate: jspb.Message.getBooleanFieldWithDefault(msg, 9, false)
   };
 
   if (includeInstance) {
@@ -3204,6 +3205,10 @@ proto.AppLocalStatusDesc.deserializeBinaryFromReader = function(msg, reader) {
     case 8:
       var value = /** @type {number} */ (reader.readUint32());
       msg.setSubError(value);
+      break;
+    case 9:
+      var value = /** @type {boolean} */ (reader.readBool());
+      msg.setAutoUpdate(value);
       break;
     default:
       reader.skipField();
@@ -3289,6 +3294,13 @@ proto.AppLocalStatusDesc.serializeBinaryToWriter = function(message, writer) {
   if (f !== 0) {
     writer.writeUint32(
       8,
+      f
+    );
+  }
+  f = message.getAutoUpdate();
+  if (f) {
+    writer.writeBool(
+      9,
       f
     );
   }
@@ -3559,6 +3571,24 @@ proto.AppLocalStatusDesc.prototype.getSubError = function() {
  */
 proto.AppLocalStatusDesc.prototype.setSubError = function(value) {
   return jspb.Message.setProto3IntField(this, 8, value);
+};
+
+
+/**
+ * optional bool auto_update = 9;
+ * @return {boolean}
+ */
+proto.AppLocalStatusDesc.prototype.getAutoUpdate = function() {
+  return /** @type {boolean} */ (jspb.Message.getBooleanFieldWithDefault(this, 9, false));
+};
+
+
+/**
+ * @param {boolean} value
+ * @return {!proto.AppLocalStatusDesc} returns this
+ */
+proto.AppLocalStatusDesc.prototype.setAutoUpdate = function(value) {
+  return jspb.Message.setProto3BooleanField(this, 9, value);
 };
 
 
@@ -4968,7 +4998,8 @@ proto.CmdCode.toObject = function(includeInstance, msg) {
     addApp: (f = msg.getAddApp()) && proto.AddApp.toObject(includeInstance, f),
     installApp: (f = msg.getInstallApp()) && proto.InstallApp.toObject(includeInstance, f),
     appPermission: (f = msg.getAppPermission()) && proto.ModifyAppPermission.toObject(includeInstance, f),
-    appQuota: (f = msg.getAppQuota()) && proto.AppQuota.toObject(includeInstance, f)
+    appQuota: (f = msg.getAppQuota()) && proto.AppQuota.toObject(includeInstance, f),
+    autoUpdate: jspb.Message.getBooleanFieldWithDefault(msg, 6, false)
   };
 
   if (includeInstance) {
@@ -5028,6 +5059,10 @@ proto.CmdCode.deserializeBinaryFromReader = function(msg, reader) {
       var value = new proto.AppQuota;
       reader.readMessage(value,proto.AppQuota.deserializeBinaryFromReader);
       msg.setAppQuota(value);
+      break;
+    case 6:
+      var value = /** @type {boolean} */ (reader.readBool());
+      msg.setAutoUpdate(value);
       break;
     default:
       reader.skipField();
@@ -5095,6 +5130,13 @@ proto.CmdCode.serializeBinaryToWriter = function(message, writer) {
       5,
       f,
       proto.AppQuota.serializeBinaryToWriter
+    );
+  }
+  f = /** @type {boolean} */ (jspb.Message.getField(message, 6));
+  if (f != null) {
+    writer.writeBool(
+      6,
+      f
     );
   }
 };
@@ -5263,6 +5305,42 @@ proto.CmdCode.prototype.clearAppQuota = function() {
  */
 proto.CmdCode.prototype.hasAppQuota = function() {
   return jspb.Message.getField(this, 5) != null;
+};
+
+
+/**
+ * optional bool auto_update = 6;
+ * @return {boolean}
+ */
+proto.CmdCode.prototype.getAutoUpdate = function() {
+  return /** @type {boolean} */ (jspb.Message.getBooleanFieldWithDefault(this, 6, false));
+};
+
+
+/**
+ * @param {boolean} value
+ * @return {!proto.CmdCode} returns this
+ */
+proto.CmdCode.prototype.setAutoUpdate = function(value) {
+  return jspb.Message.setField(this, 6, value);
+};
+
+
+/**
+ * Clears the field making it undefined.
+ * @return {!proto.CmdCode} returns this
+ */
+proto.CmdCode.prototype.clearAutoUpdate = function() {
+  return jspb.Message.setField(this, 6, undefined);
+};
+
+
+/**
+ * Returns whether this field is set.
+ * @return {boolean}
+ */
+proto.CmdCode.prototype.hasAutoUpdate = function() {
+  return jspb.Message.getField(this, 6) != null;
 };
 
 

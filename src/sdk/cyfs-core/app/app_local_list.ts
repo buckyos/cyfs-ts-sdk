@@ -20,7 +20,7 @@ import { protos } from '../codec';
 // 一些内置的categroy
 // 一些内置的categroy
 export const APP_LOCAL_LIST_CATEGORY_APP = "app";
-export const APP_LOCAL_LIST_PATH = "/app_local_list";
+export const APP_LOCAL_LIST_PATH = "/app/manager/local_list";
 
 export class AppLocalListDescTypeInfo extends DescTypeInfo {
     obj_type(): number {

@@ -36,8 +36,6 @@ import {
 import { AppQuota } from "./app_cmd";
 import JSBI from "jsbi";
 
-export const APP_LOCAL_STATUS_MAIN_PATH = "/app_local_status";
-
 export class AppLocalStatusDescTypeInfo extends DescTypeInfo {
     obj_type(): number {
         return CoreObjectType.AppLocalStatus;
@@ -136,6 +134,7 @@ export class AppLocalStatusDesc extends ProtobufDescContent {
     version?: string;
     web_dir?: ObjectId;
     sub_error: SubErrorCode;
+    auto_update: boolean;
 
     constructor(
         id: DecAppId,
@@ -146,6 +145,7 @@ export class AppLocalStatusDesc extends ProtobufDescContent {
         version?: string,
         web_dir?: ObjectId,
         sub_error?: SubErrorCode,
+        auto_update?: boolean,
     ) {
         super();
 
@@ -157,6 +157,10 @@ export class AppLocalStatusDesc extends ProtobufDescContent {
         this.permissions = permissions;
         this.quota = quota;
         this.sub_error = sub_error || SubErrorCode.None;
+        if (auto_update == undefined || auto_update == null) {
+            auto_update = true;
+        }
+        this.auto_update = auto_update;
     }
 
     type_info(): DescTypeInfo {
@@ -184,6 +188,7 @@ export class AppLocalStatusDesc extends ProtobufDescContent {
         }
         target.setLastStatusUpdateTime(this.last_status_update_time.toString())
         target.setSubError(this.sub_error)
+        target.setAutoUpdate(this.auto_update)
 
         return Ok(target);
     }
@@ -235,6 +240,7 @@ export class AppLocalStatusDescDecoder extends ProtobufDescContentDecoder<
             value.getVersion(),
             web_dir,
             value.getSubError(),
+            value.getAutoUpdate(),
         );
 
         return Ok(result);
@@ -278,6 +284,10 @@ export class AppLocalStatus extends NamedObject<AppLocalStatusDesc, EmptyProtobu
         const builder = new AppLocalStatusBuilder(desc_content, new EmptyProtobufBodyContent());
 
         return builder.owner(owner).no_create_time().build(AppLocalStatus);
+    }
+
+    static get_path(id: DecAppId) {
+        return `/app/${id.to_base_58()}/local_status`;
     }
 
     app_id(): DecAppId {
@@ -336,10 +346,8 @@ export class AppLocalStatus extends NamedObject<AppLocalStatusDesc, EmptyProtobu
         return this.desc().content().last_status_update_time;
     }
 
-    static generate_id(owner: ObjectId, id: DecAppId): ObjectId {
-        return AppLocalStatus.create(owner, id)
-            .desc()
-            .calculate_id();
+    auto_update(): boolean {
+        return this.desc().content().auto_update;
     }
 }
 
