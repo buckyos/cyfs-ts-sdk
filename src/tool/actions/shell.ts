@@ -65,7 +65,7 @@ async function select_target(): Promise<ObjectId> {
     return resp["target"].object_id;
 }
 
-async function runPrompt(target_id, current_path, device_list): Promise<string[]> {
+async function runPrompt(target_id, friendly_path, device_list): Promise<string[]> {
 
     const availableCommands = [
         {
@@ -81,7 +81,7 @@ async function runPrompt(target_id, current_path, device_list): Promise<string[]
             type: 'command',
             name: 'cmd',
             autoCompletion: availableCommands,
-            message: `${target_id}:${current_path}`,
+            message: `${target_id}:${friendly_path}`,
             choices: device_list,
             context: 0,
             prefix: "",
@@ -116,7 +116,7 @@ export function makeCommand(config: CyfsToolConfig): Command {
             const [stack, writable] = await create_stack(options.endpoint, config)
             await stack.online();
             await perpare_device_list(stack);
-            await run(options, stack, config);
+            await run(options, stack);
 
             stop_runtime()
         })
@@ -124,10 +124,12 @@ export function makeCommand(config: CyfsToolConfig): Command {
 
 
 
-async function run(options: any, default_stack: SharedCyfsStack, config: CyfsToolConfig): Promise<void> {
+async function run(options: any, default_stack: SharedCyfsStack): Promise<void> {
     let target_id;
     let current_path = "/"
-    // let friendly_cur_path = current_path;
+    let cur_dec_id = ObjectId.default();
+    let cur_dec_name = "-";
+    let friendly_path = "/";
     // 创建一个Commander实例，名称就用shell先
     const shell_prog = new Command('shell');
     shell_prog
@@ -148,11 +150,16 @@ async function run(options: any, default_stack: SharedCyfsStack, config: CyfsToo
         .addCommand(new Command('cd').description('change current root state path').argument('<dest path>').action(async (dest_path, options) => {
             // cd切换路径，检查路径是否存在。如果不存在，报错。返回current_path，如果存在，返回新路径
             current_path = await cd(current_path, dest_path, target_id, default_stack)
-            // const [dec_id, sub_path] = extract_path(current_path);
-            // if (dec_id !== undefined) {
-            //     const dec_name = await get_dec_app_name(default_stack, dec_id);
-            //     friendly_cur_path = path.resolve(dec_name, sub_path);
-            // }
+            const [dec_id, sub_path] = extract_path(current_path);
+            if (dec_id !== undefined) {
+                if (!dec_id.equals(cur_dec_id)) {
+                    const dec_name = await get_dec_app_name(default_stack, dec_id.to_base_58());
+                    cur_dec_name = dec_name;
+                    cur_dec_id = dec_id;
+                }
+                friendly_path = `${dec_id.to_base_58()}(${cur_dec_name})${sub_path}`;
+            }
+
         }).exitOverride())
         .addCommand(new Command('cat').description('show object info in json format').argument('<object path>').action(async (obj_path, options) => {
             await cat(current_path, obj_path, target_id, default_stack)
@@ -204,7 +211,7 @@ async function run(options: any, default_stack: SharedCyfsStack, config: CyfsToo
         if (target_id === undefined) {
             target_id = await select_target();
         } else {
-            const cmds = await runPrompt(target_id, current_path, device_list);
+            const cmds = await runPrompt(target_id, friendly_path, device_list);
             try {
                 await shell_prog.parseAsync(cmds, { from: 'user' })
             } catch {
@@ -267,7 +274,8 @@ async function ls(cur_path: string, dst_path: string|undefined, target_id: Objec
 
     //如果要显示详细信息，在这里再取详细信息
     if (show_detail) {
-        //表头|ObjectTypeCode|DecId|Owner|CreateTime|Key
+        console_orig.log("-".repeat(160));
+        //表头|ObjectTyp|DecId|Owner|CreateTime|ObjectId|Key
         const detail_list = await object_detail(cur_path, stack, objects);
         if (detail_list.err) {
             return;
@@ -282,18 +290,19 @@ async function ls(cur_path: string, dst_path: string|undefined, target_id: Objec
         if (show_owner) {
             owner_column = `\t\tOwner\t\t\t\t`;
         }
-        console_orig.log(`ObjectType\t${dec_id_column}\t${dec_name_column}\t${owner_column}\tCreateTime\t\tKey`);
+        console_orig.log(`ObjectType\t${dec_id_column}\t${dec_name_column}\t${owner_column}\tCreateTime\tObjectId\t\t\t\tKey`);
         console_orig.log("-".repeat(160));
         for (const object of detail_list.unwrap()) {
-            const dec_id = show_dec_id ? `${object.dec_id}\t` : '';
-            const dec_name = show_dec_id ? `${object.dec_name}\t` : '';
-            const owner_info = show_owner ? `\t${object.owner_info}` : '';
-            console_orig.log(`${object.object_type}\t${dec_id}\t${dec_name.trim()}\t${owner_info}\t${object.create_time}\t${object.key}`)
+            const dec_id = show_dec_id ? `${object.dec_id}` : '';
+            const dec_name = show_dec_id ? `${object.dec_name}` : '';
+            const owner_info = show_owner ? `${object.owner_info}` : '';
+            console_orig.log(`${object.object_type}\t${dec_id}\t${dec_name.trim()}\t${owner_info}\t${object.create_time}\t${object.object_id}\t${object.key}`)
         }
 
     } else {
         // 通用显示,现在只显示key -> objectid信息
-        console_orig.log(`path\t\t\t\t\t\tobject`);
+        console_orig.log("-".repeat(160));
+        console_orig.log(`key\t\t\t\t\t\tobject`);
         console_orig.log("-".repeat(160));
         for (const object of objects) {
             console_orig.log(`${object.key} -> ${object.object_id.to_base_58()}`)
