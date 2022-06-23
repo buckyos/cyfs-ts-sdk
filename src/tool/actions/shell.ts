@@ -159,6 +159,9 @@ async function run(options: any, default_stack: SharedCyfsStack): Promise<void> 
                 }
                 friendly_path = `${dec_id.to_base_58()}(${cur_dec_name})${sub_path}`;
             }
+            if (current_path === "/") {
+                friendly_path = current_path;
+            }
 
         }).exitOverride())
         .addCommand(new Command('cat').description('show object info in json format').argument('<object path>').action(async (obj_path, options) => {
