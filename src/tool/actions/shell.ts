@@ -292,7 +292,7 @@ function show_key(obj_type: number, key: string): string {
     if (obj_type === ObjectTypeCode.ObjectMap) {
        return colors('blue', key);
     } else if(obj_type === ObjectTypeCode.File) {
-        return colors('gray', key);
+        return colors('grey', key);
     }
 
     return key
