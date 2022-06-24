@@ -4,7 +4,7 @@ import {ObjectId, SharedCyfsStack, AnyNamedObjectDecoder } from "../../sdk";
 import * as fs from 'fs-extra';
 
 import fetch from 'node-fetch';
-import { create_stack, CyfsToolConfig, stop_runtime } from "../lib/util";
+import { convert_cyfs_url, create_stack, CyfsToolConfig, stop_runtime } from "../lib/util";
 
 const dec_id = ObjectId.from_base_58('9tGpLNnDpa8deXEk2NaWGccEu4yFQ2DrTZJPLYLT7gj4').unwrap()
 
@@ -24,36 +24,10 @@ export function makeCommand(config: CyfsToolConfig): Command {
         })
 }
 
-export async function dump_object(stack: SharedCyfsStack, olink: string, json: boolean, data?: boolean): Promise<any|[Uint8Array, ObjectId]|undefined> {
-    const local_device_id = stack.local_device_id();
-    const non_service_url = stack.non_service().service_url;
-
-    const non_url = olink.replace("cyfs://", non_service_url);
-
-    const url = new URL(non_url)
-    const path_seg = url.pathname.split("/").slice(1);
-    // 如果链接带o，拼之后就会变成http://127.0.0.1:1318/non/o/xxxxx
-    // 这里要去掉non和o这两个路径。如果没有o，就只去掉non一层
-    if (path_seg[1] === "o") {
-        url.pathname = path_seg.slice(2).join("/");
-    } else {
-        url.pathname = path_seg.slice(1).join("/");
-    }
-    if (data) {
-        url.searchParams.set("mode", "data");
-    } else {
-        url.searchParams.set("mode", "object");
-    }
-
-    if (json) {
-        url.searchParams.set("format", "json");
-    } else {
-        url.searchParams.set("format", "raw");
-    }
-    
-    const new_url_str = url.toString();
+export async function dump_object(stack: SharedCyfsStack, olink: string, json: boolean): Promise<any|[Uint8Array, ObjectId]|undefined> {
+    const [new_url_str, headers] = convert_cyfs_url(olink, stack, json, false)
     // console.log(`convert cyfs url: ${olink} to non url: ${new_url_str}`);
-    const response  = await fetch(new_url_str, {headers: {CYFS_REMOTE_DEVICE: local_device_id.toString()}});
+    const response  = await fetch(new_url_str, {headers});
     if (!response.ok) {
         console.error(`response error code ${response.status}, msg ${response.statusText}`)
         return;
@@ -61,10 +35,7 @@ export async function dump_object(stack: SharedCyfsStack, olink: string, json: b
 
     if (json) {
         return await response.json()
-    } else if (data) {
-        return await response.buffer()
-    }
-    else {
+    } else {
         const obj_raw = new Uint8Array(await response.buffer());
         // 取回的数据一定是个Object
         const obj_ret = new AnyNamedObjectDecoder().from_raw(obj_raw);
@@ -98,7 +69,7 @@ export async function run(olink_or_objectid: string, options:any, stack: SharedC
         olink = `cyfs://${olink_or_objectid}`
     }
 
-    const ret = await dump_object(stack, olink, options.json, options.data)
+    const ret = await dump_object(stack, olink, options.json)
     if (ret === undefined) {
         return;
     }

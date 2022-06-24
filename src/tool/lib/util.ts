@@ -345,3 +345,35 @@ export function stop_runtime():void {
         child_runtime = undefined;
     }
 }
+
+
+// 从一个cyfs的url，转换成本地协议栈的non url
+// json和data不能同时为true，如果同时为true的情况，以json为优先
+export function convert_cyfs_url(cyfs_url: string, stack: SharedCyfsStack, json: boolean, data: boolean): [string, { [key: string]: string }] {
+    const local_device_id = stack.local_device_id().object_id
+    const non_url = cyfs_url.replace("cyfs://", stack.non_service().service_url);
+
+    const url = new URL(non_url)
+    const path_seg = url.pathname.split("/").slice(1);
+    // 如果链接带o，拼之后就会变成http://127.0.0.1:1318/non/o/xxxxx
+    // 这里要去掉non和o这两个路径。如果没有o，就只去掉non一层
+    if (path_seg[1] === "o") {
+        url.pathname = path_seg.slice(2).join("/");
+    } else {
+        url.pathname = path_seg.slice(1).join("/");
+    }
+
+    if (json) {
+        url.searchParams.set("format", "json");
+    } else {
+        url.searchParams.set("format", "raw");
+    }
+
+    if (data && !json) {
+        url.searchParams.set("mode", "data");
+    } else {
+        url.searchParams.set("mode", "object");
+    }
+    
+    return [url.toString(), {CYFS_REMOTE_DEVICE: local_device_id.toString()}];
+}
