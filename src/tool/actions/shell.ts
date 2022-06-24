@@ -506,7 +506,8 @@ async function get(cur_path: string, dst_path: string, target_id: ObjectId, stac
 
     const cyfs_link = make_r_link(target_id, new_path);
     console.log(`save path: ${local_path}, target: ${target_id.to_string()}, dec_id: ${dec_id}, inner_path: ${sub_path}`)
-    await get_run(cyfs_link, {save: local_path}, stack, target_id, dec_id, sub_path);
+    const link_type = "r";
+    await get_run(cyfs_link, {save: local_path}, stack, target_id, dec_id, sub_path, link_type);
 }
 
 async function rm(cur_path:string, dst_path:string, target_id: ObjectId, stack: SharedCyfsStack, recursive_delete: boolean, delete_object: boolean) {

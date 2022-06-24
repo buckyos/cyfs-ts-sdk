@@ -24,10 +24,12 @@ export function makeCommand(config: CyfsToolConfig): Command {
         })
 }
 
+
 export async function dump_object(stack: SharedCyfsStack, olink: string, json: boolean): Promise<any|[Uint8Array, ObjectId]|undefined> {
     const [new_url_str, headers] = convert_cyfs_url(olink, stack, json, false)
     // console.log(`convert cyfs url: ${olink} to non url: ${new_url_str}`);
     const response  = await fetch(new_url_str, {headers});
+
     if (!response.ok) {
         console.error(`response error code ${response.status}, msg ${response.statusText}`)
         return;
@@ -77,13 +79,7 @@ export async function run(olink_or_objectid: string, options:any, stack: SharedC
         // 返回json文本格式，直接输出
         console.origin.log(`\nobject json:\n`)
         console.origin.log(JSON.stringify(ret, undefined, 4))
-    } else if (options.data) {
-        if (options.save) {
-            fs.writeFileSync(options.save, ret);
-            console.origin.log(`get obj对象为${options.save}`);
-        }
-    }
-    else {        
+    } else {        
         const [obj_raw, obj_id] = (ret as [Uint8Array, ObjectId]);
         let save_path = path.resolve(process.cwd(), options.save);
         if (fs.existsSync(save_path) && fs.statSync(save_path).isDirectory()) {

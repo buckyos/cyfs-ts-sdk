@@ -349,7 +349,7 @@ export function stop_runtime():void {
 
 // 从一个cyfs的url，转换成本地协议栈的non url
 // json和data不能同时为true，如果同时为true的情况，以json为优先
-export function convert_cyfs_url(cyfs_url: string, stack: SharedCyfsStack, json: boolean, data: boolean): [string, { [key: string]: string }] {
+export function convert_cyfs_url(cyfs_url: string, stack: SharedCyfsStack, json: boolean, data: boolean): [string, { [key: string]: string }, string] {
     const local_device_id = stack.local_device_id().object_id
     const non_url = cyfs_url.replace("cyfs://", stack.non_service().service_url);
 
@@ -363,6 +363,8 @@ export function convert_cyfs_url(cyfs_url: string, stack: SharedCyfsStack, json:
         url.pathname = path_seg.slice(1).join("/");
     }
 
+    const uri = decodeURI(path_seg[path_seg.length - 1]);
+
     if (json) {
         url.searchParams.set("format", "json");
     } else {
@@ -375,5 +377,5 @@ export function convert_cyfs_url(cyfs_url: string, stack: SharedCyfsStack, json:
         url.searchParams.set("mode", "object");
     }
     
-    return [url.toString(), {CYFS_REMOTE_DEVICE: local_device_id.toString()}];
+    return [url.toString(), {CYFS_REMOTE_DEVICE: local_device_id.toString()}, uri];
 }

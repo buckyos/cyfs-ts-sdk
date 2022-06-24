@@ -4,7 +4,7 @@ import { ObjectId, ObjectTypeCode, SharedCyfsStack, NDNAPILevel, TransTaskState,
 import * as fs from 'fs-extra';
 
 import fetch from 'node-fetch';
-import { create_stack, CyfsToolConfig, get_final_owner, makeOLink, stop_runtime } from "../lib/util";
+import { convert_cyfs_url, create_stack, CyfsToolConfig, get_final_owner, makeOLink, makeRLink, stop_runtime } from "../lib/util";
 
 import * as dump from "./dump";
 
@@ -93,130 +93,7 @@ function isDirectory(path) {
     return fs.statSync(path).isDirectory();
 }
 
-
-async function download_files(stack: SharedCyfsStack, options: any, files, file_target_id, dec_id, relative_root, is_dir: boolean) {  
-    const owner_r = await get_final_owner(file_target_id, stack);
-    if (owner_r.err) {
-        console.error("get stack owner failed, err", owner_r.val);
-        return owner_r;
-    }
-    const owner_id = owner_r.unwrap();
-    
-    // 取OOD信息
-    const oods = (await stack.util().resolve_ood({
-        common: {flags: 0},
-        object_id: owner_id
-    })).unwrap().device_list;
-    console.log(`download use owner: ${owner_id}, device: ${oods[0].toString()}`);
-
-    let base_save = options.save;
-    const option_str: string = options.save;
-    if (!path.isAbsolute(options.save)) {
-        base_save = path.normalize(path.join(process.cwd(), options.save));
-    }
-
-    let flags = 0;
-    // obj_dor | 目录存在+目录不为空
-    if (is_dir) {
-        if (fs.existsSync(base_save) && !isEmptyDir(base_save)) {
-            flags = 1;
-        } else {
-            flags = 2;
-        }
-    } else {
-       if ((fs.existsSync(base_save) && isDirectory(base_save)) || option_str.endsWith("/") || option_str.endsWith("\\")) {
-            flags = 3;
-       } else {
-            flags = 4;
-       }
-    }
-
-    if (!fs.existsSync(path.dirname(base_save))) {
-        fs.ensureDirSync(path.dirname(base_save));
-    }
-    
-    const unfinished = new Set<string>();
-    // 在本地上开启下载
-    for (const file of files) {
-        // 这里以 relative_root 分割, 裁剪路径
-        const ipos = file[0].indexOf(relative_root);//指定开始的字符串
-        let file_path = file[0].substring(ipos, file[0].length);//取后部分(指定开始的字符串(包括)的之后)
-        if (flags === 1) {
-            // 缺省
-        } else if (flags === 2) {
-            file_path = file[0].substring(ipos + relative_root.length, file[0].length);//取后部分(指定开始的字符串(排除)的之后)
-        } else if (flags === 3) {
-            // 缺省
-        } else if (flags === 4) {
-            file_path = "";
-        }
-        const save_path = path.join(base_save, `${file_path}`);
-        if (!fs.existsSync(path.dirname(save_path))) {
-            fs.ensureDirSync(path.dirname(save_path));
-        }
-        
-        try{
-            const isExisted = await isFileExisted(save_path);
-            if (isExisted) {
-                console.error(`${save_path} already exists`);
-                continue;
-            }
-        }catch (error){
-            // ignore
-        }
-        console.log(`download file ${save_path} object: ${file[1]}, on ${oods[0]}`);
-        const r = await stack.trans().create_task({
-            common: {
-                level: NDNAPILevel.Router,
-                flags: 0,
-                referer_object: [],
-                target: stack.local_device_id().object_id,
-                dec_id
-            },
-            object_id: file[1],
-            // 保存到的本地目录or文件
-            local_path: save_path,
-            // 这里需要填文件源
-            device_list: oods,
-            auto_start: true
-        });
-        if (r.err) {
-            console.error(`start task on target: ${oods[0]} err ${r.val}`)
-            return
-        }
-        unfinished.add(r.unwrap().task_id)
-    }
-
-    // 在这里检查文件有没有传输到OOD上
-    while (true) {
-        if (unfinished.size === 0) {
-            break;
-        }
-        for (const task_id of unfinished) {
-            const resp = (await stack.trans().get_task_state({
-                common: {
-                    level: NDNAPILevel.Router,
-                    flags: 0,
-                    target: stack.local_device_id().object_id,
-                    referer_object: []
-                },
-                task_id
-            }));
-            if (resp.err) {
-                console.warn("get task state failed, maybe finished. check next file.")
-                unfinished.delete(task_id);
-            } else if (resp.unwrap().state === TransTaskState.Finished) {
-                console.log(`taskid: ${task_id}`);
-                unfinished.delete(task_id);
-            }
-        }
-
-        await sleep(2000);
-    }
-}
-
-
-async function download_files_from_data(stack: SharedCyfsStack, options: any, files, file_target_id, dec_id, relative_root, is_dir: boolean) {  
+async function download_files(stack: SharedCyfsStack, options: any, files, file_target_id, dec_id, relative_root, is_dir: boolean, link_type?: string) {  
     let base_save = options.save;
     const option_str: string = options.save;
     if (!path.isAbsolute(options.save)) {
@@ -274,36 +151,38 @@ async function download_files_from_data(stack: SharedCyfsStack, options: any, fi
         console.log(`download file ${save_path} object: ${file[1]}`);
         options.data = true;
         options.save = save_path;
-        await dump.run(makeOLink(file_target_id, file[1], file_path), options, stack);
+        
+        let link = makeOLink(file_target_id, file[1], file_path);
+        if (link_type === "r") {
+            link = makeRLink(file_target_id, dec_id, file[0]);
+        }
+
+        const [new_url_str, headers, uri] = convert_cyfs_url(link, stack, false, true)
+
+        const response  = await fetch(new_url_str, {headers});
+        if (!response.ok) {
+            console.error(`response error code ${response.status}, msg ${response.statusText}`)
+            return;
+        }
+        const ret = await response.buffer();
+
+        if (options.save) {
+            fs.writeFileSync(options.save, ret);
+            console.origin.log(`get obj对象为${options.save}`);
+        }
     }
 
 }
 
-export async function run(link: string, options:any, stack: SharedCyfsStack, target_id?: ObjectId, dec_id?: ObjectId, inner_path?: string): Promise<void>{
-    const local_device_id = stack.local_device_id();
-    const non_service_url = stack.non_service().service_url;
+export async function run(link: string, options:any, stack: SharedCyfsStack, target_id?: ObjectId, dec_id?: ObjectId, inner_path?: string, link_type?: string): Promise<void>{
     let obj_id, target, relative_root;
     if (link.indexOf("cyfs://") != -1) {      
         // 把cyfs链接参照runtime的proxy.rs逻辑，转换成non的标准协议，直接用http请求
-        const proxy_url_str = link.replace("cyfs://", non_service_url);
-        const url = new URL(proxy_url_str)
-        const path_seg = url.pathname.split("/").slice(1);
-        // 如果链接带o，拼之后就会变成http://127.0.0.1:1318/non/o/xxxxx
-        // 这里要去掉non和o这两个路径。如果没有o，就只去掉non一层
-        if (path_seg[1] === "o") {
-            url.pathname = path_seg.slice(2).join("/");
-        } else {
-            url.pathname = path_seg.slice(1).join("/");
-        }
+        const [new_url_str, headers, uri] = convert_cyfs_url(link, stack, true, false)
+        console.log(`uri: ${uri}`);
 
-        relative_root = decodeURI(path_seg[path_seg.length - 1]);
-        console.log(`relative_root: ${path_seg[path_seg.length - 1]}`);
-
-        url.searchParams.set("mode", "object");
-        url.searchParams.set("format", "json");
-        const new_url_str = url.toString();
-        console.log(`convert cyfs url: ${link} to non url: ${new_url_str}`);
-        const response  = await fetch(new_url_str, {headers: {CYFS_REMOTE_DEVICE: local_device_id.toString()}});
+        relative_root = uri;
+        const response  = await fetch(new_url_str, {headers});
         if (!response.ok) {
             console.error(`response error code ${response.status}, msg ${response.statusText}`)
             return;
@@ -321,9 +200,8 @@ export async function run(link: string, options:any, stack: SharedCyfsStack, tar
     const object_id = ObjectId.from_base_58(obj_id).unwrap();
     const is_dir = object_id.obj_type_code() === ObjectTypeCode.ObjectMap;
 
-    if (target_id !== undefined && dec_id !== undefined && inner_path !== undefined) {
-        console.log(`target_id: ${target_id.toString()}, dec_id: ${dec_id.toString()}, inner_path: ${inner_path}`);
-
+    if (link_type === "r") {
+        console.log(`target_id: ${target_id!.toString()}, dec_id: ${dec_id!.toString()}, inner_path: ${inner_path}`);
         if (is_dir) {
             // 遍历对象，下载整个对象树到本地
             const files = await download_obj(stack, link, target_id, dec_id, inner_path, options);
@@ -332,12 +210,12 @@ export async function run(link: string, options:any, stack: SharedCyfsStack, tar
                 return
             }
 
-            await download_files(stack, options, files, target_id, dec_id, relative_root, is_dir)
+            await download_files(stack, options, files, target_id, dec_id, relative_root, is_dir, link_type)
         } else {
             const files = new Map();
-            const file_name = `${relative_root}.file`;
+            const file_name = `${inner_path}`;
             files.set(file_name, object_id);
-            await download_files(stack, options, files, target_id, dec_id, relative_root, is_dir)
+            await download_files(stack, options, files, target_id, dec_id, relative_root, is_dir, link_type)
         }
 
     } else {
@@ -352,13 +230,13 @@ export async function run(link: string, options:any, stack: SharedCyfsStack, tar
                 return;
             }
 
-            await download_files_from_data(stack, options, files, target_id, default_dec_id, relative_root, is_dir)
+            await download_files(stack, options, files, target_id, default_dec_id, relative_root, is_dir, link_type)
 
         } else {
             const files = new Map();
             const file_name = `${relative_root}`;
             files.set(file_name, object_id);
-            await download_files_from_data(stack, options, files, target_id, default_dec_id, relative_root, is_dir);
+            await download_files(stack, options, files, target_id, default_dec_id, relative_root, is_dir, link_type);
 
         }
 
