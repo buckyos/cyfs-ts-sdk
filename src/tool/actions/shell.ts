@@ -290,9 +290,9 @@ async function decorate_decid(old_path: string|undefined, stack: SharedCyfsStack
 
 function show_key(obj_type: number, key: string): string {
     if (obj_type === ObjectTypeCode.ObjectMap) {
-       return colors('blue', key);
+       return colors('cyan', key);
     } else if(obj_type === ObjectTypeCode.File) {
-        return colors('grey', key);
+        return colors('magenta', key);
     }
 
     return key
