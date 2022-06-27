@@ -67,7 +67,7 @@ Options:
 
 ``` shell
 # 我上传了之前的文件(夹), 静态网站， 我想下载回来看看在CYFS里面我的资源是怎么存储的, 可以用下面的操作
-执行 `cyfs get cyfs://o/5r4MYfFDmENKMkjtaZztmnpSNTDSoRd6kCWuLSo4ftMS/95RvaS5RAbFgEzkzFXima9DMKT4yjtHuorxSczbVzSrG  -s ./`, 在当前目录`upload_map`下 fetch了你的内容， 查看怎么都是二进制数据呢, 这是CYFS世界使用标准化编码后的内容, 期待你的突破迷雾, 探索 CYFS Web3.0 世界。
+执行 `cyfs get cyfs://o/5r4MYfFDmENKMkjtaZztmnpSNTDSoRd6kCWuLSo4ftMS/95RvaS5RAbFgEzkzFXima9DMKT4yjtHuorxSczbVzSrG  -s ./`, 在当前目录`upload_map`下 fetch了你的内容, 期待你的突破迷雾, 探索 CYFS Web3.0 世界。
 
 
 ```
