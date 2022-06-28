@@ -40,7 +40,7 @@
     "cyfs"
   ],
   "author": "",
-  "license": "ISC",
+  "license": "BSD-2-Clause",
   "devDependencies": {
     "@ethersproject/bignumber": "^5.2.0",
     "@ethersproject/bytes": "^5.2.0",
