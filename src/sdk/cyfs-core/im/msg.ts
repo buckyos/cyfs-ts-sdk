@@ -91,7 +91,7 @@ export class MsgDescContent extends ProtobufDescContent {
             Text: (text) => {
                 content.setType(protos.MsgContent.Type.TEXT)
                 content.setText(text)
-                return Ok({});
+                return Ok(undefined);
             },
             Object: (object) => {
                 content.setType(protos.MsgContent.Type.OBJECT)
@@ -103,7 +103,7 @@ export class MsgDescContent extends ProtobufDescContent {
                 con.setId(id_ret.unwrap())
                 con.setName(object.name)
                 content.setContent(con)
-                return Ok({})
+                return Ok(undefined)
             }
         });
         if (r!.err) {

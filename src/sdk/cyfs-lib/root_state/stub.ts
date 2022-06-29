@@ -936,7 +936,7 @@ export class GlobalStateAccessStub {
         }
 
         const resp = r.unwrap();
-        return Ok(resp);
+        return Ok(resp.object);
     }
 
     public async list(

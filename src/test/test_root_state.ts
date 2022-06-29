@@ -3,7 +3,7 @@ import * as cyfs from "../sdk";
 
 export async function test_root_state(
     stack: cyfs.SharedCyfsStack
-): Promise < void > {
+): Promise<void> {
     await test_root_state_codec(stack);
     await test_root_state_impl(stack);
 }
@@ -22,7 +22,7 @@ async function test_root_state_impl(
         } else {
             console.log(
                 `get_current_root success, current root =  ${r.unwrap().root
-        }, revision = ${r.unwrap().revision}`
+                }, revision = ${r.unwrap().revision}`
             );
         }
     }
@@ -35,7 +35,7 @@ async function test_root_state_impl(
         } else {
             console.log(
                 `get_dec_root success , return [root =  ${r.unwrap().root
-        }, dec_root = ${r.unwrap().dec_root}] `
+                }, dec_root = ${r.unwrap().dec_root}] `
             );
         }
     }
@@ -128,8 +128,8 @@ async function test_root_state_impl(
             } else {
                 console.log(
                     `commit success, return value = [root = ${r5.unwrap().root
-          }, dec_root = ${r5.unwrap().dec_root}, revision = ${r5.unwrap().revision
-          }]`
+                    }, dec_root = ${r5.unwrap().dec_root}, revision = ${r5.unwrap().revision
+                    }]`
                 );
             }
         }
@@ -156,7 +156,7 @@ async function test_root_state_impl(
                 // const str = is_exist ? "true" : "false";
                 console.log(
                     `contains success, objectid is exist  = ${is_exist ? "true" : "false"
-          }`
+                    }`
                 );
             }
 
@@ -213,8 +213,8 @@ async function test_root_state_impl(
             } else {
                 console.log(
                     `commit success, return value = [root = ${r1.unwrap().root
-          }, dec_root = ${r1.unwrap().dec_root}, revision = ${r1.unwrap().revision
-          }]`
+                    }, dec_root = ${r1.unwrap().dec_root}, revision = ${r1.unwrap().revision
+                    }]`
                 );
             }
 
@@ -397,9 +397,25 @@ async function test_root_state_codec(
     {
         // const rpath = `/$/${stack.dec_id}/${full_path}`;
         const root_state_access_stub = stack.root_state_access_stub(stack.local_device_id().object_id, stack.dec_id);
-        const r1 = await root_state_access_stub.get_object_by_path(full_path);
-        assert(r1.ok);
-        const resp = r1.unwrap();
-        console.info(resp);
+        {
+            const l1 = await root_state_access_stub.list(path);
+            assert(l1.ok);
+            const resp = l1.unwrap();
+            console.info(resp);
+        }
+
+        {
+            const r1 = await root_state_access_stub.get_object_by_path(path);
+            assert(r1.ok);
+            const resp = r1.unwrap();
+            console.info(resp);
+        }
+
+        {
+            const r1 = await root_state_access_stub.get_object_by_path(full_path);
+            assert(!r1.ok);
+            // const resp = r1.unwrap();
+            // console.info(resp);
+        }
     }
 }

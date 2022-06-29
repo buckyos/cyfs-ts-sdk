@@ -1,5 +1,5 @@
 import JSBI from "jsbi";
-import { BuckyResult, CYFS_API_LEVEL, CYFS_DEC_ID, CYFS_FLAGS, CYFS_NON_ACTION, CYFS_OBJECT_EXPIRES_TIME, CYFS_OBJECT_ID, CYFS_OBJECT_UPDATE_TIME, CYFS_RESULT, CYFS_TARGET, Err, ObjectId, Ok, Option, None, Some } from "../../cyfs-base"
+import { BuckyResult, CYFS_API_LEVEL, CYFS_DEC_ID, CYFS_FLAGS, CYFS_NON_ACTION, CYFS_OBJECT_EXPIRES_TIME, CYFS_OBJECT_ID, CYFS_OBJECT_UPDATE_TIME, CYFS_RESULT, CYFS_TARGET, Err, ObjectId, Ok, Option, None, Some, Attributes, CYFS_ATTRIBUTES } from "../../cyfs-base"
 import { BaseRequestor, RequestorHelper } from "../base/base_requestor";
 import { HttpRequest } from "../base/http_request";
 import { CYFS_REQUEST_FLAG_DELETE_WITH_QUERY } from "../base/request";
@@ -59,6 +59,32 @@ export class NONRequestorHelper {
     static encode_object_info(req: HttpRequest, info: NONObjectInfo): void {
         req.insert_header(CYFS_OBJECT_ID, info.object_id.to_string());
         req.set_body(info.object_raw);
+    }
+
+    static async decode_get_object_response(
+        resp: Response,
+    ): Promise<BuckyResult<NONGetObjectOutputResponse>> {
+        const r = await NONRequestorHelper.decode_object_info(resp)
+        if (r.err) {
+            console.error(`decode object from resp bytes error: ${r.val}`);
+            return r;
+        }
+
+        const attr = RequestorHelper.decode_optional_header(resp, CYFS_ATTRIBUTES, s => parseInt(s, 10)).unwrap().to(v => new Attributes(v));
+
+        const object_update_time =
+            RequestorHelper.decode_optional_header(resp, CYFS_OBJECT_UPDATE_TIME, (s) => JSBI.BigInt(s)).unwrap();
+        const object_expires_time =
+            RequestorHelper.decode_optional_header(resp, CYFS_OBJECT_EXPIRES_TIME, (s) => JSBI.BigInt(s)).unwrap();
+
+        const ret = {
+            object: r.unwrap(),
+            object_expires_time: object_expires_time.is_some() ? object_expires_time.unwrap() : undefined,
+            object_update_time: object_update_time.is_some() ? object_update_time.unwrap() : undefined,
+            attr: attr.is_some()? attr.unwrap() : undefined,
+        };
+
+        return Ok(ret)
     }
 }
 
@@ -190,30 +216,6 @@ export class NONRequestor {
         return http_req
     }
 
-    async decode_get_object_response(
-        req: NONGetObjectOutputRequest,
-        resp: Response,
-    ): Promise<BuckyResult<NONGetObjectOutputResponse>> {
-        const r = await NONRequestorHelper.decode_object_info(resp)
-        if (r.err) {
-            console.error(`decode object from resp bytes error: obj=${req.object_id} ${r.val}`);
-            return r;
-        }
-
-        const object_update_time =
-            RequestorHelper.decode_optional_header(resp, CYFS_OBJECT_UPDATE_TIME, (s) => JSBI.BigInt(s)).unwrap();
-        const object_expires_time =
-            RequestorHelper.decode_optional_header(resp, CYFS_OBJECT_EXPIRES_TIME, (s) => JSBI.BigInt(s)).unwrap();
-
-        const ret = {
-            object: r.unwrap(),
-            object_expires_time: object_expires_time.is_some() ? object_expires_time.unwrap() : undefined,
-            object_update_time: object_update_time.is_some() ? object_update_time.unwrap() : undefined,
-        };
-
-        return Ok(ret)
-    }
-
     async get_object(
         req: NONGetObjectOutputRequest,
     ): Promise<BuckyResult<NONGetObjectOutputResponse>> {
@@ -227,7 +229,7 @@ export class NONRequestor {
 
         if (resp.status === 200) {
             console.info("get object from non service success:", req.object_id);
-            return await this.decode_get_object_response(req, resp)
+            return await NONRequestorHelper.decode_get_object_response(resp);
         } else {
             const e = await RequestorHelper.error_from_resp(resp);
             console.warn(`get object from non service error! object=${req.object_id},`, e);

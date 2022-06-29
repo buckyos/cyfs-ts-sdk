@@ -31,7 +31,7 @@ export function sign_named_object_body<DC extends DescContent, BC extends BodyCo
     return Ok(private_key.sign(hash.as_slice(), sign_source));
 }
 
-export function sign_and_push_named_object<DC extends DescContent, BC extends BodyContent>(private_key: PrivateKey, obj: NamedObject<DC, BC>, sign_source: SignatureSource): BuckyResult<{}>{
+export function sign_and_push_named_object<DC extends DescContent, BC extends BodyContent>(private_key: PrivateKey, obj: NamedObject<DC, BC>, sign_source: SignatureSource): BuckyResult<void>{
     const desc_r = sign_named_object_desc(private_key, obj, sign_source);
     if (desc_r.err) {
         return desc_r;
@@ -46,10 +46,10 @@ export function sign_and_push_named_object<DC extends DescContent, BC extends Bo
 
         obj.signs().push_body_sign(body_r.unwrap());
     }
-    return Ok({})
+    return Ok(undefined)
 }
 
-export function sign_and_set_named_object<DC extends DescContent, BC extends BodyContent>(private_key: PrivateKey, obj: NamedObject<DC, BC>, sign_source: SignatureSource): BuckyResult<{}>{
+export function sign_and_set_named_object<DC extends DescContent, BC extends BodyContent>(private_key: PrivateKey, obj: NamedObject<DC, BC>, sign_source: SignatureSource): BuckyResult<void>{
     const desc_r = sign_named_object_desc(private_key, obj, sign_source);
     if (desc_r.err) {
         return desc_r;
@@ -64,5 +64,5 @@ export function sign_and_set_named_object<DC extends DescContent, BC extends Bod
 
         obj.signs().reset_body_sign(body_r.unwrap());
     }
-    return Ok({})
+    return Ok(undefined)
 }

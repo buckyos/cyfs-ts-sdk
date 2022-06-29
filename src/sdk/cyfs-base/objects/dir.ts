@@ -729,7 +729,7 @@ export class Dir extends NamedObject<DirDescContent, DirBodyContent>{
     }
 
     // desc content最大支持65535长度，如果超出此长度，需要切换为chunk模式
-    check_and_fix_desc_limit(): BuckyResult<{}> {
+    check_and_fix_desc_limit(): BuckyResult<void> {
         const size_r = this.desc().content().raw_measure();
         if (size_r.err) {
             return size_r;
@@ -737,7 +737,7 @@ export class Dir extends NamedObject<DirDescContent, DirBodyContent>{
         const size = size_r.unwrap();
         if (size > 0xffff) {
             this.desc().content().obj_list().match({
-                ObjList: (list): BuckyResult<{}> => {
+                ObjList: (list): BuckyResult<void> => {
                     const r = to_vec(list);
                     if (r.err) {
                         return r;
@@ -746,7 +746,7 @@ export class Dir extends NamedObject<DirDescContent, DirBodyContent>{
                     const chunk_id = ChunkId.calculate(chunk).unwrap();
 
                     if (this.body().is_some()) {
-                        return this.body_expect().content().match<BuckyResult<{}>>({
+                        return this.body_expect().content().match<BuckyResult<void>>({
                             Chunk: (chunk) => {
                                 // 不支持body的chunk模式
                                 const msg = `fix dir desc limit not support body chunk mode! dir=${this.dir_id()}`
@@ -759,7 +759,7 @@ export class Dir extends NamedObject<DirDescContent, DirBodyContent>{
                                 list.set(chunk_id.calculate_id(), new BuckyBuffer(chunk));
 
                                 this.desc().content().set_obj_list(new NDNObjectInfo({ chunk_id }))
-                                return Ok({})
+                                return Ok(undefined)
                             }
                         })
                     } else {
@@ -777,13 +777,13 @@ export class Dir extends NamedObject<DirDescContent, DirBodyContent>{
                         this.desc().content().set_obj_list(new NDNObjectInfo({ chunk_id }))
                     }
 
-                    return Ok({})
+                    return Ok(undefined)
                 },
-                Chunk: (chunk): BuckyResult<{}> => { return Ok({}) }
+                Chunk: (chunk): BuckyResult<void> => { return Ok(undefined) }
             })
         }
 
-        return Ok({});
+        return Ok(undefined);
     }
 }
 

@@ -13,7 +13,7 @@ import {
     BuckyErrorCode,
     ObjectMapSimpleContentType,
 } from "../../cyfs-base";
-import { JsonCodec } from "../base/codec";
+import { JsonCodec, JsonCodecHelper } from "../base/codec";
 import { NONGetObjectOutputResponse } from "../non/output_request";
 
 import JSBI from "jsbi";
@@ -1177,8 +1177,11 @@ export class RootStateAccessGetObjectByPathOutputRequestJsonCodec extends JsonCo
     }
 }
 
-export type RootStateAccessGetObjectByPathOutputResponse =
-    NONGetObjectOutputResponse;
+export interface RootStateAccessGetObjectByPathOutputResponse {
+    object: NONGetObjectOutputResponse;
+    root: ObjectId;
+    revision: JSBI;
+}
 
 export interface RootStateAccessListOutputRequest {
     common: RootStateOutputRequestCommon;
@@ -1218,4 +1221,48 @@ export class RootStateAccessListOutputRequestJsonCodec extends JsonCodec<RootSta
     }
 }
 
-export type RootStateAccessListOutputResponse = OpEnvNextOutputResponse;
+export interface RootStateAccessListOutputSlimResponse {
+    list: ObjectMapContentItem[];
+}
+
+export interface RootStateAccessListOutputResponse {
+    list: ObjectMapContentItem[];
+    root: ObjectId;
+    revision: JSBI;
+}
+
+export class RootStateAccessListOutputSlimResponseJsonCodec extends JsonCodec<RootStateAccessListOutputSlimResponse> {
+    constructor() {
+        super();
+    }
+
+    encode_object(param: RootStateAccessListOutputSlimResponse): any {
+        throw new Error('not support');
+    }
+
+    decode_object(o: any): BuckyResult<RootStateAccessListOutputSlimResponse> {
+        const ret: RootStateAccessListOutputSlimResponse = {
+            list: [],
+        };
+
+        let list;
+        if (Array.isArray(o)) {
+            list = o;
+        } else {
+            list  = o.result;
+        }
+
+
+        for (const item of list) {
+            console.assert(typeof item === "object");
+
+            const r = new ObjectMapContentItemJsonCodec().decode_object(item);
+            if (r.err) {
+                return r;
+            }
+            ret.list.push(r.unwrap());
+        }
+
+        return Ok(ret);
+    }
+}

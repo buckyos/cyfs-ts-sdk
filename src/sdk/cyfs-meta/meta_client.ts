@@ -769,7 +769,7 @@ export class MetaClient {
         return Ok(tx)
     }
 
-    private sign_tx(tx: Tx, secret: PrivateKey): BuckyResult<{}> {
+    private sign_tx(tx: Tx, secret: PrivateKey): BuckyResult<void> {
         return sign_and_set_named_object(secret, tx, new SignatureRefIndex(0));
     }
 

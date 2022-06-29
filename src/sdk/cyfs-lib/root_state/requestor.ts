@@ -55,6 +55,7 @@ import {
     RootStateAccessGetObjectByPathOutputResponse,
     RootStateAccessListOutputRequest,
     RootStateAccessListOutputResponse,
+    RootStateAccessListOutputSlimResponseJsonCodec,
 } from "./output_request";
 import {
     BuckyResult,
@@ -74,12 +75,14 @@ import {
     Ok,
     BuckyError,
     BuckyErrorCode,
+    CYFS_REVISION,
+    CYFS_ROOT,
 } from "../../cyfs-base";
 import { BaseRequestor, RequestorHelper } from "../base/base_requestor";
 import { HttpRequest } from "../base/http_request";
 import { RootStateAction, ObjectMapOpEnvType, OpEnvAction, GlobalStateCategory } from "./def";
 import { NONGetObjectOutputResponse } from '../non/output_request';
-import { NONRequestorHelper } from "../non/requestor";
+import { NONRequestor, NONRequestorHelper } from "../non/requestor";
 import JSBI from "jsbi";
 
 export class GlobalStateRequestor {
@@ -1085,25 +1088,34 @@ export class GlobalStateAccessRequestor {
 
     private async decode_get_object_response(
         resp: Response
-    ): Promise<BuckyResult<NONGetObjectOutputResponse>> {
-        const r = await NONRequestorHelper.decode_object_info(resp)
+    ): Promise<BuckyResult<RootStateAccessGetObjectByPathOutputResponse>> {
+        const r = await NONRequestorHelper.decode_get_object_response(resp)
         if (r.err) {
             console.error(`decode object from resp bytes error: ${r.val}`);
             return r;
         }
 
-        const object_update_time =
-            RequestorHelper.decode_optional_header(resp, CYFS_OBJECT_UPDATE_TIME, (s) => JSBI.BigInt(s)).unwrap();
-        const object_expires_time =
-            RequestorHelper.decode_optional_header(resp, CYFS_OBJECT_EXPIRES_TIME, (s) => JSBI.BigInt(s)).unwrap();
+        const object = r.unwrap();
 
-        const ret = {
-            object: r.unwrap(),
-            object_expires_time: object_expires_time.is_some() ? object_expires_time.unwrap() : undefined,
-            object_update_time: object_update_time.is_some() ? object_update_time.unwrap() : undefined,
+        const root = RequestorHelper.decode_header(resp, CYFS_ROOT, s => ObjectId.from_base_58(s).unwrap());
+        if (root.err) {
+            console.error(`decode list resp root header error`, root);
+            return root;
+        }
+
+        const revision = RequestorHelper.decode_header(resp, CYFS_REVISION, s => JSBI.BigInt(s));
+        if (revision.err) {
+            console.error(`decode list resp root header error`, revision);
+            return revision;
+        }
+
+        const response = {
+            object,
+            root: root.unwrap(),
+            revision: revision.unwrap(),
         };
 
-        return Ok(ret)
+        return Ok(response)
     }
 
     private encode_list_request(
@@ -1138,15 +1150,34 @@ export class GlobalStateAccessRequestor {
 
         const resp = r.unwrap();
         if (resp.status === 200) {
-            const result = new OpEnvNextOutputResponseJsonCodec().decode_object(
+            const result = new RootStateAccessListOutputSlimResponseJsonCodec().decode_object(
                 await resp.json()
             );
             if (result.err) {
-                console.error(`decode list resp error`);
+                console.error(`decode list resp error`, result);
                 return result;
             }
-            const response: RootStateAccessListOutputResponse = result.unwrap();
-            console.info(`list  success`);
+            const slim_resp = result.unwrap();
+
+            const root = RequestorHelper.decode_header(resp, CYFS_ROOT, s => ObjectId.from_base_58(s).unwrap());
+            if (root.err) {
+                console.error(`decode list resp root header error`, root);
+                return root;
+            }
+
+            const revision = RequestorHelper.decode_header(resp, CYFS_REVISION, s => JSBI.BigInt(s));
+            if (revision.err) {
+                console.error(`decode list resp root header error`, revision);
+                return revision;
+            }
+
+            const response: RootStateAccessListOutputResponse = {
+                list: slim_resp.list,
+                root: root.unwrap(),
+                revision: revision.unwrap(),
+            };
+
+            console.info(`list  success`, JSON.stringify(response));
 
             return Ok(response);
         } else {

@@ -42,6 +42,8 @@ export const CYFS_FLAGS = "cyfs-flags";
 export const CYFS_TARGET = "cyfs-target";
 export const CYFS_REFERER_OBJECT = "cyfs-referer-object";
 export const CYFS_FILTER_FLAGS = "cyfs-filter-flags";
+export const CYFS_REVISION = "cyfs-revision";
+export const CYFS_ROOT = "cyfs-root";
 
 export const CYFS_TIMEOUT = "cyfs-timeout";
 

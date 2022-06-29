@@ -286,7 +286,7 @@ export class AppLocalStatus extends NamedObject<AppLocalStatusDesc, EmptyProtobu
         return builder.owner(owner).no_create_time().build(AppLocalStatus);
     }
 
-    static get_path(id: DecAppId) {
+    static get_path(id: DecAppId): string {
         return `/app/${id.to_base_58()}/local_status`;
     }
 
