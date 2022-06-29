@@ -459,6 +459,10 @@ async function cd(cur_path: string, dst_path: string, target_id: ObjectId, stack
         console_orig.error(`stat path ${new_path} err ${ret.val}`)
         return cur_path
     }
+    if (dec_id === undefined && new_path !== "/")  {
+        console_orig.error(`${new_path} not existed folder!`);
+        return cur_path
+    }
     if (ret.unwrap().object.object_id.obj_type_code() === ObjectTypeCode.ObjectMap) {
         return new_path
     } else {
@@ -529,12 +533,32 @@ async function rm(cur_path:string, dst_path:string, target_id: ObjectId, stack: 
         console_orig.error(`rm: cannot remove '${sub_path}': Is a root path`);
         return;
     }
+
+    let object_id;
+    let is_dir = false;
+    if (delete_object || !recursive_delete) {
+        const cyfs_link = make_r_link(target_id, new_path);
+        const ret = await dump_object(stack, cyfs_link, true);
+        if (ret) {
+            object_id = ObjectId.from_base_58(ret["desc"]["object_id"]).unwrap();
+            if (ret["desc"]["object_type"] === 14) {
+                is_dir = true;
+            }
+        }
+    }
+
+    if (delete_object) {
+        if (object_id) {
+            const del_ret = await del(object_id, target_id, stack);
+            console_orig.log(`delete object: ${object_id} on target: ${target_id}, del_ret: ${del_ret}`);
+        }
+
+    }
+
     // 正确实现rm，不加-r参数，只能删除空ObjectMap。
     if (!recursive_delete) {
         let flags = true;
-        const cyfs_link = make_r_link(target_id, new_path);
-        const obj = await dump_object(stack, cyfs_link, true);
-        if (obj["desc"]["object_type"] === 14) {
+        if (is_dir) {
             const list_ret = await list(new_path, target_id, stack, 0, 10);
             if (list_ret.unwrap().length > 0) {
                 flags = false;
@@ -560,20 +584,6 @@ async function rm(cur_path:string, dst_path:string, target_id: ObjectId, stack: 
         console_orig.error("commit obj to root state err", r1.val);
         return;
     }
-
-    if (delete_object) {
-        const cyfs_link = make_r_link(target_id, new_path);
-        const ret = await dump_object(stack, cyfs_link, true);
-        if (ret) {
-            const object_id = ObjectId.from_base_58(ret["desc"]["object_id"]).unwrap();
-            const del_ret = await del(object_id, target_id, stack);
-            console_orig.log(`delete object: ${object_id}, del_ret: ${del_ret}`);
-        }
-
-    }
-
-    // console_orig.log(`new_path: ${new_path}, delete_object: ${delete_object}, recursive_delete: ${recursive_delete}`);
-
 }
 
 
