@@ -535,12 +535,14 @@ async function rm(cur_path:string, dst_path:string, target_id: ObjectId, stack: 
     }
 
     let object_id;
+    let owner_id;
     let is_dir = false;
     if (delete_object || !recursive_delete) {
         const cyfs_link = make_r_link(target_id, new_path);
         const ret = await dump_object(stack, cyfs_link, true);
         if (ret) {
             object_id = ObjectId.from_base_58(ret["desc"]["object_id"]).unwrap();
+            owner_id = ObjectId.from_base_58(ret["desc"]["owner"]).unwrap();
             if (ret["desc"]["object_type"] === 14) {
                 is_dir = true;
             }
@@ -549,8 +551,8 @@ async function rm(cur_path:string, dst_path:string, target_id: ObjectId, stack: 
 
     if (delete_object) {
         if (object_id) {
-            const del_ret = await del(object_id, target_id, stack);
-            console_orig.log(`delete object: ${object_id} on target: ${target_id}, del_ret: ${del_ret}`);
+            const del_ret = await del(object_id, owner_id, stack);
+            console_orig.log(`delete object: ${object_id} on target: ${owner_id}, del_ret: ${del_ret}`);
         }
 
     }
