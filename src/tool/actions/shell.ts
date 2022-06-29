@@ -239,6 +239,10 @@ function make_r_link(target_id: ObjectId, full_path: string):string {
     return `cyfs://r/${target_id}${full_path}`;
 }
 
+function show_table_sep() {
+    console_orig.log('-'.repeat(process.stdout.columns))
+}
+
 async function get_dec_name(dec_id: string, stack: SharedCyfsStack): Promise<string | undefined> {
     if (dec_name_cache.has(dec_id)) {
         return dec_name_cache.get(dec_id)
@@ -258,7 +262,7 @@ async function get_dec_name(dec_id: string, stack: SharedCyfsStack): Promise<str
     if (ret_result.err) {
         dec_name_cache.set(dec_id, undefined)
         return;
-    } else {
+    } else{
         const app_ret = new DecAppDecoder().from_raw(ret_result.unwrap().object.object_raw)
         if (app_ret.err) {
             return;
@@ -269,21 +273,13 @@ async function get_dec_name(dec_id: string, stack: SharedCyfsStack): Promise<str
     }
 }
 
-const ansi_color_pattern = [
-    '[\\u001B\\u009B][[\\]()#;?]*(?:(?:(?:(?:;[-a-zA-Z\\d\\/#&.:=?%@~_]+)*|[a-zA-Z\\d]+(?:;[-a-zA-Z\\d\\/#&.:=?%@~_]*)*)?\\u0007)',
-    '(?:(?:\\d{1,4}(?:;\\d{0,4})*)?[\\dA-PR-TZcf-nq-uy=><~]))'
-].join('|');
-const ansi_color_regexp = new RegExp(ansi_color_pattern, 'g')
-
-
 async function decorate_decid(old_path: string|undefined, stack: SharedCyfsStack): Promise<string> {
     if (!old_path) {
         return '-'
     }
     const parts = old_path.split(path.sep)
     for (let i = 0; i < parts.length; i++) {
-        const uncolor_text = parts[i].split(ansi_color_regexp).join("");
-        const name = await get_dec_name(uncolor_text, stack);
+        const name = await get_dec_name(parts[i], stack);
         if (name) {
             parts[i] += `(${name})`
         }
@@ -367,8 +363,7 @@ async function ls(cur_path: string, dst_path: string|undefined, target_id: Objec
                 object_data.push(object.owner_info)
             }
             
-            // const show_key_str = show_key(object.object_type!, await decorate_decid(object.key, stack))
-            const show_key_str = await decorate_decid(show_key(object.object_type!, object.key), stack)
+            const show_key_str = show_key(object.object_type!, await decorate_decid(object.key, stack))
             object_data.push(object.create_time, object.object_id,show_key_str)
 
             table_data.push(object_data)
@@ -381,8 +376,7 @@ async function ls(cur_path: string, dst_path: string|undefined, target_id: Objec
         const table_data: any[] = [];
         const table_head = ["ObjectId", "path"]
         for (const object of objects) {
-            const key = await decorate_decid(show_key(object.object_id.obj_type_code(), object.key), stack)
-            table_data.push([object.object_id, key])
+            table_data.push([object.object_id, show_key(object.object_id.obj_type_code(), await decorate_decid(object.key, stack))])
             //const show_key_str = show_key(object.object_id.obj_type_code(), await decorate_decid(object.key, stack))
             //console_orig.log(`${object.object_id.to_base_58()}\t\t${show_key_str}`);
         }

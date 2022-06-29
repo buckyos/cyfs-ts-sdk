@@ -16,7 +16,7 @@ export function makeCommand(config: CyfsToolConfig): Command {
         .description("get any file or dir from ood/runtime")
         .argument("<link>", "get dir object raw data")
         .requiredOption("-e, --endpoint <endpoint>", "cyfs endpoint, ood or runtime", "runtime")
-        .requiredOption("-s, --save <save_path>", "save dir obj to path, mut be absolute path!!!", ".")
+        .requiredOption("-s, --save <save_path>", "save dir obj to path, default current path", ".")
         .action(async (olink, options) => {
             console.log("options:", options)
             const [stack, writable] = await create_stack(options.endpoint, config, default_dec_id)
@@ -157,8 +157,8 @@ async function download_files(stack: SharedCyfsStack, options: any, files, file_
             link = makeRLink(file_target_id, dec_id, file[0]);
         }
 
-        const [new_url_str, headers, uri] = convert_cyfs_url(link, stack, false, true)
-
+        const [new_url_str, headers, uri] = convert_cyfs_url(link, stack, false, true);
+        console.log(`convert cyfs url: ${link} to non url: ${new_url_str}`);
         const response  = await fetch(new_url_str, {headers});
         if (!response.ok) {
             console.error(`response error code ${response.status}, msg ${response.statusText}`)
@@ -179,7 +179,6 @@ export async function run(link: string, options:any, stack: SharedCyfsStack, tar
     if (link.indexOf("cyfs://") != -1) {      
         // 把cyfs链接参照runtime的proxy.rs逻辑，转换成non的标准协议，直接用http请求
         const [new_url_str, headers, uri] = convert_cyfs_url(link, stack, true, false)
-        console.log(`uri: ${uri}`);
 
         relative_root = uri;
         const response  = await fetch(new_url_str, {headers});
@@ -188,7 +187,6 @@ export async function run(link: string, options:any, stack: SharedCyfsStack, tar
             return;
         }
         const ret = await response.json();
-        console.log(`ret: `, ret);
         obj_id = ret["desc"]["object_id"];
         target = ret["desc"]["owner"];
 

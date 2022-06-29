@@ -1,6 +1,6 @@
 \- [CYFS-SHELL use](#CYFS-SHELL use)
 
- \- [ls: list all subnodes in this directory](#ls: list all subnodes in this directory)
+ \- [ls: list all subnodes in this directory](#ls:list all subnodes in this directory)
 
  \- [cd: enter the child node, if the child node is not ObjectMap, prompt an error, and stay in the current directory](#cd: enter the child node, if the child node is not ObjectMap, prompt an error, and stay in the current directory)
 
@@ -50,14 +50,6 @@ upload_map
 5hLXAcQGjS1hJc88U11Zcwdrk7ZtzSosNmyxzq3jcUdj:/upload_map>
 5hLXAcQGjS1hJc88U11Zcwdrk7ZtzSosNmyxzq3jcUdj:/upload_map> ls
     7Tk94YfDPuqBCa79XbPueY1jSNKvMYf9EMrCeDQuzhGu
-    7Tk94YfKMto76KnMiHgEaHmwvTiJoD3oFYWCZyjS593s
-    7Tk94YfLK3iiknAEvTNW9ePq86k4rqxMZQDKLtd4fEQG
-    7Tk94Yfh8erNaNg6znzLy55AVUjeMZ7QMhRiAKwD6hWn
-    95RvaS5A9zWvmKru4R9DrniTHh1LmSBEjRfRXJF1idgQ
-    95RvaS5EM2obVY2WqSydffGyfkcQcTjXLmWfP1T5snHH
-    95RvaS5Mcmpu47AxStqTAySTNdHDpgXwhRmncUBUFg2L
-    95RvaS5PaMhCTuCz8PqbnCbH3MM4SX66oFBQS1X9ST4p
-    95RvaS5Sh1yctNKag456ffZTq6aMF3TCCYZp3kdP6SNf
     95RvaS5VNyrAgtt9am5tHKbfKaFVtVx6j2xuoZxinbBF
     95RvaS5VwsmAfinJGjKMs28bbzHFr6V4VU9wjvjRmX8p
     95RvaS5frxqyKW6BH6dmNAqadhgtQeg2Lwbn4pdNaQYA
