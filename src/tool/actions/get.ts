@@ -222,7 +222,7 @@ export async function run(link: string, options:any, stack: SharedCyfsStack, tar
 
         if (is_dir) {
             // 遍历对象，下载整个对象树到本地
-            const files = await download_obj(stack, link, target_id, undefined, "/upload_map/"+obj_id, options);
+            const files = await download_obj(stack, link, target_id, undefined, obj_id, options);
             if (files === undefined) {
                 console.log("search not found files");
                 return;
