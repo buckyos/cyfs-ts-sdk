@@ -19,11 +19,11 @@ function test_zone() {
   );
   console.assert(
     zone.ood_list()[0].to_base_58() ===
-      "5aSixgPXvhR4puWzFCHqvUXrjFWjxbq4y3thJVgZg6ty"
+    "5aSixgPXvhR4puWzFCHqvUXrjFWjxbq4y3thJVgZg6ty"
   );
   console.assert(
     zone.known_device_list()[0].to_base_58() ===
-      "5aSixgPXvhR4puWzFCHqvUXrjFWjxbq4y3thJVgZg6ty"
+    "5aSixgPXvhR4puWzFCHqvUXrjFWjxbq4y3thJVgZg6ty"
   );
 
   // 测试下签名
@@ -149,58 +149,7 @@ async function _getObj<T>(
 }
 
 async function test_app_local_status_ex() {
-  const sharedStatck = cyfs.SharedCyfsStack.open_runtime();
-  await sharedStatck.wait_online(cyfs.None);
-  const router: cyfs.NONRequestor = sharedStatck.non_service();
 
-  const owner = cyfs.ObjectId.from_base_58(
-    "5r4MYfF8FpNABnYjNyPh3Egmx68CTUaZxnreJJBkiboU"
-  ).unwrap();
-  const dec_app_id = cyfs.DecApp.generate_id(owner, "20220106-test");
-  console.assert(
-    dec_app_id.to_base_58() === "9tGpLNnRDgGPWTYLJNAhkSsky9bJ7w5vHHDu5xa9Tzog"
-  );
-  const dec_id = cyfs.DecAppId.try_from_object_id(dec_app_id.clone()).unwrap();
-  const id: cyfs.ObjectId = cyfs.AppLocalStatus.generate_id(owner, dec_id);
-  console.info(`app_local_status_ex_id: ${id}`);
-
-  {
-    const r = await _getObj(router, id, cyfs.AppLocalStatusDecoder.create());
-    if (r.err) {
-      console.log("get object failed");
-      return;
-    }
-    const local_status_ex = r.unwrap();
-    const status = local_status_ex.status();
-    console.log(`dec_app_id=${dec_app_id}, status=${status}`);
-    const version = local_status_ex.version();
-    if (version) {
-      console.log(`dec_app_id=${dec_app_id}, current app version=${version}`);
-    }
-    const web_dir = local_status_ex.webdir();
-    if (web_dir) {
-      console.log(
-        `dec_app_id=${dec_app_id}, status=${status}, web_dir=${web_dir}`
-      );
-    }
-    const permissions = local_status_ex.permissions();
-    for (const [key, value] of permissions.entries()) {
-      console.log(
-        `permission=${key}, reason=${value.reason}, state=${value.state}`
-      );
-    }
-    const unhandled_permissions = local_status_ex.permission_unhandled();
-    if (unhandled_permissions.size > 0) {
-      console.log(
-        `current app dec_app_id=${dec_app_id} has ${unhandled_permissions.size} permissions not handled`
-      );
-      for (const [key, value] of unhandled_permissions.entries()) {
-        console.log(
-          `permission=${key}, reason=${value.reason}, state=${value.state}`
-        );
-      }
-    }
-  }
 }
 
 async function _putObj(
