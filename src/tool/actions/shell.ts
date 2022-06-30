@@ -66,6 +66,10 @@ async function select_target(): Promise<ObjectId> {
     return resp["target"].object_id;
 }
 
+const alias_cmds = {
+    "ll": "ls -l"
+}
+
 async function runPrompt(target_id: ObjectId, cur_path: string, stack: SharedCyfsStack): Promise<string[]> {
     const availableCommands = [
         {
@@ -98,9 +102,18 @@ async function runPrompt(target_id: ObjectId, cur_path: string, stack: SharedCyf
         }
     ]);
 
+    // 增加alias功能
+    let cmd: string = answer.cmd
+    for (const key in alias_cmds) {
+        if (cmd.indexOf(key) === 0) {
+            cmd = cmd.replace(key, alias_cmds[key])
+            break
+        }
+    }
+
     // 这里要处理复杂的如文件名空格
     const regex = /"([^"]*)"|(\S+)/g;
-    const arr = (answer.cmd.match(regex) || []).map((m: string) => m.replace(regex, '$1$2'));
+    const arr = (cmd.match(regex) || []).map((m: string) => m.replace(regex, '$1$2'));
     const args = arr.filter((el: string | null) => {
         return el != null && el != '';
     });
@@ -134,6 +147,11 @@ async function run(options: any, default_stack: SharedCyfsStack): Promise<void> 
     // 创建一个Commander实例，名称就用shell先
     const shell_prog = new Command('shell');
     shell_prog
+        .addCommand(new Command('alias').description('show all command aliases').action(() => {
+            for (const key in alias_cmds) {
+                console_orig.log(`alias ${key}='${alias_cmds[key]}'`)
+            }
+        }).exitOverride())
         .addCommand(new Command('ls').description('list objects in current root state path')
         .argument('[path]')
         .option('-d, --decid', "list objects dec_id", false)
@@ -145,16 +163,6 @@ async function run(options: any, default_stack: SharedCyfsStack): Promise<void> 
             // 由于command类没有考虑到多次parse不同命令行，再次用没有参数的命令行parse时，不会清除上一次有参数时的结果，这里我们手动清除所有参数
             // 增加参数时，需要在这里手工清除这个参数
             actionCommand.setOptionValue('list', false)
-            actionCommand.setOptionValue('owner', false)
-            actionCommand.setOptionValue('decid', false)
-        }))
-        .addCommand(new Command('ll').description('alias for ls -l')
-        .argument('[path]')
-        .option('-d, --decid', "list objects dec_id", false)
-        .option('-o, --owner', "list objects owner", false)
-        .action(async (dst_path, options) => {
-            await ls(current_path, dst_path, target_id, default_stack, true, options.decid, options.owner)
-        }).exitOverride().hook("postAction", (thisCommand, actionCommand) => {
             actionCommand.setOptionValue('owner', false)
             actionCommand.setOptionValue('decid', false)
         }))
