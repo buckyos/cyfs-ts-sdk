@@ -148,6 +148,16 @@ async function run(options: any, default_stack: SharedCyfsStack): Promise<void> 
             actionCommand.setOptionValue('owner', false)
             actionCommand.setOptionValue('decid', false)
         }))
+        .addCommand(new Command('ll').description('alias for ls -l')
+        .argument('[path]')
+        .option('-d, --decid', "list objects dec_id", false)
+        .option('-o, --owner', "list objects owner", false)
+        .action(async (dst_path, options) => {
+            await ls(current_path, dst_path, target_id, default_stack, true, options.decid, options.owner)
+        }).exitOverride().hook("postAction", (thisCommand, actionCommand) => {
+            actionCommand.setOptionValue('owner', false)
+            actionCommand.setOptionValue('decid', false)
+        }))
         .addCommand(new Command('cd').description('change current root state path').argument('<dest path>').action(async (dest_path, options) => {
             // cd切换路径，检查路径是否存在。如果不存在，报错。返回current_path，如果存在，返回新路径
             current_path = await cd(current_path, dest_path, target_id, default_stack)
@@ -321,6 +331,7 @@ function show_table(table_head: string[], table_data: string[][]) {
         drawHorizontalLine: (line) => line === 1
     }))
 }
+import {clearLine, cursorTo} from 'readline'
 
 // ls先不提供分页功能，全部取回再全部显示。以后可能支持分页。分页行为仿照less命令
 async function ls(cur_path: string, dst_path: string|undefined, target_id: ObjectId, stack: SharedCyfsStack, show_detail: boolean, show_dec_id: boolean, show_owner: boolean) {
@@ -344,9 +355,20 @@ async function ls(cur_path: string, dst_path: string|undefined, target_id: Objec
         page_index++;
     }
 
+    process.stdout.write(colors('grey', 'Collecting Object Infos...'))
+    const console_warn = console.warn;
+    console.warn = (...data: any[]) => {
+        clearLine(process.stdout, 0)
+        cursorTo(process.stdout, 0, undefined)
+        console_warn(data)
+        process.stdout.write(colors('grey', 'Collecting Object Infos...'))
+    }
+
     //如果要显示详细信息，在这里再取详细信息
+    let table_head: string[] = [];
+    const table_data: any[] = []
     if (show_detail) {
-        const table_head = ["ObjectType"]
+        table_head = ["ObjectType"]
         //表头|ObjectTyp|DecId|Owner|CreateTime|ObjectId|Key
         await object_detail(stack, target_id, objects);
         if (show_dec_id) {
@@ -356,7 +378,6 @@ async function ls(cur_path: string, dst_path: string|undefined, target_id: Objec
             table_head.push('Owner')
         }
         table_head.push("CreateTime", "ObjectId", "path")
-        const table_data: any[] = []
         for (const object of objects) {
             const object_data:any[] = [];
             object_data.push(show_obj_type(object.object_type!))
@@ -373,23 +394,22 @@ async function ls(cur_path: string, dst_path: string|undefined, target_id: Objec
 
             table_data.push(object_data)
         }
-
-        show_table(table_head, table_data)
-
     } else {
         // 通用显示,现在只显示path -> objectid信息
-        const table_data: any[] = [];
-        const table_head = ["ObjectId", "path"]
+        table_head = ["ObjectId", "path"]
         for (const object of objects) {
             const key = await decorate_decid(show_key(object.object_id.obj_type_code(), object.key), stack)
             table_data.push([object.object_id, key])
             //const show_key_str = show_key(object.object_id.obj_type_code(), await decorate_decid(object.key, stack))
             //console_orig.log(`${object.object_id.to_base_58()}\t\t${show_key_str}`);
         }
-
-        show_table(table_head, table_data)
     }
+    clearLine(process.stdout, 0)
+    cursorTo(process.stdout, 0, undefined)
 
+    console.warn = console_warn;
+
+    show_table(table_head, table_data)
 }
 
 async function object_detail(stack: SharedCyfsStack, target: ObjectId, objects: ObjectInfo[]): Promise<void> {
