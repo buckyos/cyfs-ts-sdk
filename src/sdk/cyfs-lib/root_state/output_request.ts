@@ -3,6 +3,7 @@ import {
     ObjectMapOpEnvType,
     RootStateRootType,
     ObjectMapContentMode,
+    OpEnvCommitOpType,
 } from "./def";
 import {
     ObjectId,
@@ -229,6 +230,34 @@ export class OpEnvOutputRequestCommonJsonCodec extends JsonCodec<OpEnvOutputRequ
     }
 }
 
+export interface OpEnvNoParamOutputRequest {
+    common: OpEnvOutputRequestCommon;
+}
+
+export class OpEnvNoParamOutputRequestJsonCodec extends JsonCodec<OpEnvNoParamOutputRequest> {
+    constructor() {
+        super();
+    }
+    encode_object(param: OpEnvNoParamOutputRequest): any {
+        return {
+            common: new OpEnvOutputRequestCommonJsonCodec().encode_object(
+                param.common
+            ),
+        };
+    }
+
+    decode_object(o: any): BuckyResult<OpEnvNoParamOutputRequest> {
+        const common = new OpEnvOutputRequestCommonJsonCodec().decode_object(
+            o.common
+        );
+        if (common.err) {
+            return common;
+        }
+
+        return Ok({ common: common.unwrap() });
+    }
+}
+
 // load
 export interface OpEnvLoadOutputRequest {
     common: OpEnvOutputRequestCommon;
@@ -380,9 +409,10 @@ export class OpEnvLockOutputRequestJsonCodec extends JsonCodec<OpEnvLockOutputRe
     }
 }
 
-// commoit
+// commit
 export interface OpEnvCommitOutputRequest {
     common: OpEnvOutputRequestCommon;
+    op_type?: OpEnvCommitOpType,
 }
 
 export class OpEnvCommitOutputRequestJsonCodec extends JsonCodec<OpEnvCommitOutputRequest> {
@@ -394,6 +424,7 @@ export class OpEnvCommitOutputRequestJsonCodec extends JsonCodec<OpEnvCommitOutp
             common: new OpEnvOutputRequestCommonJsonCodec().encode_object(
                 param.common
             ),
+            op_type: param.op_type,
         };
     }
 
@@ -405,7 +436,7 @@ export class OpEnvCommitOutputRequestJsonCodec extends JsonCodec<OpEnvCommitOutp
             return common;
         }
 
-        return Ok({ common: common.unwrap() });
+        return Ok({ common: common.unwrap(), op_type: o.op_type? o.op_type as OpEnvCommitOpType : undefined });
     }
 }
 
@@ -444,34 +475,19 @@ export class OpEnvCommitOutputResponseJsonCodec extends JsonCodec<OpEnvCommitOut
     }
 }
 
+
 // abort
-export interface OpEnvAbortOutputRequest {
-    common: OpEnvOutputRequestCommon;
-}
 
-export class OpEnvAbortOutputRequestJsonCodec extends JsonCodec<OpEnvAbortOutputRequest> {
-    constructor() {
-        super();
-    }
-    encode_object(param: OpEnvAbortOutputRequest): any {
-        return {
-            common: new OpEnvOutputRequestCommonJsonCodec().encode_object(
-                param.common
-            ),
-        };
-    }
+export interface OpEnvAbortOutputRequest extends OpEnvNoParamOutputRequest {}
+export class OpEnvAbortOutputRequestJsonCodec extends OpEnvNoParamOutputRequestJsonCodec {}
 
-    decode_object(o: any): BuckyResult<OpEnvAbortOutputRequest> {
-        const common = new OpEnvOutputRequestCommonJsonCodec().decode_object(
-            o.common
-        );
-        if (common.err) {
-            return common;
-        }
 
-        return Ok({ common: common.unwrap() });
-    }
-}
+// get_current_root
+export interface OpEnvGetCurrentRootOutputRequest extends OpEnvNoParamOutputRequest {}
+export class OpEnvGetCurrentRootOutputRequestJsonCodec extends OpEnvNoParamOutputRequestJsonCodec {}
+
+export interface OpEnvGetCurrentRootOutputResponse extends OpEnvCommitOutputResponse {}
+export class OpEnvGetCurrentRootOutputResponseJsonCodec extends OpEnvCommitOutputResponseJsonCodec {}
 
 // metadata
 export interface OpEnvMetadataOutputRequest {
@@ -1145,6 +1161,10 @@ export class OpEnvNextOutputResponseJsonCodec extends JsonCodec<OpEnvNextOutputR
         return Ok({ list });
     }
 }
+
+// reset
+export interface OpEnvResetOutputRequest extends OpEnvNoParamOutputRequest {}
+export class OpEnvResetOutputRequestJsonCodec extends OpEnvNoParamOutputRequestJsonCodec {}
 
 export interface RootStateAccessGetObjectByPathOutputRequest {
     common: RootStateOutputRequestCommon;

@@ -36,8 +36,12 @@ export enum OpEnvAction {
     // metadata
     Metadata = "metadata",
 
+    // get_current_root
+    GetCurrentRoot = "get-current-root",
+
     // interator
     Next = "next",
+    Reset = "reset",
 }
 
 export enum ObjectMapOpEnvType {
@@ -70,4 +74,9 @@ export interface ObjectMapMetaData {
 export enum GlobalStateAccessMode {
     Read = "read",
     Write = "write",
+}
+
+export enum OpEnvCommitOpType {
+    Commit = "commit",
+    Update = "update",
 }

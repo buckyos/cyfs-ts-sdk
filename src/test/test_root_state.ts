@@ -57,6 +57,9 @@ async function test_root_state_impl(
             ).unwrap();
             await path_op_env.remove_with_path("/a/b");
 
+            const root_info = (await path_op_env.get_current_root()).unwrap();
+            console.log(`current root: ${JSON.stringify(root_info)}`);
+
             const r = await path_op_env.get_by_path("/a/b");
             if (r.err) {
                 console.log(`get_by_path a/b failed,  err = ${r}`);
@@ -74,6 +77,13 @@ async function test_root_state_impl(
                 console.log(`insert_with_key err = ${r1}`);
             } else {
                 console.log(`insert_with_key object_id = ${X1} success`);
+            }
+
+            {
+                const new_root = (await path_op_env.update()).unwrap();
+                console.log(`new root: ${JSON.stringify(new_root)}`);
+                console.assert(new_root.root !== root_info.root);
+                console.assert(new_root.revision !== root_info.revision);
             }
 
             const r2 = await path_op_env.get_by_path("/a/b/c");

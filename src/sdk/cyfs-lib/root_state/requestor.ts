@@ -56,6 +56,11 @@ import {
     RootStateAccessListOutputRequest,
     RootStateAccessListOutputResponse,
     RootStateAccessListOutputSlimResponseJsonCodec,
+    OpEnvGetCurrentRootOutputRequest,
+    OpEnvGetCurrentRootOutputResponse,
+    OpEnvGetCurrentRootOutputResponseJsonCodec,
+    OpEnvGetCurrentRootOutputRequestJsonCodec,
+    OpEnvResetOutputRequest,
 } from "./output_request";
 import {
     BuckyResult,
@@ -492,6 +497,50 @@ export class OpEnvRequestor {
         http_req.set_string_body(
             new OpEnvLockOutputRequestJsonCodec().encode_string(req)
         );
+
+        return http_req;
+    }
+
+    // get_current_root
+    public async get_current_root(
+        req: OpEnvGetCurrentRootOutputRequest
+    ): Promise<BuckyResult<OpEnvGetCurrentRootOutputResponse>> {
+        console.info(`will get_current_root for op_env: sid=${this.sid_}`);
+
+        const http_req = this.encode_get_current_root_request(req);
+        const r = await this.requestor_.request(http_req);
+        if (r.err) {
+            console.error(`get_current_root for op_env request failed! sid=${this.sid_}, ret=${r}`);
+            return r;
+        }
+
+        const resp = r.unwrap();
+        if (resp.status === 200) {
+            const result = new OpEnvGetCurrentRootOutputResponseJsonCodec().decode_object(
+                await resp.json()
+            );
+            if (result.err) {
+                console.error(`decode get_current_root for op_env resp error: sid=${this.sid_}, ret=${result}`);
+                return result;
+            }
+
+            const response: OpEnvGetCurrentRootOutputResponse = result.unwrap();
+            console.log(`get_current_root for op_env success: sid=${this.sid_}, resp=${JSON.stringify(response)}`);
+
+            return Ok(response);
+        } else {
+            const e = await RequestorHelper.error_from_resp(resp);
+            console.error(`get_current_root for op_env failed: sid=${this.sid_}, err=${e}`);
+
+            return Err(e);
+        }
+    }
+
+    private encode_get_current_root_request(req: OpEnvGetCurrentRootOutputRequest): HttpRequest {
+        const url = this.service_url_.concat("root");
+
+        const http_req = new HttpRequest("Get", url);
+        this.encode_common_headers(OpEnvAction.GetCurrentRoot, req.common, http_req);
 
         return http_req;
     }
@@ -999,6 +1048,40 @@ export class OpEnvRequestor {
         http_req.set_string_body(
             new OpEnvNextOutputRequestJsonCodec().encode_string(req)
         );
+
+        return http_req;
+    }
+
+    // reset
+    public async reset(
+        req: OpEnvResetOutputRequest
+    ): Promise<BuckyResult<void>> {
+        console.info(`will reset, sid=${this.sid_}`);
+
+        const http_req = this.encode_reset_request(req);
+        const r = await this.requestor_.request(http_req);
+        if (r.err) {
+            console.error(`reset request failed, sid=${this.sid_}`);
+            return r;
+        }
+
+        const resp = r.unwrap();
+        if (resp.status === 200) {
+            console.info(`reset success, sid=${this.sid_}`);
+
+            return Ok(undefined);
+        } else {
+            const e = await RequestorHelper.error_from_resp(resp);
+            console.error(`reset failed, sid=${this.sid_}, err=${e}`);
+            return Err(e);
+        }
+    }
+
+    private encode_reset_request(req: OpEnvResetOutputRequest): HttpRequest {
+        const url = this.service_url_.concat("iterator");
+
+        const http_req = new HttpRequest("Delete", url);
+        this.encode_common_headers(OpEnvAction.Reset, req.common, http_req);
 
         return http_req;
     }

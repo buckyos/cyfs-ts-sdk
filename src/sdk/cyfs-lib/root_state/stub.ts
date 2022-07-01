@@ -21,12 +21,15 @@ import {
     OpEnvMetadataOutputRequest,
     RootStateAccessGetObjectByPathOutputRequest,
     RootStateAccessListOutputRequest,
+    OpEnvGetCurrentRootOutputRequest,
+    OpEnvResetOutputRequest,
 } from "./output_request";
 import { NONGetObjectOutputResponse } from '../non/output_request';
 import {
     RootStateRootType,
     ObjectMapOpEnvType,
     ObjectMapMetaData,
+    OpEnvCommitOpType,
 } from "./def";
 
 import JSBI from "jsbi";
@@ -372,7 +375,50 @@ export class SingleOpEnvStub {
         return Ok(resp.result);
     }
 
+    // get_current_root
+    public async get_current_root(): Promise<BuckyResult<ObjectId>> {
+        const req: OpEnvGetCurrentRootOutputRequest = {
+            common: {
+                flags: 0,
+                target: this.target_,
+                dec_id: this.dec_id_,
+                sid: this.sid_,
+            },
+        };
+        const r = await this.requestor_.get_current_root(req);
+        if (r.err) {
+            return r;
+        }
+        const resp = r.unwrap();
+
+        return Ok(resp.root);
+    }
+
     // transcation
+    public async update(): Promise<BuckyResult<DecRootInfo>> {
+        const req: OpEnvCommitOutputRequest = {
+            common: {
+                flags: 0,
+                target: this.target_,
+                dec_id: this.dec_id_,
+                sid: this.sid_,
+            },
+            op_type: OpEnvCommitOpType.Update,
+        };
+        const r = await this.requestor_.commit(req);
+        if (r.err) {
+            return r;
+        }
+        const resp = r.unwrap();
+        const info: DecRootInfo = {
+            root: resp.root,
+            revision: resp.revision,
+            dec_root: resp.dec_root,
+        };
+
+        return Ok(info);
+    }
+
     public async commit(): Promise<BuckyResult<DecRootInfo>> {
         const req: OpEnvCommitOutputRequest = {
             common: {
@@ -431,6 +477,24 @@ export class SingleOpEnvStub {
         }
 
         return Ok(r.unwrap().list);
+    }
+
+    public async reset(
+    ): Promise<BuckyResult<void>> {
+        const req: OpEnvResetOutputRequest = {
+            common: {
+                flags: 0,
+                target: this.target_,
+                dec_id: this.dec_id_,
+                sid: this.sid_,
+            },
+        };
+        const r = await this.requestor_.reset(req);
+        if (r.err) {
+            return r;
+        }
+
+        return Ok(r.unwrap());
     }
 
     // metadata
@@ -833,7 +897,57 @@ export class PathOpEnvStub {
         return Ok(resp.unwrap().result);
     }
 
+    // get_current_root
+    public async get_current_root(): Promise<BuckyResult<DecRootInfo>> {
+        const req: OpEnvGetCurrentRootOutputRequest = {
+            common: {
+                flags: 0,
+                target: this.target_,
+                dec_id: this.dec_id_,
+                sid: this.sid_,
+            },
+        };
+        const r = await this.requestor_.get_current_root(req);
+        if (r.err) {
+            return r;
+        }
+        const resp = r.unwrap();
+
+        const info: DecRootInfo = {
+            root: resp.root,
+            revision: resp.revision,
+            dec_root: resp.dec_root,
+        };
+
+        return Ok(info);
+    }
+
     // transcation
+    public async update(): Promise<BuckyResult<DecRootInfo>> {
+        const req: OpEnvCommitOutputRequest = {
+            common: {
+                flags: 0,
+                target: this.target_,
+                dec_id: this.dec_id_,
+                sid: this.sid_,
+            },
+            op_type: OpEnvCommitOpType.Update,
+        };
+        const r = await this.requestor_.commit(req);
+        if (r.err) {
+            return r;
+        }
+        const resp = r.unwrap();
+
+        const info: DecRootInfo = {
+            root: resp.root,
+            revision: resp.revision,
+            dec_root: resp.dec_root,
+        };
+
+        return Ok(info);
+    }
+
     public async commit(): Promise<BuckyResult<DecRootInfo>> {
         const req: OpEnvCommitOutputRequest = {
             common: {
