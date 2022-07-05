@@ -185,7 +185,6 @@ async function run(options: any, default_stack: SharedCyfsStack): Promise<void> 
         }).exitOverride().hook("postAction", (thisCommand, actionCommand) => {
             // 由于command类没有考虑到多次parse不同命令行，再次用没有参数的命令行parse时，不会清除上一次有参数时的结果，这里我们手动清除所有参数
             // 增加参数时，需要在这里手工清除这个参数
-
             actionCommand.setOptionValue('save', undefined)
         }))
         .addCommand(new Command('target').description('change shell`s target').action(async () => {
@@ -510,8 +509,8 @@ async function cat(cur_path: string, dst_path: string, target_id: ObjectId, stac
 }
 
 async function dump(cur_path: string, dst_path: string, target_id: ObjectId, stack: SharedCyfsStack, local_path: string): Promise<void> {
-    if (local_path === undefined) {
-        local_path = "./";
+    if (local_path === "." || local_path === undefined) {
+        local_path = path.normalize(path.join(process.cwd(), "."));
     }
     const new_path = path.resolve(cur_path, dst_path)
     // cyfs://r/5r4MYfFMPYJr5UqgAh2XcM4kdui5TZrhdssWpQ7XCp2y/95RvaS5gwV5SFnT38UXXNuujFBE3Pk8QQDrKVGdcncB4
