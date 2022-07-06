@@ -1,6 +1,9 @@
 import { Argument, Command } from "commander";
 
-import { ObjectId, SharedCyfsStack, ObjectMapSimpleContentType, ObjectTypeCode, BuckyResult, Ok, clog, get_system_dec_app, DecAppDecoder, bucky_time_2_js_time, number_2_obj_type_code_name, OBJECT_TYPE_CORE_START, OBJECT_TYPE_CORE_END, number_2_core_object_name } from "../../sdk";
+import { ObjectId, SharedCyfsStack, ObjectMapSimpleContentType, ObjectTypeCode, 
+    BuckyResult, Ok, clog, get_system_dec_app, DecAppDecoder, bucky_time_2_js_time, number_2_obj_type_code_name, 
+    OBJECT_TYPE_CORE_START, OBJECT_TYPE_CORE_END, number_2_core_object_name, 
+    DeviceId, NONAPILevel, DeviceDecoder } from "../../sdk";
 import { create_stack, CyfsToolConfig, formatDate, getObject, stop_runtime } from "../lib/util";
 import { dump_object } from './dump';
 import {run as get_run} from './get';
@@ -19,8 +22,27 @@ const colors = require('colors-console')
 let local_device_index = 0;
 const device_list: any[] = [];
 const dec_name_cache = new Map<string, string|undefined>();
+const device_name_cache = new Map<string, string>();
 
 const console_orig = (console as any).origin;
+
+async function device_info(stack: SharedCyfsStack, device: DeviceId): Promise<string|undefined> {
+    const ret = await stack.non_service().get_object({
+        common: {level: NONAPILevel.Router, flags: 0},
+        object_id: device.object_id
+    })
+
+    if (ret.err) {
+        return;
+    }
+
+    const object_ret = new DeviceDecoder().from_raw(ret.unwrap().object.object_raw);
+    if (object_ret.err) {
+        return;
+    }
+
+    return object_ret.unwrap().name();
+}
 
 async function perpare_device_list(stack: SharedCyfsStack) {
     const local_id = stack.local_device_id();
@@ -31,11 +53,23 @@ async function perpare_device_list(stack: SharedCyfsStack) {
     })).unwrap()
     device_list.push(new inquirer.Separator("------OOD-----"))
     for (const device of zone.zone.ood_list()) {
-        device_list.push({ name: device.to_base_58(), value: device })
+        const info = await device_info(stack, device);
+        let name = device.to_base_58();
+        if (info) {
+            name = name + `(${info})`
+        }
+        device_name_cache.set(device.to_base_58(), name)
+        device_list.push({ name, value: device })
     }
     device_list.push(new inquirer.Separator("------Device-----"))
     for (const device of zone.zone.known_device_list()) {
-        device_list.push({ name: device.to_base_58(), value: device })
+        const info = await device_info(stack, device);
+        let name = device.to_base_58();
+        if (info) {
+            name = name + `(${info})`
+        }
+        device_name_cache.set(device.to_base_58(), name)
+        device_list.push({ name, value: device })
     }
 
     for (const item of device_list) {
@@ -87,7 +121,7 @@ async function runPrompt(target_id: ObjectId, cur_path: string, stack: SharedCyf
             type: 'command',
             name: 'cmd',
             autoCompletion: availableCommands,
-            message: `${target_id}:${friendly_path}`,
+            message: `${device_name_cache.get(target_id.to_base_58())}:${friendly_path}`,
             context: 0,
             prefix: "",
             suffix: ">",
