@@ -1,6 +1,6 @@
 import { Command } from "commander";
 import path from "path";
-import { NDNAPILevel, NONAPILevel, ObjectId, ObjectTypeCode, SharedCyfsStack, TransTaskState, ObjectMapSimpleContentType } from "../../sdk";
+import { NDNAPILevel, NONAPILevel, ObjectId, ObjectTypeCode, SharedCyfsStack, TransTaskState, ObjectMapSimpleContentType, PathOpEnvStub } from "../../sdk";
 import { create_stack, CyfsToolConfig, get_final_owner, stop_runtime } from "../lib/util";
 import * as fs from 'fs-extra';
 
@@ -123,7 +123,7 @@ async function run(upload_path: string, options:any, stack: SharedCyfsStack) {
         return
     }
     if (!path.isAbsolute(upload_path)) {
-        upload_path = path.join(process.cwd(), upload_path);
+        upload_path = path.resolve(process.cwd(), upload_path);
     }
 
     const chunk_size = 1024*8   // 这里单位是kB，默认是8MB
