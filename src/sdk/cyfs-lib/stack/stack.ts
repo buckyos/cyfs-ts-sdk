@@ -27,6 +27,7 @@ import { CryptoRequestor } from "../crypto/requestor";
 import { GlobalStateRequestor, GlobalStateAccessRequestor } from "../root_state/requestor"
 import { GlobalStateStub, GlobalStateAccessStub } from "../root_state/stub"
 import { GlobalStateCategory } from '../root_state/def';
+import { SyncRequestor } from "../sync/requestor";
 
 
 export enum CyfsStackEventType {
@@ -47,6 +48,7 @@ export interface CyfsStackRequestorConfig {
     crypto_service: CyfsStackRequestorType,
     root_state: CyfsStackRequestorType,
     local_cache: CyfsStackRequestorType,
+    sync_service: CyfsStackRequestorType,
 }
 
 
@@ -72,6 +74,7 @@ export class SharedCyfsStackParam {
             crypto_service: CyfsStackRequestorType.Http,
             root_state: CyfsStackRequestorType.Http,
             local_cache: CyfsStackRequestorType.Http,
+            sync_service: CyfsStackRequestorType.Http,
         }
     }
 
@@ -84,6 +87,7 @@ export class SharedCyfsStackParam {
             crypto_service: CyfsStackRequestorType.WebSocket,
             root_state: CyfsStackRequestorType.WebSocket,
             local_cache: CyfsStackRequestorType.WebSocket,
+            sync_service: CyfsStackRequestorType.WebSocket,
         }
     }
 
@@ -186,6 +190,8 @@ export class SharedCyfsStack {
     // router handlers事件处理器
     private m_router_handlers: RouterHandlerManager;
 
+    private m_sync_service: SyncRequestor;
+
     // 当前协议栈的device
     private m_device_id?: DeviceId;
     private m_device?: Device;
@@ -209,6 +215,8 @@ export class SharedCyfsStack {
         this.m_local_cache_access = GlobalStateAccessRequestor.new_local_cache_access(SharedCyfsStack.select_requestor(param, param.requestor_config!.local_cache), this.dec_id);
 
         this.m_router_handlers = new RouterHandlerManager(CyfsStackEventType.WebSocket, ws_url, this.dec_id);
+
+        this.m_sync_service = new SyncRequestor(SharedCyfsStack.select_requestor(param, param.requestor_config!.sync_service), this.dec_id);
     }
 
     private static select_requestor(param: SharedCyfsStackParam, requestor_type: CyfsStackRequestorType,): BaseRequestor {
@@ -320,6 +328,10 @@ export class SharedCyfsStack {
 
     trans(): TransRequestor {
         return this.m_trans_service;
+    }
+
+    sync(): SyncRequestor {
+        return this.m_sync_service;
     }
 
     router_handlers(): RouterHandlerManager {
