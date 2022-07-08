@@ -544,7 +544,7 @@ async function cat(cur_path: string, dst_path: string, target_id: ObjectId, stac
 
 async function dump(cur_path: string, dst_path: string, target_id: ObjectId, stack: SharedCyfsStack, local_path: string): Promise<void> {
     if (local_path === "." || local_path === undefined) {
-        local_path = path.normalize(path.join(process.cwd(), "."));
+        local_path = path.join(process.cwd(), ".");
     }
     const new_path = path.resolve(cur_path, dst_path)
     // cyfs://r/5r4MYfFMPYJr5UqgAh2XcM4kdui5TZrhdssWpQ7XCp2y/95RvaS5gwV5SFnT38UXXNuujFBE3Pk8QQDrKVGdcncB4
@@ -552,13 +552,17 @@ async function dump(cur_path: string, dst_path: string, target_id: ObjectId, sta
     const ret = await dump_object(stack, cyfs_link, false);
     if (ret) {
         const [obj_raw, obj_id] = (ret as [Uint8Array, ObjectId]);
-        let file_path = `${obj_id.to_base_58()}.obj`;
+        const file_name = `${obj_id.to_base_58()}.obj`;
         if (!fs.existsSync(local_path)) {
             console_orig.error(`save path not existed: ${local_path}`);
             console_orig.log('object hex:', obj_raw.toHex())
             return;
         }
-        file_path = path.join(local_path, file_path);
+        
+        let file_path = path.join(local_path, file_name);
+        if (process.platform === 'win32') {
+            file_path = `${local_path}\\${file_name}`;
+        }
 
         fs.writeFileSync(file_path, obj_raw);
         console_orig.log(`dump object to ${file_path}`);
