@@ -29,14 +29,14 @@ export class AdminDescTypeInfo extends DescTypeInfo {
     }
 }
 
-const Admin_DESC_TYPE_INFO = new AdminDescTypeInfo();
+export const Admin_DESC_TYPE_INFO = new AdminDescTypeInfo();
 
-enum AdminCommandCode {
+export enum AdminCommandCode {
     GlobalStateAccessMode = 0
 }
 
-class AdminGlobalStateAccessModeData {
-    constructor(public category:GlobalStateCategory, public access_mode: GlobalStateAccessMode){}
+export class AdminGlobalStateAccessModeData {
+    constructor(public category: GlobalStateCategory, public access_mode: GlobalStateAccessMode) { }
 
     try_to_proto(): BuckyResult<protos.AdminGlobalStateAccessModeData> {
         const target = new protos.AdminGlobalStateAccessModeData();
@@ -80,8 +80,8 @@ class AdminGlobalStateAccessModeData {
     }
 }
 
-class AdminCommand {
-    constructor(public code: AdminCommandCode, public global_state_access_mode_data?:AdminGlobalStateAccessModeData){}
+export class AdminCommand {
+    constructor(public code: AdminCommandCode, public global_state_access_mode_data?: AdminGlobalStateAccessModeData) { }
 }
 
 export class AdminDescContent extends ProtobufDescContent {
