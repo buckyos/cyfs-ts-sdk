@@ -3,52 +3,119 @@
 
 import * as jspb from "google-protobuf";
 
-export class PerfTimeRange extends jspb.Message {
-  getBegin(): string;
-  setBegin(value: string): void;
+export class SizeResult extends jspb.Message {
+  getTotal(): string;
+  setTotal(value: string): void;
 
-  getEnd(): string;
-  setEnd(value: string): void;
+  getAvg(): string;
+  setAvg(value: string): void;
+
+  getMin(): string;
+  setMin(value: string): void;
+
+  getMax(): string;
+  setMax(value: string): void;
 
   serializeBinary(): Uint8Array;
-  toObject(includeInstance?: boolean): PerfTimeRange.AsObject;
-  static toObject(includeInstance: boolean, msg: PerfTimeRange): PerfTimeRange.AsObject;
+  toObject(includeInstance?: boolean): SizeResult.AsObject;
+  static toObject(includeInstance: boolean, msg: SizeResult): SizeResult.AsObject;
   static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
   static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
-  static serializeBinaryToWriter(message: PerfTimeRange, writer: jspb.BinaryWriter): void;
-  static deserializeBinary(bytes: Uint8Array): PerfTimeRange;
-  static deserializeBinaryFromReader(message: PerfTimeRange, reader: jspb.BinaryReader): PerfTimeRange;
+  static serializeBinaryToWriter(message: SizeResult, writer: jspb.BinaryWriter): void;
+  static deserializeBinary(bytes: Uint8Array): SizeResult;
+  static deserializeBinaryFromReader(message: SizeResult, reader: jspb.BinaryReader): SizeResult;
 }
 
-export namespace PerfTimeRange {
+export namespace SizeResult {
   export type AsObject = {
-    begin: string,
-    end: string,
+    total: string,
+    avg: string,
+    min: string,
+    max: string,
+  }
+}
+
+export class TimeResult extends jspb.Message {
+  getTotal(): number;
+  setTotal(value: number): void;
+
+  getAvg(): number;
+  setAvg(value: number): void;
+
+  getMin(): number;
+  setMin(value: number): void;
+
+  getMax(): number;
+  setMax(value: number): void;
+
+  serializeBinary(): Uint8Array;
+  toObject(includeInstance?: boolean): TimeResult.AsObject;
+  static toObject(includeInstance: boolean, msg: TimeResult): TimeResult.AsObject;
+  static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+  static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+  static serializeBinaryToWriter(message: TimeResult, writer: jspb.BinaryWriter): void;
+  static deserializeBinary(bytes: Uint8Array): TimeResult;
+  static deserializeBinaryFromReader(message: TimeResult, reader: jspb.BinaryReader): TimeResult;
+}
+
+export namespace TimeResult {
+  export type AsObject = {
+    total: number,
+    avg: number,
+    min: number,
+    max: number,
+  }
+}
+
+export class SpeedResult extends jspb.Message {
+  getAvg(): number;
+  setAvg(value: number): void;
+
+  getMin(): number;
+  setMin(value: number): void;
+
+  getMax(): number;
+  setMax(value: number): void;
+
+  serializeBinary(): Uint8Array;
+  toObject(includeInstance?: boolean): SpeedResult.AsObject;
+  static toObject(includeInstance: boolean, msg: SpeedResult): SpeedResult.AsObject;
+  static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+  static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+  static serializeBinaryToWriter(message: SpeedResult, writer: jspb.BinaryWriter): void;
+  static deserializeBinary(bytes: Uint8Array): SpeedResult;
+  static deserializeBinaryFromReader(message: SpeedResult, reader: jspb.BinaryReader): SpeedResult;
+}
+
+export namespace SpeedResult {
+  export type AsObject = {
+    avg: number,
+    min: number,
+    max: number,
   }
 }
 
 export class PerfRequest extends jspb.Message {
-  getId(): string;
-  setId(value: string): void;
+  hasTime(): boolean;
+  clearTime(): void;
+  getTime(): TimeResult | undefined;
+  setTime(value?: TimeResult): void;
 
-  hasTimeRange(): boolean;
-  clearTimeRange(): void;
-  getTimeRange(): PerfTimeRange | undefined;
-  setTimeRange(value?: PerfTimeRange): void;
+  hasSpeed(): boolean;
+  clearSpeed(): void;
+  getSpeed(): SpeedResult | undefined;
+  setSpeed(value?: SpeedResult): void;
 
-  getTotal(): number;
-  setTotal(value: number): void;
+  hasSize(): boolean;
+  clearSize(): void;
+  getSize(): SizeResult | undefined;
+  setSize(value?: SizeResult): void;
 
   getSuccess(): number;
   setSuccess(value: number): void;
 
-  getTotalTime(): string;
-  setTotalTime(value: string): void;
-
-  hasTotalSize(): boolean;
-  clearTotalSize(): void;
-  getTotalSize(): string;
-  setTotalSize(value: string): void;
+  getFailed(): number;
+  setFailed(value: number): void;
 
   serializeBinary(): Uint8Array;
   toObject(includeInstance?: boolean): PerfRequest.AsObject;
@@ -62,34 +129,25 @@ export class PerfRequest extends jspb.Message {
 
 export namespace PerfRequest {
   export type AsObject = {
-    id: string,
-    timeRange?: PerfTimeRange.AsObject,
-    total: number,
+    time?: TimeResult.AsObject,
+    speed?: SpeedResult.AsObject,
+    size?: SizeResult.AsObject,
     success: number,
-    totalTime: string,
-    totalSize: string,
+    failed: number,
   }
 }
 
 export class PerfAccumulation extends jspb.Message {
-  getId(): string;
-  setId(value: string): void;
-
-  hasTimeRange(): boolean;
-  clearTimeRange(): void;
-  getTimeRange(): PerfTimeRange | undefined;
-  setTimeRange(value?: PerfTimeRange): void;
-
-  getTotal(): number;
-  setTotal(value: number): void;
+  hasSize(): boolean;
+  clearSize(): void;
+  getSize(): SizeResult | undefined;
+  setSize(value?: SizeResult): void;
 
   getSuccess(): number;
   setSuccess(value: number): void;
 
-  hasTotalSize(): boolean;
-  clearTotalSize(): void;
-  getTotalSize(): string;
-  setTotalSize(value: string): void;
+  getFailed(): number;
+  setFailed(value: number): void;
 
   serializeBinary(): Uint8Array;
   toObject(includeInstance?: boolean): PerfAccumulation.AsObject;
@@ -103,21 +161,41 @@ export class PerfAccumulation extends jspb.Message {
 
 export namespace PerfAccumulation {
   export type AsObject = {
-    id: string,
-    timeRange?: PerfTimeRange.AsObject,
-    total: number,
+    size?: SizeResult.AsObject,
     success: number,
-    totalSize: string,
+    failed: number,
+  }
+}
+
+export class PerfAction extends jspb.Message {
+  getErr(): number;
+  setErr(value: number): void;
+
+  getKey(): string;
+  setKey(value: string): void;
+
+  getValue(): string;
+  setValue(value: string): void;
+
+  serializeBinary(): Uint8Array;
+  toObject(includeInstance?: boolean): PerfAction.AsObject;
+  static toObject(includeInstance: boolean, msg: PerfAction): PerfAction.AsObject;
+  static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+  static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+  static serializeBinaryToWriter(message: PerfAction, writer: jspb.BinaryWriter): void;
+  static deserializeBinary(bytes: Uint8Array): PerfAction;
+  static deserializeBinaryFromReader(message: PerfAction, reader: jspb.BinaryReader): PerfAction;
+}
+
+export namespace PerfAction {
+  export type AsObject = {
+    err: number,
+    key: string,
+    value: string,
   }
 }
 
 export class PerfRecord extends jspb.Message {
-  getId(): string;
-  setId(value: string): void;
-
-  getTime(): string;
-  setTime(value: string): void;
-
   getTotal(): string;
   setTotal(value: string): void;
 
@@ -138,152 +216,8 @@ export class PerfRecord extends jspb.Message {
 
 export namespace PerfRecord {
   export type AsObject = {
-    id: string,
-    time: string,
     total: string,
     totalSize: string,
-  }
-}
-
-export class PerfAction extends jspb.Message {
-  getId(): string;
-  setId(value: string): void;
-
-  getTime(): string;
-  setTime(value: string): void;
-
-  getErr(): number;
-  setErr(value: number): void;
-
-  getName(): string;
-  setName(value: string): void;
-
-  getValue(): string;
-  setValue(value: string): void;
-
-  serializeBinary(): Uint8Array;
-  toObject(includeInstance?: boolean): PerfAction.AsObject;
-  static toObject(includeInstance: boolean, msg: PerfAction): PerfAction.AsObject;
-  static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
-  static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
-  static serializeBinaryToWriter(message: PerfAction, writer: jspb.BinaryWriter): void;
-  static deserializeBinary(bytes: Uint8Array): PerfAction;
-  static deserializeBinaryFromReader(message: PerfAction, reader: jspb.BinaryReader): PerfAction;
-}
-
-export namespace PerfAction {
-  export type AsObject = {
-    id: string,
-    time: string,
-    err: number,
-    name: string,
-    value: string,
-  }
-}
-
-export class PerfIsolateEntity extends jspb.Message {
-  getId(): string;
-  setId(value: string): void;
-
-  hasTimeRange(): boolean;
-  clearTimeRange(): void;
-  getTimeRange(): PerfTimeRange | undefined;
-  setTimeRange(value?: PerfTimeRange): void;
-
-  clearActionsList(): void;
-  getActionsList(): Array<PerfAction>;
-  setActionsList(value: Array<PerfAction>): void;
-  addActions(value?: PerfAction, index?: number): PerfAction;
-
-  getRecordsMap(): jspb.Map<string, PerfRecord>;
-  clearRecordsMap(): void;
-  getAccumulationsMap(): jspb.Map<string, PerfAccumulation>;
-  clearAccumulationsMap(): void;
-  getReqsMap(): jspb.Map<string, PerfRequest>;
-  clearReqsMap(): void;
-  serializeBinary(): Uint8Array;
-  toObject(includeInstance?: boolean): PerfIsolateEntity.AsObject;
-  static toObject(includeInstance: boolean, msg: PerfIsolateEntity): PerfIsolateEntity.AsObject;
-  static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
-  static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
-  static serializeBinaryToWriter(message: PerfIsolateEntity, writer: jspb.BinaryWriter): void;
-  static deserializeBinary(bytes: Uint8Array): PerfIsolateEntity;
-  static deserializeBinaryFromReader(message: PerfIsolateEntity, reader: jspb.BinaryReader): PerfIsolateEntity;
-}
-
-export namespace PerfIsolateEntity {
-  export type AsObject = {
-    id: string,
-    timeRange?: PerfTimeRange.AsObject,
-    actionsList: Array<PerfAction.AsObject>,
-    recordsMap: Array<[string, PerfRecord.AsObject]>,
-    accumulationsMap: Array<[string, PerfAccumulation.AsObject]>,
-    reqsMap: Array<[string, PerfRequest.AsObject]>,
-  }
-}
-
-export class PerfDescContent extends jspb.Message {
-  getDevice(): Uint8Array | string;
-  getDevice_asU8(): Uint8Array;
-  getDevice_asB64(): string;
-  setDevice(value: Uint8Array | string): void;
-
-  getPeople(): Uint8Array | string;
-  getPeople_asU8(): Uint8Array;
-  getPeople_asB64(): string;
-  setPeople(value: Uint8Array | string): void;
-
-  getId(): string;
-  setId(value: string): void;
-
-  getVersion(): string;
-  setVersion(value: string): void;
-
-  getHash(): string;
-  setHash(value: string): void;
-
-  serializeBinary(): Uint8Array;
-  toObject(includeInstance?: boolean): PerfDescContent.AsObject;
-  static toObject(includeInstance: boolean, msg: PerfDescContent): PerfDescContent.AsObject;
-  static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
-  static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
-  static serializeBinaryToWriter(message: PerfDescContent, writer: jspb.BinaryWriter): void;
-  static deserializeBinary(bytes: Uint8Array): PerfDescContent;
-  static deserializeBinaryFromReader(message: PerfDescContent, reader: jspb.BinaryReader): PerfDescContent;
-}
-
-export namespace PerfDescContent {
-  export type AsObject = {
-    device: Uint8Array | string,
-    people: Uint8Array | string,
-    id: string,
-    version: string,
-    hash: string,
-  }
-}
-
-export class PerfBodyContent extends jspb.Message {
-  hasTimeRange(): boolean;
-  clearTimeRange(): void;
-  getTimeRange(): PerfTimeRange | undefined;
-  setTimeRange(value?: PerfTimeRange): void;
-
-  getAllMap(): jspb.Map<string, PerfIsolateEntity>;
-  clearAllMap(): void;
-  serializeBinary(): Uint8Array;
-  toObject(includeInstance?: boolean): PerfBodyContent.AsObject;
-  static toObject(includeInstance: boolean, msg: PerfBodyContent): PerfBodyContent.AsObject;
-  static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
-  static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
-  static serializeBinaryToWriter(message: PerfBodyContent, writer: jspb.BinaryWriter): void;
-  static deserializeBinary(bytes: Uint8Array): PerfBodyContent;
-  static deserializeBinaryFromReader(message: PerfBodyContent, reader: jspb.BinaryReader): PerfBodyContent;
-}
-
-export namespace PerfBodyContent {
-  export type AsObject = {
-    timeRange?: PerfTimeRange.AsObject,
-    allMap: Array<[string, PerfIsolateEntity.AsObject]>,
   }
 }
 
