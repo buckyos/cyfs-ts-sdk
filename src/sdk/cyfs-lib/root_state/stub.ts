@@ -23,6 +23,7 @@ import {
     RootStateAccessListOutputRequest,
     OpEnvGetCurrentRootOutputRequest,
     OpEnvResetOutputRequest,
+    OpEnvListOutputRequest,
 } from "./output_request";
 import { NONGetObjectOutputResponse } from '../non/output_request';
 import {
@@ -219,9 +220,7 @@ export class SingleOpEnvStub {
     }
 
     // map methods
-    public async get_by_key(
-        key: string
-    ): Promise<BuckyResult<ObjectId | undefined>> {
+    public async get_by_key(key: string): Promise<BuckyResult<ObjectId | undefined>> {
         const req: OpEnvGetByKeyOutputRequest = {
             common: {
                 flags: 0,
@@ -395,7 +394,7 @@ export class SingleOpEnvStub {
     }
 
     // transcation
-    public async update(): Promise<BuckyResult<DecRootInfo>> {
+    public async update(): Promise<BuckyResult<ObjectId>> {
         const req: OpEnvCommitOutputRequest = {
             common: {
                 flags: 0,
@@ -416,7 +415,7 @@ export class SingleOpEnvStub {
             dec_root: resp.dec_root,
         };
 
-        return Ok(info);
+        return Ok(info.dec_root);
     }
 
     public async commit(): Promise<BuckyResult<DecRootInfo>> {
@@ -459,9 +458,7 @@ export class SingleOpEnvStub {
     }
 
     // iterator
-    public async next(
-        step: number
-    ): Promise<BuckyResult<ObjectMapContentItem[]>> {
+    public async next(step: number): Promise<BuckyResult<ObjectMapContentItem[]>> {
         const req: OpEnvNextOutputRequest = {
             common: {
                 flags: 0,
@@ -479,8 +476,7 @@ export class SingleOpEnvStub {
         return Ok(r.unwrap().list);
     }
 
-    public async reset(
-    ): Promise<BuckyResult<void>> {
+    public async reset(): Promise<BuckyResult<void>> {
         const req: OpEnvResetOutputRequest = {
             common: {
                 flags: 0,
@@ -495,6 +491,25 @@ export class SingleOpEnvStub {
         }
 
         return Ok(r.unwrap());
+    }
+
+    // list
+    public async list(): Promise<BuckyResult<ObjectMapContentItem[]>> {
+        const req: OpEnvListOutputRequest = {
+            common: {
+                dec_id: this.dec_id_,
+                target: this.target_,
+                flags: 0,
+                sid: JSBI.BigInt(0)
+            }
+        }
+
+        const r = await this.requestor_.list(req)
+        if (r.err) {
+            return r;
+        }
+
+        return Ok(r.unwrap().list)
     }
 
     // metadata
@@ -987,6 +1002,26 @@ export class PathOpEnvStub {
         }
 
         return Ok(undefined);
+    }
+
+    // list
+    public async list(path: string): Promise<BuckyResult<ObjectMapContentItem[]>> {
+        const req: OpEnvListOutputRequest = {
+            common: {
+                dec_id: this.dec_id_,
+                target: this.target_,
+                flags: 0,
+                sid: JSBI.BigInt(0)
+            },
+            path
+        }
+
+        const r = await this.requestor_.list(req)
+        if (r.err) {
+            return r;
+        }
+
+        return Ok(r.unwrap().list)
     }
 
     // metadata

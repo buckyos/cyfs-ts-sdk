@@ -42,6 +42,7 @@ export enum OpEnvAction {
     // interator
     Next = "next",
     Reset = "reset",
+    List = "list",
 }
 
 export enum ObjectMapOpEnvType {

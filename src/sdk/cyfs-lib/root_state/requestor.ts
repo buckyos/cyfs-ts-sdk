@@ -61,6 +61,9 @@ import {
     OpEnvGetCurrentRootOutputResponseJsonCodec,
     OpEnvGetCurrentRootOutputRequestJsonCodec,
     OpEnvResetOutputRequest,
+    OpEnvListOutputRequest,
+    OpEnvListOutputResponse,
+    OpEnvListOutputResponseJsonCodec,
 } from "./output_request";
 import {
     BuckyResult,
@@ -1053,9 +1056,7 @@ export class OpEnvRequestor {
     }
 
     // reset
-    public async reset(
-        req: OpEnvResetOutputRequest
-    ): Promise<BuckyResult<void>> {
+    public async reset(req: OpEnvResetOutputRequest): Promise<BuckyResult<void>> {
         console.info(`will reset, sid=${this.sid_}`);
 
         const http_req = this.encode_reset_request(req);
@@ -1084,6 +1085,47 @@ export class OpEnvRequestor {
         this.encode_common_headers(OpEnvAction.Reset, req.common, http_req);
 
         return http_req;
+    }
+
+    // list
+    private encode_list_request(req: OpEnvListOutputRequest): HttpRequest {
+        const url = this.service_url_.concat("list");
+        const http_req = new HttpRequest("Get", url);
+
+        this.encode_common_headers(OpEnvAction.List, req.common, http_req);
+        if (req.path) {
+            http_req.insert_header(CYFS_OP_ENV_PATH, encodeURI(req.path!));
+        }
+
+        return http_req
+    }
+
+    public async list(req: OpEnvListOutputRequest): Promise<BuckyResult<OpEnvListOutputResponse>> {
+        const http_req = this.encode_list_request(req);
+        const r = await this.requestor_.request(http_req);
+        if (r.err) {
+            console.error(`list request failed, sid=${this.sid_}`);
+            return r;
+        }
+
+        const resp = r.unwrap();
+        if (resp.status === 200) {
+            const result = new OpEnvListOutputResponseJsonCodec().decode_object(
+                await resp.json()
+            );
+            if (result.err) {
+                console.error(`decode next resp failed, sid=${this.sid_}, ret=${result}`);
+                return result;
+            }
+            const response: OpEnvListOutputResponse = result.unwrap();
+            console.info(`list for op_env success, sid=${this.sid_}, count=${response.list.length}`);
+
+            return Ok(response);
+        } else {
+            const e = await RequestorHelper.error_from_resp(resp);
+            console.error(`list for op_env error, sid=${this.sid_}, err=${e}`);
+            return Err(e);
+        }
     }
 }
 

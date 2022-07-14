@@ -1162,6 +1162,17 @@ export class OpEnvNextOutputResponseJsonCodec extends JsonCodec<OpEnvNextOutputR
     }
 }
 
+// list
+export interface OpEnvListOutputRequest {
+    common: OpEnvOutputRequestCommon,
+
+    // for path-env
+    path?: string,
+}
+
+export type OpEnvListOutputResponse = OpEnvNextOutputResponse;
+export class OpEnvListOutputResponseJsonCodec extends OpEnvNextOutputResponseJsonCodec {}
+
 // reset
 export interface OpEnvResetOutputRequest extends OpEnvNoParamOutputRequest {}
 export class OpEnvResetOutputRequestJsonCodec extends OpEnvNoParamOutputRequestJsonCodec {}
