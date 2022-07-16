@@ -2,26 +2,16 @@
 <header>
     <title>Perf Test</title>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <script type="text/javascript" src="js/jquery.js"></script>
-    <script type="text/javascript" src="js/jquery.cookie.js"></script>
 </header>
 <body>
-<p id="tj" style="border: 2px solid fuchsia;">
-<p id="tj1" style="border: 2px solid fuchsia;">
-</p>
-
-<script>
-    $('#tj').html(localStorage.getItem("perf_req_" + 'bdt'));
-    $('#tj1').html(localStorage.getItem("perf_req_" + 'dsg'));
-</script>
 </body>
-<script src="../cyfs/cyfs.js"></script>
+<script src="./cyfs.js"></script>
 <script>
 
     class PerfManager {
 
          constructor() {
-            this.m_sharedStatck = cyfs.SharedObjectStack.open_runtime();
+            this.m_sharedStatck = cyfs.SharedCyfsStack.open_runtime();
             //let param = cyfs.SharedObjectStackParam.new_with_ws_event_ports(21000, 210001).unwrap();
             //this.m_sharedStatck = cyfs.SharedObjectStack.open(param);
 
@@ -31,63 +21,34 @@
             // nightly cyfs-perf-service   5aSixgM3QNdxLzBVoAtsKiucZhwPwAgrprvp5XhEHdoq
             // beta cyfs-perf-service   5aSixgM3QNdxLzBVoAtsKiucZhwPwAgrprvp5XhEHdoq
             
-            this.target = cyfs.ObjectId.from_base_58("5aSixgM3QNdxLzBVoAtsKiucZhwPwAgrprvp5XhEHdoq").unwrap();
-            this.dec_id = cyfs.DecAppId.from_base_58("9tGpLNnhNgsRvthUBfmpHjk4ezYhZAyxKCmhDgyRT6MF").unwrap();
+            // this.target = cyfs.ObjectId.from_base_58("5aSixgM3QNdxLzBVoAtsKiucZhwPwAgrprvp5XhEHdoq").unwrap();
+            this.dec_id = cyfs.ObjectId.from_base_58("9tGpLNnhNgsRvthUBfmpHjk4ezYhZAyxKCmhDgyRT6MF").unwrap();
 
-        }
-
-        async init() {
-            (await this.m_sharedStatck.online()).unwrap();
-        }
-
-        async dumpInfo(){
-            // Util 接口测试
-            let current_device_static_info = await this.m_util.get_device_static_info();
-            console.log('current_device_static_info:', current_device_static_info);
-
-            let ood_status = await this.m_util.get_ood_status();
-            console.log('ood_status:', ood_status);
-
-            let noc_stat = await this.m_util.get_noc_stat();
-            console.log('noc_stat:', noc_stat);
-
-            let network_access_info = await this.m_util.get_network_access_info();
-            console.log('get_network_access_info:', network_access_info);
-
-            let [device_id, device] = (await this.m_util.get_current_device()).unwrap();
-            let owner = device.desc().owner().unwrap();
-            console.log("address_info: ", owner);
         }
 
         async perf_example() {
-            // 获取PerfClient 对象 一个bdt isolate
-            let client = await cyfs.PerfClient.create(this.m_sharedStatck, this.target, this.dec_id,  "1.0.0", "test-perf-h5-wz");
-            client.start();
+            (await this.m_sharedStatck.online()).unwrap();
 
-            let perfIsolate = await client.new_isolate("main_zzzzzz");
-            perfIsolate.perf_begin_request("bdt", "channel");
-            perfIsolate.perf_end_request("bdt", "channel", 0);
-            perfIsolate.perf_acc("bdt", 100);
-            perfIsolate.perf_action("bdt", 0, "bdt", "404");
-            perfIsolate.perf_record("bdt", 100);
+            // 获取PerfClient 对象 一个bdt isolate
+            let client = await cyfs.PerfClient.new("test-perf-h5", "1.0.0", cyfs.Some(this.dec_id), this.m_sharedStatck);
+            let perfIsolate = client.new_isolate("main");
+            perfIsolate.begin_request("bdt", "channel");
+            await perfIsolate.end_request("bdt", "channel", 60 * 1000 , cyfs.Ok(cyfs.Some(cyfs.JSBI.BigInt(100))));
+
+            await perfIsolate.acc("bdt", cyfs.Ok(cyfs.JSBI.BigInt(100)));
+            //await perfIsolate.action("bdt", 0, cyfs.Ok(["bdt", "404"]));
+            await perfIsolate.action("bdt", 0, cyfs.Err(new cyfs.BuckyError(cyfs.BuckyErrorCode.Unknown, "xxx")));
+            await perfIsolate.record("bdt", 100, cyfs.Some(cyfs.JSBI.BigInt(100)));
 
             console.log("*".repeat(128));
 
-            //一个dsg isolate
-            let perfIsolate1 = await client.new_isolate("main_zzzzzz1");
-            perfIsolate1.perf_begin_request("dsg", "driver");
-            perfIsolate1.perf_end_request("dsg", "driver", 0, 10);
-            perfIsolate1.perf_acc("dsg", 0, 100);
-            perfIsolate1.perf_action("dsg", 0, "driver", "404");
-            perfIsolate1.perf_record("dsg", 100, 200);
         }
     }
 
     let perfManager = new PerfManager();
-    perfManager.init()
-    // perfManager.dumpInfo();
 
     perfManager.perf_example();
+
     setInterval(() => {
         perfManager.perf_example();
     }, 1000 * 10);

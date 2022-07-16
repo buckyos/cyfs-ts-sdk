@@ -1,5 +1,8 @@
 import JSBI from "jsbi";
-import { BuckyErrorCode, BuckyResult, DescTypeInfo, EmptyProtobufBodyContent, NamedObject, NamedObjectBuilder, NamedObjectId, NamedObjectIdDecoder, named_id_from_base_58, named_id_gen_default, named_id_try_from_object_id, None, ObjectId, Ok, Option, ProtobufCodecHelper, ProtobufDescContent, ProtobufDescContentDecoder, Some, SubDescType } from "../../cyfs-base";
+import { BuckyErrorCode, BuckyResult, DescTypeInfo, EmptyProtobufBodyContent, EmptyProtobufBodyContentDecoder, NamedObject, NamedObjectBuilder, 
+    NamedObjectDecoder, 
+    NamedObjectId, NamedObjectIdDecoder, named_id_from_base_58, named_id_gen_default, named_id_try_from_object_id, None, 
+    ObjectId, Ok, Option, ProtobufCodecHelper, ProtobufDescContent, ProtobufDescContentDecoder, Some, SubDescType } from "../../cyfs-base";
 import { PerfObjectType } from "./type";
 import {perf_protos as protos} from "../codec/index"
 import { stringify } from "querystring";
@@ -218,9 +221,9 @@ export class PerfRequestId extends NamedObjectId<PerfRequestDesc, EmptyProtobufB
     }
 }
 
-export class PerfRequestDecoder extends NamedObjectIdDecoder<PerfRequestDesc, EmptyProtobufBodyContent> {
+export class PerfRequestDecoder extends NamedObjectDecoder<PerfRequestDesc, EmptyProtobufBodyContent, PerfRequest> {
     constructor() {
-        super(PerfObjectType.Request);
+        super(new PerfRequestDescDecoder(), new EmptyProtobufBodyContentDecoder(), PerfRequest);
     }
 }
 
@@ -342,9 +345,9 @@ export class PerfAccumulationId extends NamedObjectId<PerfAccumulationDesc, Empt
     }
 }
 
-export class PerfAccumulationDecoder extends NamedObjectIdDecoder<PerfAccumulationDesc, EmptyProtobufBodyContent> {
+export class PerfAccumulationDecoder extends NamedObjectDecoder<PerfAccumulationDesc, EmptyProtobufBodyContent, PerfAccumulation> {
     constructor() {
-        super(PerfObjectType.Accumulation);
+        super(new PerfAccumulationDescDecoder(), new EmptyProtobufBodyContentDecoder(), PerfAccumulation);
     }
 }
 
@@ -463,7 +466,7 @@ export class PerfAction extends NamedObject<PerfActionDesc, EmptyProtobufBodyCon
             key = stat.unwrap()[0];
             value = stat.unwrap()[1];
         } else {
-            err = stat.val.code
+            err = stat.val.code;
         }
         return new PerfActionBuilder(new PerfActionDesc(err, key, value), new EmptyProtobufBodyContent()).owner(owner).dec_id(dec_id).build(PerfAction)
     }
@@ -551,9 +554,9 @@ export class PerfRecordId extends NamedObjectId<PerfRecordDesc, EmptyProtobufBod
     }
 }
 
-export class PerfRecordDecoder extends NamedObjectIdDecoder<PerfRecordDesc, EmptyProtobufBodyContent> {
+export class PerfRecordDecoder extends NamedObjectDecoder<PerfRecordDesc, EmptyProtobufBodyContent, PerfRecord> {
     constructor() {
-        super(PerfObjectType.Record);
+        super(new PerfRecordDescDecoder(), new EmptyProtobufBodyContentDecoder(), PerfRecord);
     }
 }
 

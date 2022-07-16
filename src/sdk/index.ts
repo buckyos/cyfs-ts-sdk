@@ -8,7 +8,7 @@ export * from './cyfs-base';
 export * from './cyfs-base-meta';
 export * from './cyfs-core';
 export * from './cyfs-meta';
-// export * from './cyfs-perf';
+export * from './cyfs-perf';
 export * from './cyfs-lib';
 
 export * from './ethabi';
