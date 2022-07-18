@@ -36,9 +36,9 @@
             await perfIsolate.end_request("bdt", "channel", 60 * 1000 , cyfs.Ok(cyfs.Some(cyfs.JSBI.BigInt(100))));
 
             await perfIsolate.acc("bdt", cyfs.Ok(cyfs.JSBI.BigInt(100)));
-            //await perfIsolate.action("bdt", 0, cyfs.Ok(["bdt", "404"]));
-            await perfIsolate.action("bdt", 0, cyfs.Err(new cyfs.BuckyError(cyfs.BuckyErrorCode.Unknown, "xxx")));
-            await perfIsolate.record("bdt", 100, cyfs.Some(cyfs.JSBI.BigInt(100)));
+            await perfIsolate.action("bdt", cyfs.Ok(["bdt", "404"]));
+            await perfIsolate.action("bdt", cyfs.Err(new cyfs.BuckyError(cyfs.BuckyErrorCode.Unknown, "xxx")));
+            await perfIsolate.record("bdt", cyfs.JSBI.BigInt(100), cyfs.Some(cyfs.JSBI.BigInt(100)));
 
             console.log("*".repeat(128));
 
@@ -48,12 +48,6 @@
     let perfManager = new PerfManager();
 
     perfManager.perf_example();
-
-    setInterval(() => {
-        perfManager.perf_example();
-    }, 1000 * 10);
-
-
 
 </script>
 </html>

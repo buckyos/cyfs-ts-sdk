@@ -78,6 +78,7 @@ export class PerfIsolate {
         };
 
         const put_ret = await this.stack.non_service().put_object(req);
+        console.info(`put_ret: ${put_ret}, object_id: ${object_id.to_base_58()}`);
         return Ok(undefined);
     }
 
@@ -118,10 +119,10 @@ export class PerfIsolate {
         const root_state = this.stack.root_state_stub(people_id, dec_id);
         const op_env = (await root_state.create_path_op_env()).unwrap();
         const path = this.get_local_cache_path(Some(dec_id), isolate_id, id, perf_type);
-        await op_env.set_with_key(path, perf_object_id.to_string(), perf_object_id, undefined, true);
+        await op_env.set_with_path(path, perf_object_id, undefined, true);
 
         const root = await op_env.commit();
-        console.info("new dec root is: {:?}, perf_obj_id={}", root, perf_object_id);
+        console.info(`path: ${path}, value: ${perf_object_id.to_base_58()}, new dec root is: ${root}, perf_obj_id=${perf_object_id}`);
 
         return Ok(undefined);
     }
@@ -139,9 +140,22 @@ export class PerfIsolate {
             dec_id, 
             this.isolate_id, 
             this.id, 
-            object_id, perf_type);
+            object_id, 
+            perf_type);
 
         return Ok(undefined);
+    }
+
+    async get_by_path(path: string): Promise<BuckyResult<ObjectId | undefined>> {
+        let dec_id = ObjectId.from_base_58(PERF_DEC_ID_STR).unwrap();
+        if(this.dec_id.is_some()){
+            dec_id = this.dec_id.unwrap();
+        }
+        const root_state = this.stack.root_state_stub(this.people_id, dec_id);
+        const op_env = (await root_state.create_path_op_env()).unwrap();
+        const ret = await op_env.get_by_path(path);
+
+        return ret;
     }
 
     // 开启一个request
@@ -167,9 +181,7 @@ export class PerfIsolate {
             dec_id = this.dec_id.unwrap();
         }
 
-        const root_state = this.stack.root_state_stub(this.people_id, dec_id);
-        const op_env = (await root_state.create_path_op_env()).unwrap();
-        const ret = await op_env.get_by_path(path);
+        const ret = await this.get_by_path(path);
         if (ret.err || ret.unwrap() === undefined) {
             if (this.pending_reqs.delete(full_id)) {
                 const perf_obj = PerfRequest.create(this.people_id, dec_id);
@@ -180,6 +192,7 @@ export class PerfIsolate {
             }
             return Ok(undefined);
         }
+        console.info(`ret: ${ret}`);
         const v = ret.unwrap()!;
         const req = {
             object_id: v,
@@ -200,9 +213,8 @@ export class PerfIsolate {
                 await this.put_noc_and_root_state(object_id, object_raw, PerfType.Requests);
             }
         } else {
-            const perf_obj = ProtobufCodecHelper.decode_buf(ret_result.unwrap().object.object_raw, new PerfRequestDecoder()).unwrap();
-            
             if (this.pending_reqs.delete(full_id)) {
+                const perf_obj = ProtobufCodecHelper.decode_buf(ret_result.unwrap().object.object_raw, new PerfRequestDecoder()).unwrap();
                 const v = perf_obj.add_stat(spend_time, stat);
                 const object_raw = v.to_vec().unwrap();
                 const object_id = v.desc().object_id();
@@ -222,9 +234,7 @@ export class PerfIsolate {
             dec_id = this.dec_id.unwrap();
         }
 
-        const root_state = this.stack.root_state_stub(this.people_id, dec_id);
-        const op_env = (await root_state.create_path_op_env()).unwrap();
-        const ret = await op_env.get_by_path(path);
+        const ret = await this.get_by_path(path);
         if (ret.err || ret.unwrap() === undefined) {
             const perf_obj = PerfAccumulation.create(this.people_id, dec_id);
             const v = perf_obj.add_stat(stat);
@@ -270,6 +280,7 @@ export class PerfIsolate {
         if(this.dec_id.is_some()){
             dec_id = this.dec_id.unwrap();
         }
+
         const v = PerfAction.create(this.people_id, dec_id, stat);
         const object_raw = v.to_vec().unwrap();
         const object_id = v.desc().object_id();
@@ -285,9 +296,7 @@ export class PerfIsolate {
             dec_id = this.dec_id.unwrap();
         }
 
-        const root_state = this.stack.root_state_stub(this.people_id, dec_id);
-        const op_env = (await root_state.create_path_op_env()).unwrap();
-        const ret = await op_env.get_by_path(path);
+        const ret = await this.get_by_path(path);
         if (ret.err || ret.unwrap() === undefined) {
             const perf_obj = PerfRecord.create(this.people_id, dec_id, total, total_size);
             const v = perf_obj.add_stat(total, total_size);

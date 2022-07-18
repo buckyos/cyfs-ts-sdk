@@ -310,7 +310,7 @@ export class PerfAccumulationDescDecoder extends ProtobufDescContentDecoder<Perf
     }
 
     type_info(): DescTypeInfo {
-        return PERF_REQUEST_DESC_TYPE_INFO;
+        return PERF_ACC_DESC_TYPE_INFO;
     }
 
     try_from_proto(value: protos.PerfAccumulation): BuckyResult<PerfAccumulationDesc> {
