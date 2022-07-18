@@ -11,7 +11,7 @@ export enum PerfType {
     Records,
 }
 
-export function to_string(x:number): string{
+export function number_2_metric_name(x:number): string{
     if (typeof PerfType[x] === 'undefined') {
         // console.error('Invalid PerfObjectType number');
         return "Unknown";
@@ -102,14 +102,10 @@ export class PerfIsolate {
         }
         //const time_span = hour + ":" + now.getUTCMinutes()
         const time_span = hour + ":00";
-
-        let dec_app_id = ObjectId.from_base_58(PERF_DEC_ID_STR).unwrap();
-        if(dec_id.is_some()){
-            dec_app_id = dec_id.unwrap();
-        }
+        const people_id = this.people_id.to_base_58();
         const device_id = this.device_id.to_base_58();
-        // /perf-dec-id/<owner>/<device>/<DecId>/<isolate_id>/<id>/<PerfType>/<Date>/<TimeSpan>
-        const path = `/${PERF_DEC_ID_STR}/${this.people_id.to_base_58()}/${device_id}/${dec_app_id.to_base_58()}/${isolate_id}/${id}/${to_string(perf_type)}/${date}/${time_span}`;
+        // /<DecId>/perf-dec-id/<owner>/<device>/<isolate_id>/<id>/<PerfType>/<Date>/<TimeSpan>
+        const path = `/${PERF_DEC_ID_STR}/${people_id}/${device_id}/${isolate_id}/${id}/${number_2_metric_name(perf_type)}/${date}/${time_span}`;
 
         return path;
     }
