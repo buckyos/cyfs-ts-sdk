@@ -11,7 +11,10 @@
     class PerfManager {
 
          constructor() {
-            this.m_sharedStatck = cyfs.SharedCyfsStack.open_runtime();
+            let dec_id = cyfs.ObjectId.from_base_58("9tGpLNnhNgsRvthUBfmpHjk4ezYhZAyxKCmhDgyRT6MF").unwrap();
+            this.dec_id = dec_id;
+
+            this.m_sharedStatck = cyfs.SharedCyfsStack.open_runtime(dec_id);
             //let param = cyfs.SharedObjectStackParam.new_with_ws_event_ports(21000, 210001).unwrap();
             //this.m_sharedStatck = cyfs.SharedObjectStack.open(param);
 
@@ -22,7 +25,7 @@
             // beta cyfs-perf-service   5aSixgM3QNdxLzBVoAtsKiucZhwPwAgrprvp5XhEHdoq
             
             // this.target = cyfs.ObjectId.from_base_58("5aSixgM3QNdxLzBVoAtsKiucZhwPwAgrprvp5XhEHdoq").unwrap();
-            this.dec_id = cyfs.ObjectId.from_base_58("9tGpLNnhNgsRvthUBfmpHjk4ezYhZAyxKCmhDgyRT6MF").unwrap();
+
 
         }
 

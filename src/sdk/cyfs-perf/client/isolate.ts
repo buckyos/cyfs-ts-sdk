@@ -108,15 +108,15 @@ export class PerfIsolate {
             dec_app_id = dec_id.unwrap();
         }
         const device_id = this.device_id.to_base_58();
-        // /<owner>/<device>/<DecId>/<isolate_id>/<id>/<PerfType>/<Date>/<TimeSpan>
+        // /perf-dec-id/<owner>/<device>/<DecId>/<isolate_id>/<id>/<PerfType>/<Date>/<TimeSpan>
         const path = `/${PERF_DEC_ID_STR}/${this.people_id.to_base_58()}/${device_id}/${dec_app_id.to_base_58()}/${isolate_id}/${id}/${to_string(perf_type)}/${date}/${time_span}`;
 
         return path;
     }
 
-    async noc_root_state(people_id: ObjectId, dec_id: ObjectId, isolate_id: string, id: string, perf_object_id: ObjectId, perf_type: PerfType) : Promise<BuckyResult<void>> {
-        // 把对象存到root_state
-        const root_state = this.stack.root_state_stub(people_id, dec_id);
+    async local_cache(device_id: ObjectId, dec_id: ObjectId, isolate_id: string, id: string, perf_object_id: ObjectId, perf_type: PerfType) : Promise<BuckyResult<void>> {
+        // 把对象存到root_state, local cache
+        const root_state = this.stack.root_state_stub(device_id, dec_id);
         const op_env = (await root_state.create_path_op_env()).unwrap();
         const path = this.get_local_cache_path(Some(dec_id), isolate_id, id, perf_type);
         if (perf_type === PerfType.Actions) {
@@ -138,8 +138,8 @@ export class PerfIsolate {
             dec_id = this.dec_id.unwrap();
         }
         
-        await this.noc_root_state(
-            this.people_id, 
+        await this.local_cache(
+            this.device_id.object_id,
             dec_id, 
             this.isolate_id, 
             this.id, 
