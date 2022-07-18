@@ -119,8 +119,11 @@ export class PerfIsolate {
         const root_state = this.stack.root_state_stub(people_id, dec_id);
         const op_env = (await root_state.create_path_op_env()).unwrap();
         const path = this.get_local_cache_path(Some(dec_id), isolate_id, id, perf_type);
-        await op_env.set_with_path(path, perf_object_id, undefined, true);
-
+        if (perf_type === PerfType.Actions) {
+            await op_env.set_with_key(path, perf_object_id.to_base_58(), perf_object_id, undefined, true);
+        } else {
+            await op_env.set_with_path(path, perf_object_id, undefined, true);
+        }
         const root = await op_env.commit();
         console.info(`path: ${path}, value: ${perf_object_id.to_base_58()}, new dec root is: ${root}, perf_obj_id=${perf_object_id}`);
 
