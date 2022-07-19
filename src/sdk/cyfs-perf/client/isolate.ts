@@ -100,8 +100,12 @@ export class PerfIsolate {
         if (hour <= 9) {
             hour = "0" + hour;
         }
-        //const time_span = hour + ":" + now.getUTCMinutes()
-        const time_span = hour + ":00";
+        let minutes: string | number = now.getUTCMinutes();
+        if (minutes <= 9) {
+            minutes = "0" + minutes;
+        }
+        const time_span = hour + ":" + minutes;
+        //const time_span = hour + ":00";
         const people_id = this.people_id.to_base_58();
         const device_id = this.device_id.to_base_58();
         // /<DecId>/perf-dec-id/<owner>/<device>/<isolate_id>/<id>/<PerfType>/<Date>/<TimeSpan>
