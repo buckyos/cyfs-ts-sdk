@@ -276,7 +276,7 @@ interface ObjectInfo {
 function extract_path(pathstr: string): [ObjectId|undefined, string] {
     const path_parts = pathstr.split(path.sep)
     let dec_id: ObjectId|undefined = undefined;
-    if (path_parts[1].length > 0) {
+    if (path_parts.length > 1 && path_parts[1].length > 0) {
         const r = ObjectId.from_base_58(path_parts[1])
         if (r.ok) {
             dec_id = r.unwrap()
