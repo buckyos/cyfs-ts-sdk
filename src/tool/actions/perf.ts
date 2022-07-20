@@ -134,6 +134,16 @@ async function decorate_decid(old_path: string|undefined, stack: SharedCyfsStack
     return parts.join(path.sep)
 }
 
+function show_key(obj_type: number, key: string): string {
+    if (obj_type === ObjectTypeCode.ObjectMap) {
+       return colors('cyan', key);
+    } else if(obj_type === ObjectTypeCode.File) {
+        return colors('magenta', key);
+    }
+
+    return key
+}
+
 export function makeCommand(config: CyfsToolConfig): Command {
     return new Command("perf")
         .description("perf statistical summary tool")
@@ -305,7 +315,7 @@ async function list(cur_path: string, target_id: ObjectId, stack: SharedCyfsStac
     
 }
 
-async function objects_info(cur_path: string, type: string, target_id: ObjectId, stack: SharedCyfsStack): Promise<[number, string]> {
+async function objects_info(cur_path: string, type: string, target_id: ObjectId, stack: SharedCyfsStack, is_show: boolean): Promise<[number, string]> {
     let table_head: string[] = [];
     const table_data: any[] = [];
 
@@ -349,13 +359,16 @@ async function objects_info(cur_path: string, type: string, target_id: ObjectId,
         }
 
         for (const object of objects) {
-            table_data.push([object.key])
+            const key = await decorate_decid(show_key(object.object_id.obj_type_code(), object.key), stack)
+            table_data.push([key])
             dimension = object.key;
             size += 1;
         }
     }
 
-    show_table(table_head, table_data);
+    if (is_show) {
+        show_table(table_head, table_data);
+    }
 
     return [size, dimension];
 }
@@ -383,17 +396,18 @@ function next_dimension(cur_path: string): string | undefined {
     if (dec_id === undefined) {
         return "dec";
     }
-    const path_parts = sub_path.split(path.sep);
+
+    const path_parts = cur_path.split(path.sep);
 
     if (path_parts.length <= 2) {
         return "iso"
     }
 
-    if (path_parts.length < 3) {
+    if (path_parts.length <= 3) {
         return "id"
     }
 
-    if (path_parts.length < 4) {
+    if (path_parts.length <= 4) {
         return "type"
     }
 
@@ -407,7 +421,7 @@ function reslove_full_path(cur_path: string) {
     // 拼接dec_id + perf-dec-id/<owner>/<device> + ...
     let dst_path = cur_path;
     if (dec_id !== undefined) {
-        dst_path = path.resolve(`/${dec_id.to_base_58()}`, `${PERF_DEC_ID_STR}/${people_id.to_base_58()}/${target_id.to_base_58()}`) + sub_path;
+        dst_path = `/${dec_id.to_base_58()}` + `/${PERF_DEC_ID_STR}/${people_id.to_base_58()}/${target_id.to_base_58()}` + sub_path;
     }
 
     return dst_path;
@@ -419,7 +433,7 @@ async function show(cur_path: string, type: string, default_stack: SharedCyfsSta
     if (vaild) {
         // 指定type时候, 就显示这个type对应的列表(只有一个的时候也展示)
         if (validate(cur_path, type)) {
-            await objects_info(cur_path, type, device_list[local_device_index].value.object_id, default_stack);
+            await objects_info(cur_path, type, device_list[local_device_index].value.object_id, default_stack, true);
         }
 
     } else {
@@ -430,7 +444,7 @@ async function show(cur_path: string, type: string, default_stack: SharedCyfsSta
         }
         let i = 0;
         do {
-            const [size, dimension] = await objects_info(dst_path, next_type, device_list[local_device_index].value.object_id, default_stack);
+            const [size, dimension] = await objects_info(dst_path, next_type, device_list[local_device_index].value.object_id, default_stack, true);
             if (size > 1) {
                 break;
             }
@@ -451,6 +465,17 @@ async function show(cur_path: string, type: string, default_stack: SharedCyfsSta
 
 
 async function use(cur_path: string, dst_path: string, default_stack: SharedCyfsStack): Promise<string> {
+    if (dst_path === ".") {
+        const next_type = next_dimension(cur_path);
+        dst_path = reslove_full_path(cur_path);
+        if (next_type === undefined) {
+            return cur_path;
+        }
+        const [size, dimension] = await objects_info(dst_path, next_type, device_list[local_device_index].value.object_id, default_stack, false);
+        if (size === 1) {
+            dst_path = dimension;
+        }
+    }
     // 路径检查器
     const new_path = path.resolve(cur_path, dst_path);
     const next_type = next_dimension(new_path);
@@ -459,9 +484,7 @@ async function use(cur_path: string, dst_path: string, default_stack: SharedCyfs
         return cur_path
     }
     
-    let check_path = reslove_full_path(cur_path);
-    check_path = path.resolve(check_path, dst_path);
-
+    const check_path = reslove_full_path(new_path);
     // 如果这个path存在，且是ObjectMap，返回new_path。否则返回cur_path
     const [dec_id, sub_path] = extract_path(check_path);
     const ret = await default_stack.root_state_access_stub(device_list[local_device_index].value.object_id, dec_id).get_object_by_path(sub_path);
