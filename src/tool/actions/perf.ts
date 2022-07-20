@@ -1,7 +1,7 @@
 import { Argument, Command } from "commander";
 import { create_stack, CyfsToolConfig, formatDate, getObject, stop_runtime } from "../lib/util";
 
-import {BuckyResult, clog, DeviceDecoder, DeviceId, NONAPILevel, ObjectId, ObjectMapSimpleContentType, Ok, SharedCyfsStack } from "../../sdk";
+import {BuckyResult, clog, DecAppDecoder, DeviceDecoder, DeviceId, NONAPILevel, ObjectId, ObjectMapSimpleContentType, ObjectTypeCode, Ok, SharedCyfsStack } from "../../sdk";
 import * as inquirer from 'inquirer'
 inquirer.registerPrompt(
     'command',
@@ -79,6 +79,60 @@ async function prelude_device_list(stack: SharedCyfsStack) {
     }
 }
 
+async function get_dec_name(dec_id: string, stack: SharedCyfsStack): Promise<string | undefined> {
+    if (dec_name_cache.has(dec_id)) {
+        return dec_name_cache.get(dec_id)
+    }
+    if (dec_id.length < 32) {
+        return
+    }
+    const id_ret = ObjectId.from_base_58(dec_id);
+    if (id_ret.err) {
+        return;
+    }
+    if (!id_ret.unwrap().is_core_object()) {
+        return
+    }
+    
+    const ret_result = await getObject({ stack, id: id_ret.unwrap()})
+    if (ret_result.err) {
+        dec_name_cache.set(dec_id, undefined)
+        return;
+    } else {
+        const app_ret = new DecAppDecoder().from_raw(ret_result.unwrap().object.object_raw)
+        if (app_ret.err) {
+            return;
+        }
+        const name = app_ret.unwrap().name()
+        dec_name_cache.set(dec_id, name)
+        return name
+    }
+}
+
+const PERF_DEC_ID_STR = "9tGpLNnAAYE9Dd4ooNiSjtP5MeL9CNLf9Rxu6AFEc12M";
+
+const ansi_color_pattern = [
+    '[\\u001B\\u009B][[\\]()#;?]*(?:(?:(?:(?:;[-a-zA-Z\\d\\/#&.:=?%@~_]+)*|[a-zA-Z\\d]+(?:;[-a-zA-Z\\d\\/#&.:=?%@~_]*)*)?\\u0007)',
+    '(?:(?:\\d{1,4}(?:;\\d{0,4})*)?[\\dA-PR-TZcf-nq-uy=><~]))'
+].join('|');
+const ansi_color_regexp = new RegExp(ansi_color_pattern, 'g')
+
+
+async function decorate_decid(old_path: string|undefined, stack: SharedCyfsStack): Promise<string> {
+    if (!old_path) {
+        return '-'
+    }
+    const parts = old_path.split(path.sep)
+    for (let i = 0; i < parts.length; i++) {
+        const uncolor_text = parts[i].split(ansi_color_regexp).join("");
+        const name = await get_dec_name(uncolor_text, stack);
+        if (name) {
+            parts[i] += `(${name})`
+        }
+    }
+    
+    return parts.join(path.sep)
+}
 
 export function makeCommand(config: CyfsToolConfig): Command {
     return new Command("perf")
@@ -106,13 +160,13 @@ async function runPrompt(cur_path: string, stack: SharedCyfsStack): Promise<stri
         'show', "use", "cat"
     ]
 
-
+    const friendly_path = await decorate_decid(cur_path, stack)
     const answer = await inquirer.prompt([
         {
             type: 'command',
             name: 'cmd',
             autoCompletion: availableCommands,
-            message: `/local:${cur_path}`,
+            message: `/local${friendly_path}`,
             context: 0,
             prefix: "",
             suffix: ">",
@@ -127,8 +181,12 @@ async function runPrompt(cur_path: string, stack: SharedCyfsStack): Promise<stri
         }
     ]);
 
+    // 这里 use 默认进入第一个子维度, 处理Commander default argument
+    let cmd: string = answer.cmd
+    if (cmd.trim() === "use") {
+        cmd = "use .";
+    }
 
-    const cmd: string = answer.cmd
     // 这里要处理复杂的如文件名空格
     const regex = /"([^"]*)"|(\S+)/g;
     const arr = (cmd.match(regex) || []).map((m: string) => m.replace(regex, '$1$2'));
@@ -154,7 +212,7 @@ async function run(options: any, default_stack: SharedCyfsStack): Promise<void> 
             // 增加参数时，需要在这里手工清除这个参数
         }))
         
-        .addCommand(new Command('use').description('pin specified dimensions').argument('<dest path>').action(async (dest_path, options) => {
+        .addCommand(new Command('use').description('pin specified dimensions').argument('<destpath>').action(async (dest_path, options) => {
             // cd切换路径，检查路径是否存在。如果不存在，报错。返回current_path，如果存在，返回新路径
             current_path = await use(current_path, dest_path, default_stack)
         }).exitOverride())
@@ -187,7 +245,7 @@ async function run(options: any, default_stack: SharedCyfsStack): Promise<void> 
 }
 
 import {table, getBorderCharacters} from 'table';
-import path from "path";
+import {posix as path} from "path";
 
 function show_table(table_head: string[], table_data: string[][]) {
     console_orig.log(table([table_head].concat(table_data), {
@@ -247,30 +305,32 @@ async function list(cur_path: string, target_id: ObjectId, stack: SharedCyfsStac
     
 }
 
-async function objects_info(cur_path: string, type: string, dst_path: string|undefined, target_id: ObjectId, stack: SharedCyfsStack): Promise<number> {
+async function objects_info(cur_path: string, type: string, target_id: ObjectId, stack: SharedCyfsStack): Promise<[number, string]> {
     let table_head: string[] = [];
     const table_data: any[] = [];
 
     let size = 0;
+    let dimension = '';
 
     //通用显示
     table_head = [type]
 
     if (type === "people") {
         // people
-        table_data.push([people_id.to_base_58()])
+        const people = people_id.to_base_58();
+        table_data.push([people])
         size += 1;
+        dimension = people;
+
     } else if (type === "device") {
         // device
         for (const device of device_list) {
             table_data.push([device.name])
+            dimension = device.name;
             size += 1;
         }
     } else {
-        // 获取 dec/iso/id 的path
-        if (dst_path) {
-            cur_path = path.resolve(cur_path, dst_path);
-        }
+        // 获取 dec/iso/id
         // 先取回objects列表
         let objects: ObjectInfo[] = []
         let page_index = 0;
@@ -290,17 +350,18 @@ async function objects_info(cur_path: string, type: string, dst_path: string|und
 
         for (const object of objects) {
             table_data.push([object.key])
+            dimension = object.key;
             size += 1;
         }
     }
 
     show_table(table_head, table_data);
 
-    return size;
+    return [size, dimension];
 }
 
-function validate(curr_path: string, type: string): boolean {
-    const [dec_id, sub_path] = extract_path(curr_path);
+function validate(cur_path: string, type: string): boolean {
+    const [dec_id, sub_path] = extract_path(cur_path);
     if (dec_id === undefined && (type === "iso" || type === "id")) {
         console_orig.log(`dec is not specified`);
         return false;
@@ -317,49 +378,71 @@ function validate(curr_path: string, type: string): boolean {
     return true;
 }
 
-function next_dimension(curr_path: string): string | undefined {
-    const [dec_id, sub_path] = extract_path(curr_path);
+function next_dimension(cur_path: string): string | undefined {
+    const [dec_id, sub_path] = extract_path(cur_path);
     if (dec_id === undefined) {
         return "dec";
     }
     const path_parts = sub_path.split(path.sep);
 
+    if (path_parts.length <= 2) {
+        return "iso"
+    }
+
     if (path_parts.length < 3) {
-        return "people"
+        return "id"
     }
 
     if (path_parts.length < 4) {
-        return "device"
-    }
-
-    if (path_parts.length < 5) {
-        return "iso"
-    }
-    if (path_parts.length < 6) {
-        return "id";
+        return "type"
     }
 
     return undefined;
 }
 
+
+function reslove_full_path(cur_path: string) {
+    const target_id = device_list[local_device_index].value.object_id;
+    const [dec_id, sub_path] = extract_path(cur_path);
+    // 拼接dec_id + perf-dec-id/<owner>/<device> + ...
+    let dst_path = cur_path;
+    if (dec_id !== undefined) {
+        dst_path = path.resolve(`/${dec_id.to_base_58()}`, `${PERF_DEC_ID_STR}/${people_id.to_base_58()}/${target_id.to_base_58()}`) + sub_path;
+    }
+
+    return dst_path;
+}
+
 // /dec-id/perf-dec-id/<owner>/<device>/<isolate_id>/<id>/<PerfType>/<Date>/<TimeSpan>
-async function show(curr_path: string, type: string, default_stack: SharedCyfsStack) {
+async function show(cur_path: string, type: string, default_stack: SharedCyfsStack) {
     const vaild = dimensions.some(e => e === type);
     if (vaild) {
         // 指定type时候, 就显示这个type对应的列表(只有一个的时候也展示)
-        const is_ok = validate(curr_path, type);
-        if (is_ok) {
-            await objects_info(curr_path, type, undefined, device_list[local_device_index].value.object_id, default_stack);
+        if (validate(cur_path, type)) {
+            await objects_info(cur_path, type, device_list[local_device_index].value.object_id, default_stack);
         }
 
     } else {
-        const next_type = next_dimension(curr_path);
+        let next_type = next_dimension(cur_path);
+        let dst_path = reslove_full_path(cur_path);
+        if (next_type === undefined) {
+            return;
+        }
         let i = 0;
         do {
-            const size = await objects_info(curr_path, next_type, undefined, device_list[local_device_index].value.object_id, default_stack);
+            const [size, dimension] = await objects_info(dst_path, next_type, device_list[local_device_index].value.object_id, default_stack);
             if (size > 1) {
                 break;
             }
+
+            // 路径检查器
+            const new_path = path.resolve(cur_path, dimension);
+            next_type = next_dimension(new_path);
+            if (next_type === undefined) {
+                break;
+            }
+            dst_path = reslove_full_path(new_path);
+
             i++;
         } while (i <= 1);
     }
@@ -367,12 +450,37 @@ async function show(curr_path: string, type: string, default_stack: SharedCyfsSt
 }
 
 
-async function use(curr_path: string, dst_path: string, default_stack: SharedCyfsStack): Promise<string> {
-    console_orig.log(`use: ${dst_path}`);
+async function use(cur_path: string, dst_path: string, default_stack: SharedCyfsStack): Promise<string> {
+    // 路径检查器
+    const new_path = path.resolve(cur_path, dst_path);
+    const next_type = next_dimension(new_path);
+    if (next_type === undefined) {
+        console_orig.log(`new path ${new_path}`);
+        return cur_path
+    }
+    
+    let check_path = reslove_full_path(cur_path);
+    check_path = path.resolve(check_path, dst_path);
 
-    return "";
+    // 如果这个path存在，且是ObjectMap，返回new_path。否则返回cur_path
+    const [dec_id, sub_path] = extract_path(check_path);
+    const ret = await default_stack.root_state_access_stub(device_list[local_device_index].value.object_id, dec_id).get_object_by_path(sub_path);
+    if (ret.err) {
+        console_orig.error(`stat path ${new_path} err ${ret.val}`)
+        return cur_path
+    }
+    if (dec_id === undefined && new_path !== "/")  {
+        console_orig.error(`${new_path} not existed folder!`);
+        return cur_path
+    }
+    if (ret.unwrap().object.object_id.obj_type_code() === ObjectTypeCode.ObjectMap) {
+        return new_path
+    } else {
+        console_orig.error(`${new_path} is not a valid folder!`);
+        return cur_path
+    }
 }
 
-async function cat(curr_path: string, dst_path: string, default_stack: SharedCyfsStack, type: string, start_time: string, end_time: string) {
+async function cat(cur_path: string, dst_path: string, default_stack: SharedCyfsStack, type: string, start_time: string, end_time: string) {
     console_orig.log(`cat: ${dst_path}`);
 }
