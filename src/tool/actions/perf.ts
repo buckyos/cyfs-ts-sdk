@@ -197,6 +197,13 @@ async function runPrompt(cur_path: string, stack: SharedCyfsStack): Promise<stri
         cmd = "use .";
     }
 
+    if (cmd.indexOf("cat") !== -1) {
+        const next_type = next_dimension(cur_path);
+        if (next_type === "type" || next_type === undefined) {
+            cmd = cmd.replace('cat', 'cat .');
+        }
+    }
+
     // 这里要处理复杂的如文件名空格
     const regex = /"([^"]*)"|(\S+)/g;
     const arr = (cmd.match(regex) || []).map((m: string) => m.replace(regex, '$1$2'));
@@ -230,12 +237,18 @@ async function run(options: any, default_stack: SharedCyfsStack): Promise<void> 
         .addCommand(new Command('cat')
         .description('show object info in json format')
         .argument('<id>')
-        .option('-t, --type', "list objects request, acc, action, record", undefined)
-        .option('-s, --start', "start format datatime `YYYY-MM-DD hh:mm`", undefined)
-        .option('-e, --end', "end format datatime `YYYY-MM-DD hh:mm`", undefined)
-        .action(async (obj_path, options) => {
-            await cat(current_path, obj_path, default_stack, options.type, options.start, options.end)
-        }).exitOverride())
+        .option('-t, --type <type>', "list objects request, acc, action, record", undefined)
+        .option('-s, --start <start>', "start format datatime `YYYY-MM-DD hh:mm`", undefined)
+        .option('-e, --end <end>', "end format datatime `YYYY-MM-DD hh:mm`", undefined)
+        .action(async (id, options) => {
+            await cat(current_path, id, default_stack, options.type, options.start, options.end)
+        }).exitOverride().hook("postAction", (thisCommand, actionCommand) => {
+            // 由于command类没有考虑到多次parse不同命令行，再次用没有参数的命令行parse时，不会清除上一次有参数时的结果，这里我们手动清除所有参数
+            // 增加参数时，需要在这里手工清除这个参数
+            actionCommand.setOptionValue('type', undefined);
+            actionCommand.setOptionValue('start', undefined);
+            actionCommand.setOptionValue('end', undefined);
+        }))
         
         .addCommand(new Command('clear').description('clear screen output').action(() => {
             console.clear();
@@ -504,6 +517,22 @@ async function use(cur_path: string, dst_path: string, default_stack: SharedCyfs
     }
 }
 
-async function cat(cur_path: string, dst_path: string, default_stack: SharedCyfsStack, type: string, start_time: string, end_time: string) {
-    console_orig.log(`cat: ${dst_path}`);
+
+async function cat(cur_path: string, id: string, default_stack: SharedCyfsStack, type: string, start_time: string, end_time: string) {
+    // 默认最近一个时间片的信息
+    if (start_time === undefined) {
+        start_time = formatDate(new Date().getTime() - 1000 * 60)
+    }
+    // 默认为当前本地时间
+    if (end_time === undefined) {
+        end_time = formatDate(new Date().getTime())
+    }
+
+    if (type === undefined) {
+        type = "all";
+    }
+
+    const new_path = path.resolve(cur_path, id);
+
+    console_orig.log(`cat  cur_path: ${cur_path}, id: ${id}, new_path: ${new_path}, type: ${type}, start_time ${start_time}, end_time: ${end_time}`);
 }
