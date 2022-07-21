@@ -237,7 +237,7 @@ async function run(options: any, default_stack: SharedCyfsStack): Promise<void> 
         .addCommand(new Command('cat')
         .description('show object info in json format')
         .argument('<id>')
-        .option('-t, --type <type>', "list objects request, acc, action, record", undefined)
+        .option('-t, --type <type>', "list objects support `request, acc, action, record` type", undefined)
         .option('-s, --start <start>', "start format datatime `YYYY-MM-DD hh:mm`", undefined)
         .option('-e, --end <end>', "end format datatime `YYYY-MM-DD hh:mm`", undefined)
         .action(async (id, options) => {
@@ -493,7 +493,6 @@ async function use(cur_path: string, dst_path: string, default_stack: SharedCyfs
     const new_path = path.resolve(cur_path, dst_path);
     const next_type = next_dimension(new_path);
     if (next_type === undefined) {
-        console_orig.log(`new path ${new_path}`);
         return cur_path
     }
     
@@ -517,22 +516,84 @@ async function use(cur_path: string, dst_path: string, default_stack: SharedCyfs
     }
 }
 
+function formatUTCDate(d: Date): [string, string] {
+    let month: string | number = d.getUTCMonth() + 1;
+    let strDate: string | number = d.getUTCDate();
 
-async function cat(cur_path: string, id: string, default_stack: SharedCyfsStack, type: string, start_time: string, end_time: string) {
-    // 默认最近一个时间片的信息
-    if (start_time === undefined) {
-        start_time = formatDate(new Date().getTime() - 1000 * 60)
-    }
-    // 默认为当前本地时间
-    if (end_time === undefined) {
-        end_time = formatDate(new Date().getTime())
+    if (month <= 9) {
+        month = "0" + month;
     }
 
+    if (strDate <= 9) {
+        strDate = "0" + strDate;
+    }
+
+    const date = d.getUTCFullYear() + "-" + month + "-" + strDate;
+
+    let hour: string | number = d.getUTCHours();
+    if (hour <= 9) {
+        hour = "0" + hour;
+    }
+    let minutes: string | number = d.getUTCMinutes();
+    if (minutes <= 9) {
+        minutes = "0" + minutes;
+    }
+    const time = hour + ":" + minutes;
+
+    return [date, time];
+}
+
+const ACC       = "Accumulations";
+const ACTION    = "Actions";
+const RECORD    = "Records";
+const REQUEST   = "Requests";
+
+function get_full_path(cur_path: string, id: string, type: string, date: string, time: string): string {
+   
+    let new_path = path.resolve(cur_path, id);
+    // request, acc, action, record
+    if (type === "request") {
+        new_path = path.resolve(new_path, REQUEST);
+    } else if (type === "record") {
+        new_path = path.resolve(new_path, RECORD);
+    } else if (type === "action") {
+        new_path = path.resolve(new_path, ACTION);
+    } else if (type === "acc") {
+        new_path = path.resolve(new_path, ACC);
+    }
+    new_path = path.resolve(new_path, date);
+    new_path = path.resolve(new_path, time);
+
+    return reslove_full_path(new_path);
+}
+
+// cat -s "2022-08-08 03:32:00"  -e  "2022-08-09 09:32:00"
+async function cat(cur_path: string, id: string, default_stack: SharedCyfsStack, type: string, start: string, end: string) {
     if (type === undefined) {
         type = "all";
     }
 
-    const new_path = path.resolve(cur_path, id);
-
-    console_orig.log(`cat  cur_path: ${cur_path}, id: ${id}, new_path: ${new_path}, type: ${type}, start_time ${start_time}, end_time: ${end_time}`);
+    // 默认最近一个时间片的信息
+    if (start === undefined) {
+        start = formatDate(new Date().getTime() - 1000 * 60)
+    }
+    // 默认为当前本地时间
+    if (end === undefined) {
+        end = formatDate(new Date().getTime())
+    }
+    
+    const s = new Date(Date.parse(start));
+    const e = new Date(Date.parse(end));
+    
+    const [start_date, start_time] = formatUTCDate(s);
+    const [end_date, end_time] = formatUTCDate(e);
+    console_orig.log(` start_date: ${start_date}, start_time: ${start_time}, end_date: ${end_date}, end_time: ${end_time}`);
+    const  s1 = Date.parse(start_date + " " + start_time);
+    const  s2 = Date.parse(end_date + " " + end_time);
+    // 遍历每一个时间间隔
+    for (let t = s1; t < s2; t += 60 * 1000) {
+        const [date, time] = formatUTCDate(new Date(t.valueOf()));
+        const full_path = get_full_path(cur_path, id, type, date, time);
+        console_orig.log(` date: ${date}, time: ${time}`);
+     }
 }
