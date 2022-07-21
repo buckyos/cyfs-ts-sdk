@@ -149,18 +149,6 @@ export class PerfIsolate {
         return Ok(undefined);
     }
 
-    async get_by_path(path: string): Promise<BuckyResult<ObjectId | undefined>> {
-        let dec_id = ObjectId.from_base_58(PERF_DEC_ID_STR).unwrap();
-        if(this.dec_id.is_some()){
-            dec_id = this.dec_id.unwrap();
-        }
-        const root_state = this.stack.root_state_stub(this.people_id, dec_id);
-        const op_env = (await root_state.create_path_op_env()).unwrap();
-        const ret = await op_env.get_by_path(path);
-
-        return ret;
-    }
-
     // 开启一个request
     begin_request(id: string, key: string): void {
         const full_id = `${id}_${key}`;
@@ -184,8 +172,11 @@ export class PerfIsolate {
             dec_id = this.dec_id.unwrap();
         }
 
-        const ret = await this.get_by_path(path);
-        if (ret.err || ret.unwrap() === undefined) {
+        const ret = await this.stack
+        .root_state_access_stub(this.device_id.object_id, dec_id)
+        .get_object_by_path(path)
+
+        if (ret.err) {
             if (this.pending_reqs.delete(full_id)) {
                 const perf_obj = PerfRequest.create(this.people_id, dec_id);
                 const v = perf_obj.add_stat(spend_time, stat);
@@ -196,7 +187,7 @@ export class PerfIsolate {
             return Ok(undefined);
         }
         console.info(`ret: ${ret}`);
-        const v = ret.unwrap()!;
+        const v = ret.unwrap().object.object_id;
         const req = {
             object_id: v,
             common: {
@@ -237,8 +228,11 @@ export class PerfIsolate {
             dec_id = this.dec_id.unwrap();
         }
 
-        const ret = await this.get_by_path(path);
-        if (ret.err || ret.unwrap() === undefined) {
+        const ret = await this.stack
+        .root_state_access_stub(this.device_id.object_id, dec_id)
+        .get_object_by_path(path)
+
+        if (ret.err) {
             const perf_obj = PerfAccumulation.create(this.people_id, dec_id);
             const v = perf_obj.add_stat(stat);
             const object_raw = v.to_vec().unwrap();
@@ -246,7 +240,7 @@ export class PerfIsolate {
             await this.put_noc_and_root_state(object_id, object_raw, PerfType.Accumulations);
             return Ok(undefined);
         }
-        const v = ret.unwrap()!;
+        const v = ret.unwrap().object.object_id;
 
         const req = {
             object_id: v,
@@ -299,8 +293,11 @@ export class PerfIsolate {
             dec_id = this.dec_id.unwrap();
         }
 
-        const ret = await this.get_by_path(path);
-        if (ret.err || ret.unwrap() === undefined) {
+        const ret = await this.stack
+        .root_state_access_stub(this.device_id.object_id, dec_id)
+        .get_object_by_path(path)
+
+        if (ret.err) {
             const perf_obj = PerfRecord.create(this.people_id, dec_id, total, total_size);
             const v = perf_obj.add_stat(total, total_size);
             const object_raw = v.to_vec().unwrap();
@@ -308,7 +305,7 @@ export class PerfIsolate {
             await this.put_noc_and_root_state(object_id, object_raw, PerfType.Records);
             return Ok(undefined);
         }
-        const v = ret.unwrap()!;
+        const v = ret.unwrap().object.object_id;
 
         const req = {
             object_id: v,

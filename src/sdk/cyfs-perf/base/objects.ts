@@ -451,9 +451,9 @@ export class PerfActionId extends NamedObjectId<PerfActionDesc, EmptyProtobufBod
     }
 }
 
-export class PerfActionDecoder extends NamedObjectIdDecoder<PerfActionDesc, EmptyProtobufBodyContent> {
+export class PerfActionDecoder extends NamedObjectDecoder<PerfActionDesc, EmptyProtobufBodyContent, PerfAction> {
     constructor() {
-        super(PerfObjectType.Action);
+        super(new PerfActionDescDecoder(), new EmptyProtobufBodyContentDecoder(), PerfAction);
     }
 }
 
