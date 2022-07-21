@@ -1,7 +1,7 @@
 import { Argument, Command } from "commander";
 import { create_stack, CyfsToolConfig, formatDate, getObject, stop_runtime } from "../lib/util";
 
-import {BuckyResult, clog, DecAppDecoder, DeviceDecoder, DeviceId, NONAPILevel, ObjectId, ObjectMapSimpleContentType, ObjectTypeCode, Ok, SharedCyfsStack } from "../../sdk";
+import {BuckyResult, clog, DecAppDecoder, DeviceDecoder, DeviceId, NONAPILevel, ObjectId, ObjectMapSimpleContentType, ObjectTypeCode, Ok, PerfRequestDecoder, ProtobufCodecHelper, SharedCyfsStack } from "../../sdk";
 import * as inquirer from 'inquirer'
 inquirer.registerPrompt(
     'command',
@@ -567,7 +567,7 @@ function get_full_path(cur_path: string, id: string, type: string, date: string,
     return reslove_full_path(new_path);
 }
 
-// cat -s "2022-08-08 03:32:00"  -e  "2022-08-09 09:32:00"
+// cat -s "2022-07-21 03:32"  -e  "2022-07-21 20:00"
 async function cat(cur_path: string, id: string, default_stack: SharedCyfsStack, type: string, start: string, end: string) {
     if (type === undefined) {
         type = "all";
@@ -593,7 +593,37 @@ async function cat(cur_path: string, id: string, default_stack: SharedCyfsStack,
     // 遍历每一个时间间隔
     for (let t = s1; t < s2; t += 60 * 1000) {
         const [date, time] = formatUTCDate(new Date(t.valueOf()));
-        const full_path = get_full_path(cur_path, id, type, date, time);
-        console_orig.log(` date: ${date}, time: ${time}`);
+        const full_path = get_full_path(cur_path, id, "request", date, time);
+        const [dec_id, sub_path] = extract_path(full_path);
+        const ret = await default_stack.root_state_access_stub(device_list[local_device_index].value.object_id, dec_id).get_object_by_path(sub_path);
+        if (ret.err) {
+            console_orig.log(`target: ${device_list[local_device_index].value.object_id}, dec_id: ${dec_id}, sub_path: ${sub_path}`);
+            continue;
+        }
+        const v = ret.unwrap().object.object_id;
+        const req = {
+            object_id: v,
+            common: {
+                dec_id,
+                flags: 0,
+                level: NONAPILevel.NOC
+            }
+        };
+    
+        const ret_result = await default_stack.non_service().get_object(req);
+        if (ret_result.err) {
+            console_orig.log(`ret_result: ${ret_result}`);
+            continue;
+        } else {
+            // console_orig.log(`object_id: ${ret_result.unwrap().object.object_id}, object_raw: ${ret_result.unwrap().object.object_raw}`);
+            const object_ret = new PerfRequestDecoder().from_raw(ret_result.unwrap().object.object_raw);
+            if (object_ret.err) {
+                console_orig.log(`perf_ret: ${object_ret.err}`);
+                continue;
+            }
+            const perf_obj = object_ret.unwrap();
+            console_orig.log(`perf_obj: ${JSON.stringify(perf_obj.desc().content(), null, 2)}`);
+        }
+
      }
 }
