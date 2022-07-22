@@ -1,13 +1,15 @@
 import JSBI from "jsbi";
 import { BuckyErrorCode, BuckyResult, DescTypeInfo, EmptyProtobufBodyContent, EmptyProtobufBodyContentDecoder, NamedObject, NamedObjectBuilder, 
     NamedObjectDecoder, 
-    NamedObjectId, NamedObjectIdDecoder, named_id_from_base_58, named_id_gen_default, named_id_try_from_object_id, None, 
+    NamedObjectId, named_id_from_base_58, named_id_gen_default, named_id_try_from_object_id, None, 
     ObjectId, Ok, Option, ProtobufCodecHelper, ProtobufDescContent, ProtobufDescContentDecoder, Some, SubDescType } from "../../cyfs-base";
 import { PerfObjectType } from "./type";
 import {perf_protos as protos} from "../codec/index"
-import { stringify } from "querystring";
 
-function jsbi_min(t1: JSBI, t2: JSBI): JSBI {
+function jsbi_min(t1: JSBI, t2: JSBI, ignore?: JSBI): JSBI {
+    if (ignore && JSBI.equal(t1, ignore)) {
+        return t2
+    }
     return JSBI.lessThan(t1, t2)?t1:t2
 }
 
@@ -47,11 +49,19 @@ export class SizeResult {
         return ret
     }
 
-    merge(value: JSBI, total_num: number) {
+    merge_record(value: JSBI, total_num: number): void {
         this.total = JSBI.ADD(this.total, value);
-        this.min = JSBI.equal(this.min, JSBI.BigInt(0))?value:jsbi_min(this.min, value);
+        this.min = jsbi_min(this.min, value, JSBI.BigInt(0))
         this.max = jsbi_max(this.max, value)
         this.avg = JSBI.divide(this.total, JSBI.BigInt(total_num))
+    }
+
+    merge(value: SizeResult): void {
+        this.min = jsbi_min(this.min, value.min, JSBI.BigInt(0))
+        this.max = jsbi_max(this.max, value.max)
+        const total_num = JSBI.ADD(JSBI.divide(this.total, this.avg), JSBI.divide(value.total, value.avg))
+        this.total = JSBI.ADD(this.total, value.total)
+        this.avg = JSBI.divide(this.total, total_num)
     }
 }
 
@@ -87,10 +97,18 @@ export class TimeResult {
         return ret
     }
 
-    merge(value: number, total_num: number) {
+    merge_record(value: number, total_num: number): void {
         this.total += value;
         this.min = (this.min === 0)?value:Math.min(this.min, value)
         this.max = Math.max(this.max, value)
+        this.avg = Math.floor(this.total/total_num)
+    }
+
+    merge(value: TimeResult): void {
+        this.min = (this.min === 0)?value.min:Math.min(this.min, value.min)
+        this.max = Math.max(this.max, value.max)
+        const total_num = Math.floor((this.total / this.avg) + (value.total / value.avg))
+        this.total += value.total
         this.avg = Math.floor(this.total/total_num)
     }
 }
@@ -123,10 +141,14 @@ export class SpeedResult {
         return ret
     }
 
-    merge(value: number) {
+    merge_record(value: number): void {
         this.min = (this.min === 0)?value:Math.min(this.min, value)
         this.max = Math.max(this.max, value);
+    }
 
+    merge(value: SpeedResult): void {
+        this.min = (this.min === 0)?value.min:Math.min(this.min, value.min)
+        this.max = Math.max(this.max, value.max);
     }
 }
 
@@ -247,18 +269,32 @@ export class PerfRequest extends NamedObject<PerfRequestDesc, EmptyProtobufBodyC
             desc.failed += 1;
         } else {
             desc.success += 1;
-            desc.time.merge(spend_time, desc.success);
+            desc.time.merge_record(spend_time, desc.success);
             if (stat.unwrap().is_some()) {
                 const stat_num = stat.unwrap().unwrap()
-                desc.size.merge(stat_num, desc.success);
+                desc.size.merge_record(stat_num, desc.success);
 
                 const speed = JSBI.divide(stat_num, JSBI.BigInt(spend_time / 1000))
-                desc.speed.merge(JSBI.toNumber(speed));
+                desc.speed.merge_record(JSBI.toNumber(speed));
                 desc.speed.avg = JSBI.toNumber(JSBI.divide(desc.size.total, JSBI.BigInt(desc.time.total / 1000)))
             }
         }
 
         return new PerfRequestBuilder(desc, new EmptyProtobufBodyContent()).owner(this.desc().owner()!.unwrap()).dec_id(this.desc().dec_id().unwrap()).build(PerfRequest)
+    }
+
+    merge(value: PerfRequest) {
+        const desc = this.desc().content()
+        const value_desc = value.desc().content()
+
+        desc.failed += value_desc.failed
+        desc.success += value_desc.success
+
+        desc.time.merge(value_desc.time)
+        desc.size.merge(value_desc.size)
+        desc.speed.merge(value_desc.speed)
+
+        desc.speed.avg = JSBI.toNumber(JSBI.divide(desc.size.total, JSBI.BigInt(desc.time.total / 1000)))
     }
 }
 
@@ -371,10 +407,20 @@ export class PerfAccumulation extends NamedObject<PerfAccumulationDesc, EmptyPro
             desc.failed += 1;
         } else {
             desc.success += 1;
-            desc.size.merge(stat.unwrap(), desc.success);
+            desc.size.merge_record(stat.unwrap(), desc.success);
         }
 
         return new PerfAccumulationBuilder(desc, new EmptyProtobufBodyContent()).owner(this.desc().owner()!.unwrap()).dec_id(this.desc().dec_id().unwrap()).build(PerfAccumulation)
+    }
+
+    merge(value: PerfAccumulation) {
+        const desc = this.desc().content()
+        const value_desc = value.desc().content()
+
+        desc.failed += value_desc.failed
+        desc.success += value_desc.success
+
+        desc.size.merge(value_desc.size)
     }
 }
 
@@ -582,6 +628,5 @@ export class PerfRecord extends NamedObject<PerfRecordDesc, EmptyProtobufBodyCon
             .owner(this.desc().owner()!.unwrap())
             .dec_id(this.desc().dec_id().unwrap())
             .build(PerfRecord)
-
     }
 }
