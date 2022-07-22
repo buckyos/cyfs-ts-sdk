@@ -123,7 +123,7 @@ export function makeOLink(
 }
 
 // 时间格式转换
-export function formatDate(date: number | string | Date, isfoleder?: boolean): string{
+export function formatDate(date: number | string | Date, isfoleder?: boolean): string {
     if (Number(date) > 0) {
       date = new Date(Number(date))
       const years = date.getFullYear() > 9 ? date.getFullYear() : '0' + date.getFullYear();
@@ -140,7 +140,61 @@ export function formatDate(date: number | string | Date, isfoleder?: boolean): s
     } else {
       return '-';
     }
-  }
+ }
+
+ export function formatLocalDate(d: Date): [string, string] {
+    let month: string | number = d.getMonth() + 1;
+    let strDate: string | number = d.getDate();
+
+    if (month <= 9) {
+        month = "0" + month;
+    }
+
+    if (strDate <= 9) {
+        strDate = "0" + strDate;
+    }
+
+    const date = d.getFullYear() + "-" + month + "-" + strDate;
+
+    let hour: string | number = d.getHours();
+    if (hour <= 9) {
+        hour = "0" + hour;
+    }
+    let minutes: string | number = d.getMinutes();
+    if (minutes <= 9) {
+        minutes = "0" + minutes;
+    }
+    const time = hour + ":" + minutes;
+
+    return [date, time];
+}
+
+ export function formatUTCDate(d: Date): [string, string] {
+    let month: string | number = d.getUTCMonth() + 1;
+    let strDate: string | number = d.getUTCDate();
+
+    if (month <= 9) {
+        month = "0" + month;
+    }
+
+    if (strDate <= 9) {
+        strDate = "0" + strDate;
+    }
+
+    const date = d.getUTCFullYear() + "-" + month + "-" + strDate;
+
+    let hour: string | number = d.getUTCHours();
+    if (hour <= 9) {
+        hour = "0" + hour;
+    }
+    let minutes: string | number = d.getUTCMinutes();
+    if (minutes <= 9) {
+        minutes = "0" + minutes;
+    }
+    const time = hour + ":" + minutes;
+
+    return [date, time];
+}
 
 export async function getObject(params: {
     stack: SharedCyfsStack,

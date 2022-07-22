@@ -1,5 +1,5 @@
 import { Argument, Command } from "commander";
-import { create_stack, CyfsToolConfig, formatDate, getObject, stop_runtime } from "../lib/util";
+import { create_stack, CyfsToolConfig, formatDate, formatLocalDate, formatUTCDate, getObject, stop_runtime } from "../lib/util";
 
 import {BuckyResult, clog, DecAppDecoder, DeviceDecoder, DeviceId, NONAPILevel, ObjectId, ObjectMapSimpleContentType, ObjectTypeCode, Ok, PerfAccumulationDecoder, PerfActionDecoder, PerfRecordDecoder, PerfRequestDecoder, ProtobufCodecHelper, SharedCyfsStack } from "../../sdk";
 import * as inquirer from 'inquirer'
@@ -149,7 +149,7 @@ export function makeCommand(config: CyfsToolConfig): Command {
         .description("perf statistical summary tool")
         .requiredOption("-e, --endpoint <target>", "cyfs shell endpoint, ood or runtime", "runtime")
         .action(async (options) => {
-            clog.setLevel(4) // warn level log message
+            clog.setLevel(5) // error level log message
             const [stack, writable] = await create_stack(options.endpoint, config)
             await stack.online();
             await prelude_device_list(stack);
@@ -328,12 +328,12 @@ async function list(cur_path: string, target_id: ObjectId, stack: SharedCyfsStac
     
 }
 
-async function objects_info(cur_path: string, type: string, target_id: ObjectId, stack: SharedCyfsStack, is_show: boolean): Promise<[number, string]> {
+async function objects_info(cur_path: string, type: string, target_id: ObjectId, stack: SharedCyfsStack, is_show: boolean): Promise<[number, ObjectInfo[]]> {
     let table_head: string[] = [];
     const table_data: any[] = [];
 
     let size = 0;
-    let dimension = '';
+    let result: ObjectInfo[] = [];
 
     //通用显示
     table_head = [type]
@@ -343,13 +343,19 @@ async function objects_info(cur_path: string, type: string, target_id: ObjectId,
         const people = people_id.to_base_58();
         table_data.push([people])
         size += 1;
-        dimension = people;
+        result.push({
+            key: people,
+            object_id: people_id
+        })
 
     } else if (type === "device") {
         // device
         for (const device of device_list) {
             table_data.push([device.name])
-            dimension = device.name;
+            result.push({
+                key: device.name,
+                object_id: device.value.object_id
+            })
             size += 1;
         }
     } else {
@@ -374,16 +380,17 @@ async function objects_info(cur_path: string, type: string, target_id: ObjectId,
         for (const object of objects) {
             const key = await decorate_decid(show_key(object.object_id.obj_type_code(), object.key), stack)
             table_data.push([key])
-            dimension = object.key;
             size += 1;
         }
+
+        result = objects;
     }
 
     if (is_show) {
         show_table(table_head, table_data);
     }
 
-    return [size, dimension];
+    return [size, result];
 }
 
 function validate(cur_path: string, type: string): boolean {
@@ -457,13 +464,13 @@ async function show(cur_path: string, type: string, default_stack: SharedCyfsSta
         }
         let i = 0;
         do {
-            const [size, dimension] = await objects_info(dst_path, next_type, device_list[local_device_index].value.object_id, default_stack, true);
+            const [size, objects] = await objects_info(dst_path, next_type, device_list[local_device_index].value.object_id, default_stack, true);
             if (size > 1) {
                 break;
             }
 
             // 路径检查器
-            const new_path = path.resolve(cur_path, dimension);
+            const new_path = path.resolve(cur_path, objects[0].key);
             next_type = next_dimension(new_path);
             if (next_type === undefined) {
                 break;
@@ -484,9 +491,9 @@ async function use(cur_path: string, dst_path: string, default_stack: SharedCyfs
         if (next_type === undefined) {
             return cur_path;
         }
-        const [size, dimension] = await objects_info(dst_path, next_type, device_list[local_device_index].value.object_id, default_stack, false);
+        const [size, objects] = await objects_info(dst_path, next_type, device_list[local_device_index].value.object_id, default_stack, false);
         if (size === 1) {
-            dst_path = dimension;
+            dst_path = objects[0].key;
         }
     }
     // 路径检查器
@@ -516,33 +523,6 @@ async function use(cur_path: string, dst_path: string, default_stack: SharedCyfs
     }
 }
 
-function formatUTCDate(d: Date): [string, string] {
-    let month: string | number = d.getUTCMonth() + 1;
-    let strDate: string | number = d.getUTCDate();
-
-    if (month <= 9) {
-        month = "0" + month;
-    }
-
-    if (strDate <= 9) {
-        strDate = "0" + strDate;
-    }
-
-    const date = d.getUTCFullYear() + "-" + month + "-" + strDate;
-
-    let hour: string | number = d.getUTCHours();
-    if (hour <= 9) {
-        hour = "0" + hour;
-    }
-    let minutes: string | number = d.getUTCMinutes();
-    if (minutes <= 9) {
-        minutes = "0" + minutes;
-    }
-    const time = hour + ":" + minutes;
-
-    return [date, time];
-}
-
 const ACC       = "Accumulations";
 const ACTION    = "Actions";
 const RECORD    = "Records";
@@ -567,61 +547,72 @@ function get_full_path(cur_path: string, id: string, type: string, date: string,
     return reslove_full_path(new_path);
 }
 
-function perf_decoder(type: string, object_raw: Uint8Array) {
-    let object_ret;
-    if (type === "request") {
-        object_ret = new PerfRequestDecoder().from_raw(object_raw);
-    } else if (type === "record") {
-        object_ret = new PerfRecordDecoder().from_raw(object_raw);
-    } else if (type === "action") {
-        object_ret = new PerfActionDecoder().from_raw(object_raw);
-    } else if (type === "acc") {
-        object_ret = new PerfAccumulationDecoder().from_raw(object_raw);
-    }
-
-    if (object_ret.err) {
-        console_orig.log(`perf_ret: ${object_ret.err}`);
+async function view_object(dec_id: ObjectId, sub_path: string, type: string, stack: SharedCyfsStack) {
+    const ret = await stack.root_state_access_stub(device_list[local_device_index].value.object_id, dec_id).get_object_by_path(sub_path);
+    if (ret.err) {
+        console_orig.log(`target: ${device_list[local_device_index].value.object_id}, dec_id: ${dec_id}, sub_path: ${sub_path}`);
         return;
     }
-    const perf_obj = object_ret.unwrap();
-    console_orig.log(`${type}: ${JSON.stringify(perf_obj.desc().content(), null, 4)}`);
+    const v = ret.unwrap().object.object_id;
+    const req = {
+        object_id: v,
+        common: {
+            dec_id,
+            flags: 0,
+            level: NONAPILevel.NOC
+        }
+    };
 
-    //fixed  merge duration and simple output_request
+    const ret_result = await stack.non_service().get_object(req);
+    if (ret_result.err) {
+        console_orig.log(`ret_result: ${ret_result}`);
+        return;
+    } else {
+        let object_ret;
+        if (type === "request") {
+            object_ret = new PerfRequestDecoder().from_raw(ret_result.unwrap().object.object_raw);
+        } else if (type === "record") {
+            object_ret = new PerfRecordDecoder().from_raw(ret_result.unwrap().object.object_raw);
+        } else if (type === "action") {
+            object_ret = new PerfActionDecoder().from_raw(ret_result.unwrap().object.object_raw);
+        } else if (type === "acc") {
+            object_ret = new PerfAccumulationDecoder().from_raw(ret_result.unwrap().object.object_raw);
+        }
+    
+        if (object_ret.err) {
+            console_orig.log(`perf_ret: ${object_ret.err}`);
+            return;
+        }
+        const perf_obj = object_ret.unwrap();
+        console_orig.log(`${type}: ${JSON.stringify(perf_obj.desc().content(), null, 4)}`);
+    } 
+    
+
 }
 
 async function traverse(cur_path: string, id: string, stack: SharedCyfsStack, s1: number, s2: number, type: string){
     for (let t = s1; t < s2; t += 60 * 1000) {
-        const [date, time] = formatUTCDate(new Date(t.valueOf()));
+        const [date, time] = formatLocalDate(new Date(t.valueOf()));
         const full_path = get_full_path(cur_path, id, type, date, time);
         const [dec_id, sub_path] = extract_path(full_path);
-        const ret = await stack.root_state_access_stub(device_list[local_device_index].value.object_id, dec_id).get_object_by_path(sub_path);
-        if (ret.err) {
-            console_orig.log(`target: ${device_list[local_device_index].value.object_id}, dec_id: ${dec_id}, sub_path: ${sub_path}`);
-            continue;
+        if (dec_id === undefined) {
+            return;
         }
-        const v = ret.unwrap().object.object_id;
-        const req = {
-            object_id: v,
-            common: {
-                dec_id,
-                flags: 0,
-                level: NONAPILevel.NOC
+        if (type === "action") {
+            const [size, objects] = await objects_info(full_path, "objects", device_list[local_device_index].value.object_id, stack, false);
+            for (const object of objects) {
+                await view_object(dec_id, path.resolve(sub_path, object.key), type, stack);
             }
-        };
-    
-        const ret_result = await stack.non_service().get_object(req);
-        if (ret_result.err) {
-            console_orig.log(`ret_result: ${ret_result}`);
-            continue;
+
         } else {
-            perf_decoder(type, ret_result.unwrap().object.object_raw);
-        }        
+            await view_object(dec_id, sub_path, type, stack);
+        }
     }
 
 }
 
 // cat -s "2022-07-21 03:32"  -e  "2022-07-21 20:00"
-async function cat(cur_path: string, id: string, default_stack: SharedCyfsStack, type: string, start: string, end: string) {
+async function cat(cur_path: string, id: string, stack: SharedCyfsStack, type: string, start: string, end: string) {
     if (type === undefined) {
         type = "all";
     }
@@ -645,12 +636,12 @@ async function cat(cur_path: string, id: string, default_stack: SharedCyfsStack,
     const  s2 = Date.parse(end_date + " " + end_time);
     
     if (type === "all") {
-        await traverse(cur_path, id, default_stack, s1, s2, "request");
-        await traverse(cur_path, id, default_stack, s1, s2, "record");
-        await traverse(cur_path, id, default_stack, s1, s2, "action");
-        await traverse(cur_path, id, default_stack, s1, s2, "acc");
+        await traverse(cur_path, id, stack, s1, s2, "request");
+        await traverse(cur_path, id, stack, s1, s2, "record");
+        await traverse(cur_path, id, stack, s1, s2, "action");
+        await traverse(cur_path, id, stack, s1, s2, "acc");
     } else {
-        await traverse(cur_path, id, default_stack, s1, s2, type);       
+        await traverse(cur_path, id, stack, s1, s2, type);       
     }
 
 }
