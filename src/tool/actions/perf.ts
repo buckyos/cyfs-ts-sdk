@@ -619,7 +619,7 @@ async function cat(cur_path: string, id: string, stack: SharedCyfsStack, type: s
 
     // 默认最近一个时间片的信息
     if (start === undefined) {
-        start = formatDate(new Date().getTime() - 1000 * 60)
+        start = formatDate(new Date().getTime() - 1000 * 60 * 60)
     }
     // 默认为当前本地时间
     if (end === undefined) {
