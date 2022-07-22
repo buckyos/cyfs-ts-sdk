@@ -26,8 +26,8 @@
         async perf_example() {
             (await this.m_sharedStatck.online()).unwrap();
 
-            // 获取PerfClient 对象 一个bdt isolate
-            let client = await cyfs.PerfClient.new("test-perf-h5", "1.0.0", cyfs.Some(this.dec_id), this.m_sharedStatck);
+            // 获取PerfClient 对象 一个bdt isolate 
+            let client = await cyfs.PerfClient.new("test-perf-h5", "1.0.0", 10 /*[1, 1440)*/, cyfs.Some(this.dec_id), this.m_sharedStatck);
             let perfIsolate = client.new_isolate("main");
             perfIsolate.begin_request("bdt", "channel");
             await perfIsolate.end_request("bdt", "channel", 60 * 1000 , cyfs.Ok(cyfs.Some(cyfs.JSBI.BigInt(100))));

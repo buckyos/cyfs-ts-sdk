@@ -149,7 +149,7 @@ export function makeCommand(config: CyfsToolConfig): Command {
         .description("perf statistical summary tool")
         .requiredOption("-e, --endpoint <target>", "cyfs shell endpoint, ood or runtime", "runtime")
         .action(async (options) => {
-            clog.setLevel(5) // error level log message
+            clog.setLevel(4) // error level log message
             const [stack, writable] = await create_stack(options.endpoint, config)
             await stack.online();
             await prelude_device_list(stack);
@@ -529,7 +529,7 @@ const ACTION    = "Actions";
 const RECORD    = "Records";
 const REQUEST   = "Requests";
 
-function get_full_path(cur_path: string, id: string, type: string, date: string, time: string): string {
+function get_full_path(cur_path: string, id: string, type: string): string {
    
     let new_path = path.resolve(cur_path, id);
     // request, acc, action, record
@@ -542,8 +542,6 @@ function get_full_path(cur_path: string, id: string, type: string, date: string,
     } else if (type === "acc") {
         new_path = path.resolve(new_path, ACC);
     }
-    new_path = path.resolve(new_path, date);
-    new_path = path.resolve(new_path, time);
 
     return reslove_full_path(new_path);
 }
@@ -592,27 +590,51 @@ async function get_object<T>(dec_id: ObjectId, sub_path: string, type: string, s
 
 async function traverse<T>(cur_path: string, id: string, stack: SharedCyfsStack, s1: number, s2: number, type: string): Promise<BuckyResult<T[]>> {
     const result: T[] = [];
-    
-    for (let t = s1; t < s2; t += 60 * 1000) {
+    // 按天滚动查询, 日期下的time_span
+    for (let t = s1; t < s2; t += 86400 * 1000) {
+        // 这里特殊处理最近的一个时间片的数据
         const [date, time] = formatLocalDate(new Date(t.valueOf()));
-        const full_path = get_full_path(cur_path, id, type, date, time);
-        const [dec_id, sub_path] = extract_path(full_path);
-        if (dec_id === undefined) {
-            return Err(new BuckyError(BuckyErrorCode.InvalidFormat, "not found dec_id extract path"));
+        let full_path = get_full_path(cur_path, id, type);
+        let latest_date;
+        let is_latest = false;
+        if (date === "1970-01-01") {
+            is_latest = true;
+            // 存在最近的时间片的date
+            const [size, objects] = await objects_info(full_path, "objects", device_list[local_device_index].value.object_id, stack, false);
+            for (const date of objects.reverse()) {
+                latest_date = date.key;
+                break;
+            }
         }
 
-        if (type === "action") {
-            // 前置检查是否对象存在
-            let is_dir = false;
-            const cyfs_link = makeFullRlink(device_list[local_device_index].value.object_id, full_path);
-            const ret = await dump_object(stack, cyfs_link, true);
-            if (ret) {
-                if (ret["desc"]["object_type"] === 14) {
-                    is_dir = true;
-                }
+        if (is_latest) {
+            if (latest_date !== undefined) {
+                full_path = path.resolve(full_path, latest_date);
             }
-            if (is_dir) {
-                const [size, objects] = await objects_info(full_path, "objects", device_list[local_device_index].value.object_id, stack, false);
+
+        } else {
+            full_path = path.resolve(full_path, date);
+
+        }
+
+        //console_orig.log(`t: ${t}, date: ${date}, time:${time}, is_latest: ${is_latest} - latest_date: ${latest_date}, full_path: ${full_path}`); 
+
+        let latest_time;
+        // 存在最近的时间片time
+        const [size, objects] = await objects_info(full_path, "objects", device_list[local_device_index].value.object_id, stack, false);
+        for (const time of objects.reverse()) {
+            const new_path = path.resolve(full_path, time.key);
+            // FIXME: 验证自定义的time是否有效范围
+            // if (!is_latest) {
+            //     continue;
+            // }
+            const [dec_id, sub_path] = extract_path(new_path);
+            if (dec_id === undefined) {
+                return Err(new BuckyError(BuckyErrorCode.InvalidFormat, "not found dec_id extract path"));
+            }
+    
+            if (type === "action") {
+                const [size, objects] = await objects_info(new_path, "objects", device_list[local_device_index].value.object_id, stack, false);
                 for (const object of objects) {
                     const ret = await get_object<T>(dec_id, path.resolve(sub_path, object.key), type, stack);
                     if (ret.err) {
@@ -620,21 +642,24 @@ async function traverse<T>(cur_path: string, id: string, stack: SharedCyfsStack,
                     }
                     result.push(ret.unwrap());
                 }
-            }
-
-
-        } else {
-            const cyfs_link = makeFullRlink(device_list[local_device_index].value.object_id, full_path);
-            const ret = await dump_object(stack, cyfs_link, true);
-            if (ret) {
+    
+    
+            } else {
                 const ret = await get_object<T>(dec_id, sub_path, type, stack);
                 if (ret.err) {
                     continue;
                 }
     
                 result.push(ret.unwrap());
+    
             }
-
+            if (is_latest) {
+                break;
+            }
+        }
+        
+        if (is_latest) {
+            break;
         }
     }
 
@@ -715,7 +740,8 @@ async function cat(cur_path: string, id: string, stack: SharedCyfsStack, type: s
 
     // 默认最近一个时间片的信息
     if (start === undefined) {
-        start = formatDate(new Date().getTime() - 1000 * 60 * 60)
+        // 向前回溯到有数据为止
+        start = `1970-01-01 20:00`;
     }
     // 默认为当前本地时间
     if (end === undefined) {
@@ -723,14 +749,20 @@ async function cat(cur_path: string, id: string, stack: SharedCyfsStack, type: s
     }
     
     const s = new Date(Date.parse(start));
+
     const e = new Date(Date.parse(end));
+
     
     const [start_date, start_time] = formatUTCDate(s);
     const [end_date, end_time] = formatUTCDate(e);
     console_orig.log(` start_date: ${start_date}, start_time: ${start_time}, end_date: ${end_date}, end_time: ${end_time}`);
     const  s1 = Date.parse(start_date + " " + start_time);
     const  s2 = Date.parse(end_date + " " + end_time);
-    
+    if (s1 > s2) {
+        console_orig.log(` start: ${s1} > end: ${s2}, is invalid date`);
+        return;
+    }
+    console_orig.log(`start: ${start}, end: ${end}, s1: ${s1}, s2: ${s2}`);
     if (type === "all") {
         await view_object(cur_path, id, stack, s1, s2, "request");
         await view_object(cur_path, id, stack, s1, s2, "acc");

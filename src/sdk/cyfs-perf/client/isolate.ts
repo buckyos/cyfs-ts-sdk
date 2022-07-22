@@ -28,12 +28,14 @@ export function number_2_metric_name(x:number): string{
 export class PerfIsolate {
     stack: SharedCyfsStack
 
-    people_id: ObjectId;
-    device_id: DeviceId;
+    people_id: ObjectId
+    device_id: DeviceId
 
     dec_id: Option<ObjectId>
 
-    isolate_id: string;
+    isolate_id: string
+
+    span_times: number[]
 
     id: string
 
@@ -46,8 +48,9 @@ export class PerfIsolate {
     pending_reqs: Map<string, number>
     reqs: Map<string, PerfRequest>
     
-    constructor(isolate_id: string, people_id: ObjectId, device_id: DeviceId, dec_id: Option<ObjectId>, id: string, stack: SharedCyfsStack) {
+    constructor(isolate_id: string, span_times: number[], people_id: ObjectId, device_id: DeviceId, dec_id: Option<ObjectId>, id: string, stack: SharedCyfsStack) {
         this.isolate_id = isolate_id;
+        this.span_times = span_times;
         this.people_id = people_id;
         this.device_id = device_id;
         this.dec_id = dec_id;
@@ -82,6 +85,32 @@ export class PerfIsolate {
         return Ok(undefined);
     }
 
+    // 查找最后一个小于等于给定值的元素
+    binary_search_lastsmall(arr: number[], target: number): number {
+        if (arr.length <= 1) {
+            return 0;
+        } 
+        // 低位下标
+        let lowIndex = 0
+        // 高位下标
+        let highIndex = arr.length - 1
+
+        while (lowIndex <= highIndex) {
+            // 中间下标
+            const midIndex = Math.floor((lowIndex + highIndex) / 2)
+            if (arr[midIndex] <= target) {
+                if (midIndex === arr.length - 1 || arr[midIndex + 1] > target) {
+                    return arr[midIndex];
+                }
+                lowIndex = midIndex + 1
+            } else {
+                highIndex = midIndex - 1
+            }
+        }
+
+        return 0;
+    }
+
     get_local_cache_path(dec_id: Option<ObjectId>, isolate_id: string, id: string, perf_type: PerfType) : string {
         const now = new Date();
         let month: string | number = now.getUTCMonth() + 1;
@@ -96,19 +125,21 @@ export class PerfIsolate {
         }
 
         const date = now.getUTCFullYear() + "-" + month + "-" + strDate;
-        let hour: string | number = now.getUTCHours();
+        
+        const cur_span_time = now.getUTCHours() * 60 + now.getUTCMinutes();
+        const cur_span = this.binary_search_lastsmall(this.span_times, cur_span_time);
+
+        let hour: string | number = Math.floor(cur_span / 60);
         if (hour <= 9) {
             hour = "0" + hour;
         }
-        let minutes: string | number = now.getUTCMinutes();
+        let minutes: string | number = cur_span % 60;
         if (minutes <= 9) {
             minutes = "0" + minutes;
         }
         const time_span = hour + ":" + minutes;
-        //const time_span = hour + ":00";
         const people_id = this.people_id.to_base_58();
         const device_id = this.device_id.to_base_58();
-        // /<DecId>/perf-dec-id/<owner>/<device>/<isolate_id>/<id>/<PerfType>/<Date>/<TimeSpan>
         const path = `/${PERF_DEC_ID_STR}/${people_id}/${device_id}/${isolate_id}/${id}/${number_2_metric_name(perf_type)}/${date}/${time_span}`;
 
         return path;
