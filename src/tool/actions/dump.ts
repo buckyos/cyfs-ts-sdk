@@ -31,7 +31,7 @@ export async function dump_object(stack: SharedCyfsStack, olink: string, json: b
     const response  = await fetch(new_url_str, {headers});
 
     if (!response.ok) {
-        console.error(`response error code ${response.status}, msg ${response.statusText}`)
+        console.warn(`response error code ${response.status}, msg ${response.statusText}`)
         return;
     }
 

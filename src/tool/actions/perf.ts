@@ -1,7 +1,7 @@
 import { Argument, Command } from "commander";
-import { create_stack, CyfsToolConfig, formatDate, formatLocalDate, formatUTCDate, getObject, stop_runtime } from "../lib/util";
+import { create_stack, CyfsToolConfig, formatDate, formatLocalDate, formatUTCDate, getObject, makeFullRlink, stop_runtime } from "../lib/util";
 
-import {BuckyResult, clog, DecAppDecoder, DeviceDecoder, DeviceId, NONAPILevel, ObjectId, ObjectMapSimpleContentType, ObjectTypeCode, Ok, PerfAccumulationDecoder, PerfActionDecoder, PerfRecordDecoder, PerfRequestDecoder, ProtobufCodecHelper, SharedCyfsStack } from "../../sdk";
+import {AnyNamedObject, BuckyError, BuckyErrorCode, BuckyResult, clog, DecAppDecoder, DeviceDecoder, DeviceId, Err, NONAPILevel, ObjectId, ObjectMapSimpleContentType, ObjectTypeCode, Ok, PerfAccumulation, PerfAccumulationDecoder, PerfAction, PerfActionDecoder, PerfRecord, PerfRecordDecoder, PerfRequest, PerfRequestDecoder, ProtobufCodecHelper, SharedCyfsStack } from "../../sdk";
 import * as inquirer from 'inquirer'
 inquirer.registerPrompt(
     'command',
@@ -269,6 +269,7 @@ async function run(options: any, default_stack: SharedCyfsStack): Promise<void> 
 
 import {table, getBorderCharacters} from 'table';
 import {posix as path} from "path";
+import { dump_object } from "./dump";
 
 function show_table(table_head: string[], table_data: string[][]) {
     console_orig.log(table([table_head].concat(table_data), {
@@ -547,11 +548,11 @@ function get_full_path(cur_path: string, id: string, type: string, date: string,
     return reslove_full_path(new_path);
 }
 
-async function view_object(dec_id: ObjectId, sub_path: string, type: string, stack: SharedCyfsStack) {
+async function get_object<T>(dec_id: ObjectId, sub_path: string, type: string, stack: SharedCyfsStack): Promise<BuckyResult<T>> {
     const ret = await stack.root_state_access_stub(device_list[local_device_index].value.object_id, dec_id).get_object_by_path(sub_path);
     if (ret.err) {
         console_orig.log(`target: ${device_list[local_device_index].value.object_id}, dec_id: ${dec_id}, sub_path: ${sub_path}`);
-        return;
+        return ret;
     }
     const v = ret.unwrap().object.object_id;
     const req = {
@@ -566,7 +567,7 @@ async function view_object(dec_id: ObjectId, sub_path: string, type: string, sta
     const ret_result = await stack.non_service().get_object(req);
     if (ret_result.err) {
         console_orig.log(`ret_result: ${ret_result}`);
-        return;
+        return ret_result;
     } else {
         let object_ret;
         if (type === "request") {
@@ -581,34 +582,129 @@ async function view_object(dec_id: ObjectId, sub_path: string, type: string, sta
     
         if (object_ret.err) {
             console_orig.log(`perf_ret: ${object_ret.err}`);
-            return;
+            return object_ret;
         }
         const perf_obj = object_ret.unwrap();
-        console_orig.log(`${type}: ${JSON.stringify(perf_obj.desc().content(), null, 4)}`);
-    } 
+        return Ok(perf_obj);
+    }
     
-
 }
 
-async function traverse(cur_path: string, id: string, stack: SharedCyfsStack, s1: number, s2: number, type: string){
+async function traverse<T>(cur_path: string, id: string, stack: SharedCyfsStack, s1: number, s2: number, type: string): Promise<BuckyResult<T[]>> {
+    const result: T[] = [];
+    
     for (let t = s1; t < s2; t += 60 * 1000) {
         const [date, time] = formatLocalDate(new Date(t.valueOf()));
         const full_path = get_full_path(cur_path, id, type, date, time);
         const [dec_id, sub_path] = extract_path(full_path);
         if (dec_id === undefined) {
-            return;
+            return Err(new BuckyError(BuckyErrorCode.InvalidFormat, "not found dec_id extract path"));
         }
+
         if (type === "action") {
-            const [size, objects] = await objects_info(full_path, "objects", device_list[local_device_index].value.object_id, stack, false);
-            for (const object of objects) {
-                await view_object(dec_id, path.resolve(sub_path, object.key), type, stack);
+            // 前置检查是否对象存在
+            let is_dir = false;
+            const cyfs_link = makeFullRlink(device_list[local_device_index].value.object_id, full_path);
+            const ret = await dump_object(stack, cyfs_link, true);
+            if (ret) {
+                if (ret["desc"]["object_type"] === 14) {
+                    is_dir = true;
+                }
+            }
+            if (is_dir) {
+                const [size, objects] = await objects_info(full_path, "objects", device_list[local_device_index].value.object_id, stack, false);
+                for (const object of objects) {
+                    const ret = await get_object<T>(dec_id, path.resolve(sub_path, object.key), type, stack);
+                    if (ret.err) {
+                        continue;
+                    }
+                    result.push(ret.unwrap());
+                }
             }
 
+
         } else {
-            await view_object(dec_id, sub_path, type, stack);
+            const cyfs_link = makeFullRlink(device_list[local_device_index].value.object_id, full_path);
+            const ret = await dump_object(stack, cyfs_link, true);
+            if (ret) {
+                const ret = await get_object<T>(dec_id, sub_path, type, stack);
+                if (ret.err) {
+                    continue;
+                }
+    
+                result.push(ret.unwrap());
+            }
+
         }
     }
 
+    return Ok(result);
+
+}
+
+async function view_request(cur_path: string, id: string, stack: SharedCyfsStack, s1: number, s2: number, type: string) {
+    const ret = await traverse<PerfRequest>(cur_path, id, stack, s1, s2, type);
+    let perf_obj: PerfRequest;
+    let counter = 0;
+    for (const object of ret.unwrap()) {
+        perf_obj = object;
+        if (perf_obj !== undefined) {
+            perf_obj.merge(object);
+        }
+        counter += 1;
+    }
+
+    if (counter > 0 ) {
+        console_orig.log(`${type}: ${JSON.stringify(perf_obj!.desc().content(), null, 4)}`);
+    }
+}
+
+async function view_acc(cur_path: string, id: string, stack: SharedCyfsStack, s1: number, s2: number, type: string) {
+    const ret = await traverse<PerfAccumulation>(cur_path, id, stack, s1, s2, type);
+    let perf_obj: PerfAccumulation;
+    let counter = 0;
+    for (const object of ret.unwrap()) {
+        perf_obj = object;
+        if (perf_obj !== undefined) {
+            perf_obj.merge(object);
+        }
+        counter += 1;
+    }
+    if (counter > 0 ) {
+        console_orig.log(`${type}: ${JSON.stringify(perf_obj!.desc().content(), null, 4)}`);
+    }
+}
+
+async function view_record(cur_path: string, id: string, stack: SharedCyfsStack, s1: number, s2: number, type: string) {
+    const ret = await traverse<PerfRecord>(cur_path, id, stack, s1, s2, type);
+    let counter = 0;
+    for (const perf_obj of ret.unwrap().reverse()) {
+        // 取最近的一个时间片1h
+        console_orig.log(`${type}: ${JSON.stringify(perf_obj.desc().content(), null, 4)}`);
+        counter += 1;
+        if (counter >= 60) {
+            break;
+        }
+    }
+}
+
+async function view_action(cur_path: string, id: string, stack: SharedCyfsStack, s1: number, s2: number, type: string) {
+    const ret = await traverse<PerfAction>(cur_path, id, stack, s1, s2, type);
+    for (const perf_obj of ret.unwrap()) {
+        console_orig.log(`${type}: ${JSON.stringify(perf_obj.desc().content(), null, 4)}`);
+    }
+}
+
+async function view_object(cur_path: string, id: string, stack: SharedCyfsStack, s1: number, s2: number, type: string) {
+    if (type === "request") {
+        await view_request(cur_path, id, stack, s1, s2, "request");
+    } else if (type === "record") {
+        await view_record(cur_path, id, stack, s1, s2, "record");
+    } else if (type === "action") {
+        await view_action(cur_path, id, stack, s1, s2, "action");
+    } else if (type === "acc") {
+        await view_acc(cur_path, id, stack, s1, s2, "acc");
+    }
 }
 
 // cat -s "2022-07-21 03:32"  -e  "2022-07-21 20:00"
@@ -636,12 +732,12 @@ async function cat(cur_path: string, id: string, stack: SharedCyfsStack, type: s
     const  s2 = Date.parse(end_date + " " + end_time);
     
     if (type === "all") {
-        await traverse(cur_path, id, stack, s1, s2, "request");
-        await traverse(cur_path, id, stack, s1, s2, "record");
-        await traverse(cur_path, id, stack, s1, s2, "action");
-        await traverse(cur_path, id, stack, s1, s2, "acc");
+        await view_object(cur_path, id, stack, s1, s2, "request");
+        await view_object(cur_path, id, stack, s1, s2, "acc");
+        await view_object(cur_path, id, stack, s1, s2, "record");
+        await view_object(cur_path, id, stack, s1, s2, "action");
     } else {
-        await traverse(cur_path, id, stack, s1, s2, type);       
+        await view_object(cur_path, id, stack, s1, s2, type);
     }
 
 }

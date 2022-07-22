@@ -4,7 +4,7 @@ import { ObjectId, SharedCyfsStack, ObjectMapSimpleContentType, ObjectTypeCode,
     BuckyResult, Ok, clog, get_system_dec_app, DecAppDecoder, bucky_time_2_js_time, number_2_obj_type_code_name, 
     OBJECT_TYPE_CORE_START, OBJECT_TYPE_CORE_END, number_2_core_object_name, 
     DeviceId, NONAPILevel, DeviceDecoder } from "../../sdk";
-import { create_stack, CyfsToolConfig, formatDate, getObject, stop_runtime } from "../lib/util";
+import { create_stack, CyfsToolConfig, formatDate, getObject, makeFullRlink, stop_runtime } from "../lib/util";
 import { dump_object } from './dump';
 import {run as get_run} from './get';
 import { delete_object as del} from './del';
@@ -286,10 +286,6 @@ function extract_path(pathstr: string): [ObjectId|undefined, string] {
     return [dec_id, path.sep + path_parts.slice(2).join(path.sep)]
 }
 
-function make_r_link(target_id: ObjectId, full_path: string):string {
-    return `cyfs://r/${target_id}${full_path}`;
-}
-
 async function get_dec_name(dec_id: string, stack: SharedCyfsStack): Promise<string | undefined> {
     if (dec_name_cache.has(dec_id)) {
         return dec_name_cache.get(dec_id)
@@ -535,7 +531,7 @@ async function cd(cur_path: string, dst_path: string, target_id: ObjectId, stack
 async function cat(cur_path: string, dst_path: string, target_id: ObjectId, stack: SharedCyfsStack): Promise<void> {
     const new_path = path.resolve(cur_path, dst_path)
     // cyfs://r/5r4MYfFMPYJr5UqgAh2XcM4kdui5TZrhdssWpQ7XCp2y/95RvaS5gwV5SFnT38UXXNuujFBE3Pk8QQDrKVGdcncB4
-    const cyfs_link = make_r_link(target_id, new_path);
+    const cyfs_link = makeFullRlink(target_id, new_path);
     const obj = await dump_object(stack, cyfs_link, true);
     if (obj) {
         console_orig.log(JSON.stringify(obj, undefined, 4))
@@ -548,7 +544,7 @@ async function dump(cur_path: string, dst_path: string, target_id: ObjectId, sta
     }
     const new_path = path.resolve(cur_path, dst_path)
     // cyfs://r/5r4MYfFMPYJr5UqgAh2XcM4kdui5TZrhdssWpQ7XCp2y/95RvaS5gwV5SFnT38UXXNuujFBE3Pk8QQDrKVGdcncB4
-    const cyfs_link = make_r_link(target_id, new_path);
+    const cyfs_link = makeFullRlink(target_id, new_path);
     const ret = await dump_object(stack, cyfs_link, false);
     if (ret) {
         const [obj_raw, obj_id] = (ret as [Uint8Array, ObjectId]);
@@ -579,7 +575,7 @@ async function get(cur_path: string, dst_path: string, target_id: ObjectId, stac
         local_path = "./";
     }
 
-    const cyfs_link = make_r_link(target_id, new_path);
+    const cyfs_link = makeFullRlink(target_id, new_path);
     console.log(`save path: ${local_path}, target: ${target_id.to_string()}, dec_id: ${dec_id}, inner_path: ${sub_path}`)
     const link_type = "r";
     await get_run(cyfs_link, {save: local_path}, stack, target_id, dec_id, sub_path, link_type);
@@ -603,7 +599,7 @@ async function rm(cur_path:string, dst_path:string, target_id: ObjectId, stack: 
     //let owner_id;
     let is_dir = false;
     if (delete_object || !recursive_delete) {
-        const cyfs_link = make_r_link(target_id, new_path);
+        const cyfs_link = makeFullRlink(target_id, new_path);
         const ret = await dump_object(stack, cyfs_link, true);
         if (ret) {
             object_id = ObjectId.from_base_58(ret["desc"]["object_id"]).unwrap();

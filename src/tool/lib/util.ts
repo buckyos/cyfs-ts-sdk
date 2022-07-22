@@ -114,6 +114,10 @@ export function makeRLink(
     return [`cyfs://r`, ownerId.to_base_58(), dec_id.to_base_58(), inner_path].join("/");
 }
 
+export function makeFullRlink(target_id: ObjectId, full_path: string):string {
+    return `cyfs://r/${target_id}${full_path}`;
+}
+
 export function makeOLink(
     ownerId: ObjectId,
     object_id: ObjectId,
