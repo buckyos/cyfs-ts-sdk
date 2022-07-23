@@ -149,7 +149,7 @@ export function makeCommand(config: CyfsToolConfig): Command {
         .description("perf statistical summary tool")
         .requiredOption("-e, --endpoint <target>", "cyfs shell endpoint, ood or runtime", "runtime")
         .action(async (options) => {
-            clog.setLevel(4) // error level log message
+            clog.setSwitch(false) // turn off log message
             const [stack, writable] = await create_stack(options.endpoint, config)
             await stack.online();
             await prelude_device_list(stack);
@@ -588,16 +588,17 @@ async function get_object<T>(dec_id: ObjectId, sub_path: string, type: string, s
     
 }
 
-async function traverse<T>(cur_path: string, id: string, stack: SharedCyfsStack, s1: number, s2: number, type: string): Promise<BuckyResult<T[]>> {
+async function traverse<T>(cur_path: string, id: string, stack: SharedCyfsStack, start_date: string, start_time: string, end_date: string, end_time: string, type: string): Promise<BuckyResult<T[]>> {
     const result: T[] = [];
     // 按天滚动查询, 日期下的time_span
-    for (let t = s1; t < s2; t += 86400 * 1000) {
-        // 这里特殊处理最近的一个时间片的数据
-        const [date, time] = formatLocalDate(new Date(t.valueOf()));
+    const d1= Date.parse(start_date + " " + "00:00");
+    const d2= Date.parse(end_date + " " + "00:00");
+    for (let d = d1; d <= d2; d += 86400000) {
         let full_path = get_full_path(cur_path, id, type);
         let latest_date;
         let is_latest = false;
-        if (date === "1970-01-01") {
+        // 这里特殊处理最近的一个时间片的数据
+        if (start_date === "1970-01-01") {
             is_latest = true;
             // 存在最近的时间片的date
             const [size, objects] = await objects_info(full_path, "objects", device_list[local_device_index].value.object_id, stack, false);
@@ -613,21 +614,29 @@ async function traverse<T>(cur_path: string, id: string, stack: SharedCyfsStack,
             }
 
         } else {
-            full_path = path.resolve(full_path, date);
+            const date = new Date(d);
+            const [date_span, start_time] = formatLocalDate(date);
+            full_path = path.resolve(full_path, date_span);
 
         }
 
-        //console_orig.log(`t: ${t}, date: ${date}, time:${time}, is_latest: ${is_latest} - latest_date: ${latest_date}, full_path: ${full_path}`); 
-
-        let latest_time;
         // 存在最近的时间片time
         const [size, objects] = await objects_info(full_path, "objects", device_list[local_device_index].value.object_id, stack, false);
+        if (size <= 0) {
+            continue;
+        }
         for (const time of objects.reverse()) {
             const new_path = path.resolve(full_path, time.key);
             // FIXME: 验证自定义的time是否有效范围
-            // if (!is_latest) {
-            //     continue;
-            // }
+            if (!is_latest) {
+                const  s1 = Date.parse(start_date + " " + start_time);
+                const  s2 = Date.parse(end_date + " " + end_time);
+                const [date_span, time_span] = formatLocalDate(new Date(d));
+                const  s = Date.parse(date_span + " " + time.key);
+                if (s < s1 || s > s2) {
+                    continue;
+                }
+            }
             const [dec_id, sub_path] = extract_path(new_path);
             if (dec_id === undefined) {
                 return Err(new BuckyError(BuckyErrorCode.InvalidFormat, "not found dec_id extract path"));
@@ -667,8 +676,8 @@ async function traverse<T>(cur_path: string, id: string, stack: SharedCyfsStack,
 
 }
 
-async function view_request(cur_path: string, id: string, stack: SharedCyfsStack, s1: number, s2: number, type: string) {
-    const ret = await traverse<PerfRequest>(cur_path, id, stack, s1, s2, type);
+async function view_request(cur_path: string, id: string, stack: SharedCyfsStack, start_date: string, start_time: string, end_date: string, end_time: string, type: string) {
+    const ret = await traverse<PerfRequest>(cur_path, id, stack, start_date, start_time, end_date, end_time, type);
     let perf_obj: PerfRequest;
     let counter = 0;
     for (const object of ret.unwrap()) {
@@ -684,8 +693,8 @@ async function view_request(cur_path: string, id: string, stack: SharedCyfsStack
     }
 }
 
-async function view_acc(cur_path: string, id: string, stack: SharedCyfsStack, s1: number, s2: number, type: string) {
-    const ret = await traverse<PerfAccumulation>(cur_path, id, stack, s1, s2, type);
+async function view_acc(cur_path: string, id: string, stack: SharedCyfsStack, start_date: string, start_time: string, end_date: string, end_time: string, type: string) {
+    const ret = await traverse<PerfAccumulation>(cur_path, id, stack, start_date, start_time, end_date, end_time, type);
     let perf_obj: PerfAccumulation;
     let counter = 0;
     for (const object of ret.unwrap()) {
@@ -700,39 +709,35 @@ async function view_acc(cur_path: string, id: string, stack: SharedCyfsStack, s1
     }
 }
 
-async function view_record(cur_path: string, id: string, stack: SharedCyfsStack, s1: number, s2: number, type: string) {
-    const ret = await traverse<PerfRecord>(cur_path, id, stack, s1, s2, type);
-    let counter = 0;
+async function view_record(cur_path: string, id: string, stack: SharedCyfsStack, start_date: string, start_time: string, end_date: string, end_time: string, type: string) {
+    const ret = await traverse<PerfRecord>(cur_path, id, stack, start_date, start_time, end_date, end_time, type);
     for (const perf_obj of ret.unwrap().reverse()) {
         // 取最近的一个时间片1h
         console_orig.log(`${type}: ${JSON.stringify(perf_obj.desc().content(), null, 4)}`);
-        counter += 1;
-        if (counter >= 60) {
-            break;
-        }
+        break;
     }
 }
 
-async function view_action(cur_path: string, id: string, stack: SharedCyfsStack, s1: number, s2: number, type: string) {
-    const ret = await traverse<PerfAction>(cur_path, id, stack, s1, s2, type);
+async function view_action(cur_path: string, id: string, stack: SharedCyfsStack, start_date: string, start_time: string, end_date: string, end_time: string, type: string) {
+    const ret = await traverse<PerfAction>(cur_path, id, stack, start_date, start_time, end_date, end_time, type);
     for (const perf_obj of ret.unwrap()) {
         console_orig.log(`${type}: ${JSON.stringify(perf_obj.desc().content(), null, 4)}`);
     }
 }
 
-async function view_object(cur_path: string, id: string, stack: SharedCyfsStack, s1: number, s2: number, type: string) {
+async function view_object(cur_path: string, id: string, stack: SharedCyfsStack, start_date: string, start_time: string, end_date: string, end_time: string, type: string) {
     if (type === "request") {
-        await view_request(cur_path, id, stack, s1, s2, "request");
+        await view_request(cur_path, id, stack, start_date, start_time, end_date, end_time, "request");
     } else if (type === "record") {
-        await view_record(cur_path, id, stack, s1, s2, "record");
+        await view_record(cur_path, id, stack, start_date, start_time, end_date, end_time, "record");
     } else if (type === "action") {
-        await view_action(cur_path, id, stack, s1, s2, "action");
+        await view_action(cur_path, id, stack, start_date, start_time, end_date, end_time, "action");
     } else if (type === "acc") {
-        await view_acc(cur_path, id, stack, s1, s2, "acc");
+        await view_acc(cur_path, id, stack, start_date, start_time, end_date, end_time, "acc");
     }
 }
 
-// cat -s "2022-07-21 03:32"  -e  "2022-07-21 20:00"
+// cat -s "2022-07-21 03:32"  -e  "2022-07-23 20:00"
 async function cat(cur_path: string, id: string, stack: SharedCyfsStack, type: string, start: string, end: string) {
     if (type === undefined) {
         type = "all";
@@ -762,14 +767,13 @@ async function cat(cur_path: string, id: string, stack: SharedCyfsStack, type: s
         console_orig.log(` start: ${s1} > end: ${s2}, is invalid date`);
         return;
     }
-    console_orig.log(`start: ${start}, end: ${end}, s1: ${s1}, s2: ${s2}`);
     if (type === "all") {
-        await view_object(cur_path, id, stack, s1, s2, "request");
-        await view_object(cur_path, id, stack, s1, s2, "acc");
-        await view_object(cur_path, id, stack, s1, s2, "record");
-        await view_object(cur_path, id, stack, s1, s2, "action");
+        await view_object(cur_path, id, stack, start_date, start_time, end_date, end_time, "request");
+        await view_object(cur_path, id, stack, start_date, start_time, end_date, end_time, "acc");
+        await view_object(cur_path, id, stack, start_date, start_time, end_date, end_time, "record");
+        await view_object(cur_path, id, stack, start_date, start_time, end_date, end_time, "action");
     } else {
-        await view_object(cur_path, id, stack, s1, s2, type);
+        await view_object(cur_path, id, stack, start_date, start_time, end_date, end_time, type);
     }
 
 }
