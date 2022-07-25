@@ -150,6 +150,7 @@ export function makeCommand(config: CyfsToolConfig): Command {
         .requiredOption("-e, --endpoint <target>", "cyfs shell endpoint, ood or runtime", "runtime")
         .action(async (options) => {
             clog.setSwitch(false) // turn off log message
+            //clog.setLevel(4) // warn log message
             const [stack, writable] = await create_stack(options.endpoint, config)
             await stack.online();
             await prelude_device_list(stack);
@@ -579,10 +580,11 @@ async function get_object<T>(dec_id: ObjectId, sub_path: string, type: string, s
         }
     
         if (object_ret.err) {
-            console_orig.log(`perf_ret: ${object_ret.err}`);
+            // console_orig.log(`perf_ret: ${object_ret.err}`);
             return object_ret;
         }
         const perf_obj = object_ret.unwrap();
+        // console_orig.log("get_object: " + JSON.stringify(perf_obj));
         return Ok(perf_obj);
     }
     
@@ -627,6 +629,7 @@ async function traverse<T>(cur_path: string, id: string, stack: SharedCyfsStack,
         }
         for (const time of objects.reverse()) {
             const new_path = path.resolve(full_path, time.key);
+            // console_orig.log(`new_path: ${new_path}`);
             // FIXME: 验证自定义的time是否有效范围
             if (!is_latest) {
                 const  s1 = Date.parse(start_date + " " + start_time);
@@ -641,7 +644,7 @@ async function traverse<T>(cur_path: string, id: string, stack: SharedCyfsStack,
             if (dec_id === undefined) {
                 return Err(new BuckyError(BuckyErrorCode.InvalidFormat, "not found dec_id extract path"));
             }
-    
+            
             if (type === "action") {
                 const [size, objects] = await objects_info(new_path, "objects", device_list[local_device_index].value.object_id, stack, false);
                 for (const object of objects) {
@@ -680,6 +683,10 @@ async function view_request(cur_path: string, id: string, stack: SharedCyfsStack
     const ret = await traverse<PerfRequest>(cur_path, id, stack, start_date, start_time, end_date, end_time, type);
     let perf_obj: PerfRequest;
     let counter = 0;
+    if (ret.err) {
+        console_orig.log(`view_request: err: ${ret.err}`);
+        return;
+    }
     for (const object of ret.unwrap()) {
         perf_obj = object;
         if (perf_obj !== undefined) {
@@ -697,6 +704,7 @@ async function view_acc(cur_path: string, id: string, stack: SharedCyfsStack, st
     const ret = await traverse<PerfAccumulation>(cur_path, id, stack, start_date, start_time, end_date, end_time, type);
     let perf_obj: PerfAccumulation;
     let counter = 0;
+    //console_orig.log("view_acc: " + JSON.stringify(ret.unwrap()));
     for (const object of ret.unwrap()) {
         perf_obj = object;
         if (perf_obj !== undefined) {
@@ -711,6 +719,7 @@ async function view_acc(cur_path: string, id: string, stack: SharedCyfsStack, st
 
 async function view_record(cur_path: string, id: string, stack: SharedCyfsStack, start_date: string, start_time: string, end_date: string, end_time: string, type: string) {
     const ret = await traverse<PerfRecord>(cur_path, id, stack, start_date, start_time, end_date, end_time, type);
+    //console_orig.log("view_record: " + JSON.stringify(ret.unwrap()));
     for (const perf_obj of ret.unwrap().reverse()) {
         // 取最近的一个时间片1h
         console_orig.log(`${type}: ${JSON.stringify(perf_obj.desc().content(), null, 4)}`);
@@ -720,6 +729,7 @@ async function view_record(cur_path: string, id: string, stack: SharedCyfsStack,
 
 async function view_action(cur_path: string, id: string, stack: SharedCyfsStack, start_date: string, start_time: string, end_date: string, end_time: string, type: string) {
     const ret = await traverse<PerfAction>(cur_path, id, stack, start_date, start_time, end_date, end_time, type);
+    //console_orig.log("view_action: " + JSON.stringify(ret.unwrap()));
     for (const perf_obj of ret.unwrap()) {
         console_orig.log(`${type}: ${JSON.stringify(perf_obj.desc().content(), null, 4)}`);
     }
@@ -737,7 +747,7 @@ async function view_object(cur_path: string, id: string, stack: SharedCyfsStack,
     }
 }
 
-// cat -s "2022-07-21 03:32"  -e  "2022-07-23 20:00"
+// cat -s "2022-07-21 03:32"  -e  "2022-07-25 20:00"
 async function cat(cur_path: string, id: string, stack: SharedCyfsStack, type: string, start: string, end: string) {
     if (type === undefined) {
         type = "all";

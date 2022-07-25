@@ -59,9 +59,21 @@ export class SizeResult {
     merge(value: SizeResult): void {
         this.min = jsbi_min(this.min, value.min, JSBI.BigInt(0))
         this.max = jsbi_max(this.max, value.max)
-        const total_num = JSBI.ADD(JSBI.divide(this.total, this.avg), JSBI.divide(value.total, value.avg))
+        let total = JSBI.BigInt(0);
+        if (this.avg > JSBI.BigInt(0)) {
+            total = JSBI.divide(this.total, this.avg);
+        }
+        let other_total = JSBI.BigInt(0);
+        if (value.avg > JSBI.BigInt(0)) {
+            other_total = JSBI.divide(value.total, value.avg);
+        }
+        const total_num = JSBI.ADD(total, other_total)
         this.total = JSBI.ADD(this.total, value.total)
-        this.avg = JSBI.divide(this.total, total_num)
+        if (total_num > 0) {
+            this.avg = JSBI.divide(this.total, total_num)
+        } else {
+            this.avg = JSBI.BigInt(0);
+        }
     }
 }
 
@@ -107,9 +119,22 @@ export class TimeResult {
     merge(value: TimeResult): void {
         this.min = (this.min === 0)?value.min:Math.min(this.min, value.min)
         this.max = Math.max(this.max, value.max)
-        const total_num = Math.floor((this.total / this.avg) + (value.total / value.avg))
+        let total = 0;
+        if (this.avg > 0) {
+            total = this.total / this.avg;
+        }
+        let other_total = 0;
+        if (value.avg > 0) {
+            other_total = value.total / value.avg;
+        }
+        const total_num = Math.floor(total + other_total)
         this.total += value.total
-        this.avg = Math.floor(this.total/total_num)
+        if (total_num > 0) {
+            this.avg = Math.floor(this.total/total_num)
+        } else {
+            this.avg = 0;
+        }
+
     }
 }
 
@@ -291,10 +316,17 @@ export class PerfRequest extends NamedObject<PerfRequestDesc, EmptyProtobufBodyC
         desc.success += value_desc.success
 
         desc.time.merge(value_desc.time)
+
         desc.size.merge(value_desc.size)
+
         desc.speed.merge(value_desc.speed)
 
-        desc.speed.avg = JSBI.toNumber(JSBI.divide(desc.size.total, JSBI.BigInt(desc.time.total / 1000)))
+        const total = JSBI.BigInt(Math.floor(desc.time.total / 1000));
+        if (JSBI.equal(total, JSBI.BigInt(0))) {
+            desc.speed.avg = 0;
+        } else {
+            desc.speed.avg = JSBI.toNumber(JSBI.divide(desc.size.total, total))
+        }
     }
 }
 
