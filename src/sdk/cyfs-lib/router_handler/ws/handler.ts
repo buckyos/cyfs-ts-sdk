@@ -7,7 +7,7 @@ import {
     RouterWSAddHandlerParam,
     RouterWSRemoveHandlerParam,
     RouterWSHandlerEventParam,
-    RouterWSHandlerEventResponse,
+    RouterWSHandlerResponseJsonCodec,
     RouterWSHandlerResponse
 } from "./request";
 
@@ -15,7 +15,6 @@ import { WebSocketSession } from "../../ws/session";
 import { WebSocketClient } from "../../ws/client";
 import { RouterHandlerAnyRoutine, RouterHandlerEventRoutineT } from "../handler";
 import { RouterHandlerRequest, RouterHandlerResponse } from '../request';
-import { RouterEventResponseJsonCodec } from '../../events/def';
 import { JsonCodec } from '../../base/codec';
 import { RouterHandlerChain } from '../chain';
 import { ROUTER_WS_HANDLER_CMD_ADD, ROUTER_WS_HANDLER_CMD_EVENT, ROUTER_WS_HANDLER_CMD_REMOVE } from '../../base/protocol';
@@ -86,7 +85,7 @@ class RouterHandlerItem {
         if (ret.err) {
             console.error(`add ws router handler error! chain=${req.chain}, category=${req.category}, id=${req.id}`, ret);
         } else {
-            const codec = new RouterEventResponseJsonCodec();
+            const codec = new RouterWSHandlerResponseJsonCodec();
             const resp: RouterWSHandlerResponse = codec.decode_string(ret.unwrap()).unwrap();
             if (resp.err !== 0) {
                 console.error(`add ws router handler failed! chain=${this.chain}, category=${this.category}, id=${req.id}, err=${resp.err}, msg=${resp.msg}`);
@@ -122,7 +121,7 @@ export class RouterHandlerUnregisterItem {
             console.error(`remove ws router handler error! chain=${req.chain}, category=${req.category}, id=${req.id}`, ret);
             return ret;
         } else {
-            const codec = new RouterEventResponseJsonCodec();
+            const codec = new RouterWSHandlerResponseJsonCodec();
             const resp: RouterWSHandlerResponse = codec.decode_string(ret.unwrap()).unwrap();
             if (resp.err === 0) {
                 console.log(`remove ws router handler success! chain=${this.chain}, category=${this.category}, id=${this.id}`);

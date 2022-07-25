@@ -30,6 +30,7 @@ import { GlobalStateStub, GlobalStateAccessStub } from "../root_state/stub"
 import { GlobalStateCategory } from '../root_state/def';
 import { SyncRequestor } from "../sync/requestor";
 import { StateStorage } from "../storage/state_storage";
+import { RouterEventManager } from "../events/handler";
 
 
 export enum CyfsStackEventType {
@@ -192,6 +193,9 @@ export class SharedCyfsStack {
     // router handlers事件处理器
     private m_router_handlers: RouterHandlerManager;
 
+    // event事件处理器
+    private m_router_events: RouterEventManager;
+
     private m_sync_service: SyncRequestor;
 
     // 当前协议栈的device
@@ -217,6 +221,8 @@ export class SharedCyfsStack {
         this.m_local_cache_access = GlobalStateAccessRequestor.new_local_cache_access(SharedCyfsStack.select_requestor(param, param.requestor_config!.local_cache), this.dec_id);
 
         this.m_router_handlers = new RouterHandlerManager(CyfsStackEventType.WebSocket, ws_url, this.dec_id);
+
+        this.m_router_events = new RouterEventManager(CyfsStackEventType.WebSocket, ws_url, this.dec_id);
 
         this.m_sync_service = new SyncRequestor(SharedCyfsStack.select_requestor(param, param.requestor_config!.sync_service), this.dec_id);
     }
@@ -338,6 +344,10 @@ export class SharedCyfsStack {
 
     router_handlers(): RouterHandlerManager {
         return this.m_router_handlers;
+    }
+
+    router_events(): RouterEventManager {
+        return this.m_router_events;
     }
 
     // root_state methods
