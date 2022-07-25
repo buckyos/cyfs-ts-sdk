@@ -41,3 +41,4 @@ export * from './acl/def';
 export * from './acl/request';
 export * from "./zone/def";
 export * from "./admin/admin_object";
+export * from "./storage/state_storage";

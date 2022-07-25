@@ -16,6 +16,7 @@ import {
     sleep,
     Option,
     ObjectId,
+    ObjectMapSimpleContentType,
 } from "../../cyfs-base";
 import { CYFS_RUNTIME_NON_STACK_HTTP_PORT, CYFS_RUNTIME_NON_STACK_WS_PORT, NON_STACK_HTTP_PORT, NON_STACK_WS_PORT } from "../../cyfs-base/base/port";
 import { TransRequestor } from '../trans/requestor';
@@ -28,6 +29,7 @@ import { GlobalStateRequestor, GlobalStateAccessRequestor } from "../root_state/
 import { GlobalStateStub, GlobalStateAccessStub } from "../root_state/stub"
 import { GlobalStateCategory } from '../root_state/def';
 import { SyncRequestor } from "../sync/requestor";
+import { StateStorage } from "../storage/state_storage";
 
 
 export enum CyfsStackEventType {
@@ -370,5 +372,38 @@ export class SharedCyfsStack {
 
     local_cache_access_stub(dec_id?: ObjectId): GlobalStateAccessStub {
         return new GlobalStateAccessStub(this.local_cache_access(), undefined, dec_id);
+    }
+
+    // state_storage
+    global_state_storage(
+        category: GlobalStateCategory,
+        path: string,
+        content_type: ObjectMapSimpleContentType,
+    ): StateStorage {
+        return new StateStorage(
+            this,
+            category,
+            path,
+            content_type,
+            undefined,
+            this.dec_id,
+        )
+    }
+
+    global_state_storage_ex(
+        category: GlobalStateCategory,
+        path: string,
+        content_type: ObjectMapSimpleContentType,
+        target?: ObjectId,
+        dec_id?: ObjectId,
+    ): StateStorage {
+        return new StateStorage(
+            this,
+            category,
+            path,
+            content_type,
+            target,
+            dec_id,
+        )
     }
 }
