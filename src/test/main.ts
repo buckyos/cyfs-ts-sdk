@@ -17,6 +17,7 @@ import {JSBI} from '../sdk';
 import { test_object_map } from './test_object_map';
 import { test_base } from './test_base';
 import { assert } from 'console';
+import { test_state_storage } from './test_state_storage';
 
 function test_meta_codec() {
 
@@ -145,6 +146,8 @@ async function main() {
     await test_trans();
 
     test_codec();
+
+    // await test_state_storage(stack)
 }
 
 
