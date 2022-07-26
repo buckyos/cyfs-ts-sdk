@@ -167,15 +167,43 @@ export namespace PerfAccumulation {
   }
 }
 
-export class PerfAction extends jspb.Message {
+export class PerfActionItem extends jspb.Message {
   getErr(): number;
   setErr(value: number): void;
+
+  getTime(): string;
+  setTime(value: string): void;
 
   getKey(): string;
   setKey(value: string): void;
 
   getValue(): string;
   setValue(value: string): void;
+
+  serializeBinary(): Uint8Array;
+  toObject(includeInstance?: boolean): PerfActionItem.AsObject;
+  static toObject(includeInstance: boolean, msg: PerfActionItem): PerfActionItem.AsObject;
+  static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+  static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+  static serializeBinaryToWriter(message: PerfActionItem, writer: jspb.BinaryWriter): void;
+  static deserializeBinary(bytes: Uint8Array): PerfActionItem;
+  static deserializeBinaryFromReader(message: PerfActionItem, reader: jspb.BinaryReader): PerfActionItem;
+}
+
+export namespace PerfActionItem {
+  export type AsObject = {
+    err: number,
+    time: string,
+    key: string,
+    value: string,
+  }
+}
+
+export class PerfAction extends jspb.Message {
+  clearActionsList(): void;
+  getActionsList(): Array<PerfActionItem>;
+  setActionsList(value: Array<PerfActionItem>): void;
+  addActions(value?: PerfActionItem, index?: number): PerfActionItem;
 
   serializeBinary(): Uint8Array;
   toObject(includeInstance?: boolean): PerfAction.AsObject;
@@ -189,9 +217,7 @@ export class PerfAction extends jspb.Message {
 
 export namespace PerfAction {
   export type AsObject = {
-    err: number,
-    key: string,
-    value: string,
+    actionsList: Array<PerfActionItem.AsObject>,
   }
 }
 

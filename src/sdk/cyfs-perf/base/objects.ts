@@ -1,5 +1,5 @@
 import JSBI from "jsbi";
-import { BuckyErrorCode, BuckyResult, DescTypeInfo, EmptyProtobufBodyContent, EmptyProtobufBodyContentDecoder, NamedObject, NamedObjectBuilder, 
+import { BuckyErrorCode, BuckyResult, bucky_time_now, DescTypeInfo, EmptyProtobufBodyContent, EmptyProtobufBodyContentDecoder, NamedObject, NamedObjectBuilder, 
     NamedObjectDecoder, 
     NamedObjectId, named_id_from_base_58, named_id_gen_default, named_id_try_from_object_id, None, 
     ObjectId, Ok, Option, ProtobufCodecHelper, ProtobufDescContent, ProtobufDescContentDecoder, Some, SubDescType } from "../../cyfs-base";
@@ -75,6 +75,19 @@ export class SizeResult {
             this.avg = JSBI.BigInt(0);
         }
     }
+
+    merge_records(values: JSBI[], total_num: number): void {
+        let min = JSBI.BigInt(0), max = JSBI.BigInt(0);
+        for (const value of values) {
+            this.total = JSBI.ADD(this.total, value)
+            min = jsbi_min(min, value);
+            max = jsbi_max(max, value);
+        }
+
+        this.min = jsbi_min(this.min, min, JSBI.BigInt(0))
+        this.max = jsbi_max(this.max, max)
+        this.avg = JSBI.divide(this.total, JSBI.BigInt(total_num))
+    }
 }
 
 export class TimeResult {
@@ -136,6 +149,19 @@ export class TimeResult {
         }
 
     }
+
+    merge_records(values: number[], total_num: number): void {
+        let min = 0, max = 0;
+        for (const value of values) {
+            this.total += value;
+            min = Math.min(min, value);
+            max = Math.max(max, value);
+        }
+
+        this.min = (this.min === 0)?min:Math.min(this.min, min)
+        this.max = Math.max(this.max, max)
+        this.avg = Math.floor(this.total/total_num)
+    }
 }
 
 export class SpeedResult {
@@ -169,6 +195,13 @@ export class SpeedResult {
     merge_record(value: number): void {
         this.min = (this.min === 0)?value:Math.min(this.min, value)
         this.max = Math.max(this.max, value);
+    }
+
+    merge_records(values: number[]): void {
+        for (const value of values) {
+            this.min = (this.min === 0)?value:Math.min(this.min, value)
+            this.max = Math.max(this.max, value);
+        }
     }
 
     merge(value: SpeedResult): void {
@@ -274,6 +307,13 @@ export class PerfRequestDecoder extends NamedObjectDecoder<PerfRequestDesc, Empt
     }
 }
 
+export interface PerfRequestItem {
+    time: JSBI,
+    spend_time: number,
+    err: BuckyErrorCode,
+    stat: Option<JSBI>
+}
+
 export class PerfRequest extends NamedObject<PerfRequestDesc, EmptyProtobufBodyContent> {
     static create(owner: ObjectId, dec_id: ObjectId): PerfRequest {
         return new PerfRequestBuilder(new PerfRequestDesc(), new EmptyProtobufBodyContent()).owner(owner).dec_id(dec_id).build(PerfRequest)
@@ -287,23 +327,53 @@ export class PerfRequest extends NamedObject<PerfRequestDesc, EmptyProtobufBodyC
         return this.desc().content().failed
     }
 
-    add_stat(spend_time: number, stat: BuckyResult<Option<JSBI>>): PerfRequest {
+    add_stat(stat: PerfRequestItem): PerfRequest {
         const desc = this.desc().content()
 
-        if (stat.err) {
+        if (stat.err !== BuckyErrorCode.Ok) {
             desc.failed += 1;
         } else {
             desc.success += 1;
-            desc.time.merge_record(spend_time, desc.success);
-            if (stat.unwrap().is_some()) {
-                const stat_num = stat.unwrap().unwrap()
+            desc.time.merge_record(stat.spend_time, desc.success);
+            if (stat.stat.is_some()) {
+                const stat_num = stat.stat.unwrap()
                 desc.size.merge_record(stat_num, desc.success);
 
-                const speed = JSBI.divide(stat_num, JSBI.BigInt(spend_time / 1000))
+                const speed = JSBI.divide(stat_num, JSBI.BigInt(stat.spend_time / 1000))
                 desc.speed.merge_record(JSBI.toNumber(speed));
                 desc.speed.avg = JSBI.toNumber(JSBI.divide(desc.size.total, JSBI.BigInt(desc.time.total / 1000)))
             }
         }
+
+        return new PerfRequestBuilder(desc, new EmptyProtobufBodyContent()).owner(this.desc().owner()!.unwrap()).dec_id(this.desc().dec_id().unwrap()).build(PerfRequest)
+    }
+
+    add_stats(stats: PerfRequestItem[]): PerfRequest {
+        const desc = this.desc().content()
+
+        const spend_times = [];
+        const stat_nums = [];
+        const speeds = [];
+        for (const stat of stats) {
+            if (stat.err !== BuckyErrorCode.Ok) {
+                desc.failed += 1;
+            } else {
+                desc.success += 1;
+                spend_times.push(stat.spend_time);
+                desc.time.merge_record(stat.spend_time, desc.success);
+                if (stat.stat.is_some()) {
+                    stat_nums.push(stat.stat.unwrap())
+    
+                    const speed = JSBI.divide(stat.stat.unwrap(), JSBI.BigInt(stat.spend_time / 1000))
+                    speeds.push(JSBI.toNumber(speed));
+                }
+            }
+        }
+
+        desc.time.merge_records(spend_times, desc.success)
+        desc.size.merge_records(stat_nums, desc.success);
+        desc.speed.avg = JSBI.toNumber(JSBI.divide(desc.size.total, JSBI.BigInt(desc.time.total / 1000)))
+        desc.speed.merge_records(speeds);
 
         return new PerfRequestBuilder(desc, new EmptyProtobufBodyContent()).owner(this.desc().owner()!.unwrap()).dec_id(this.desc().dec_id().unwrap()).build(PerfRequest)
     }
@@ -419,6 +489,12 @@ export class PerfAccumulationDecoder extends NamedObjectDecoder<PerfAccumulation
     }
 }
 
+export interface PerfAccumulationItem {
+    time: JSBI,
+    err: BuckyErrorCode,
+    stat: JSBI
+}
+
 export class PerfAccumulation extends NamedObject<PerfAccumulationDesc, EmptyProtobufBodyContent> {
     static create(owner: ObjectId, dec_id: ObjectId): PerfAccumulation {
         return new PerfAccumulationBuilder(new PerfAccumulationDesc(), new EmptyProtobufBodyContent()).owner(owner).dec_id(dec_id).build(PerfAccumulation)
@@ -432,17 +508,38 @@ export class PerfAccumulation extends NamedObject<PerfAccumulationDesc, EmptyPro
         return this.desc().content().failed
     }
 
-    add_stat(stat: BuckyResult<JSBI>): PerfAccumulation {
+    add_stat(stat: PerfAccumulationItem): PerfAccumulation {
         const desc = this.desc().content()
 
-        if (stat.err) {
+        if (stat.err !== BuckyErrorCode.Ok) {
             desc.failed += 1;
         } else {
             desc.success += 1;
-            desc.size.merge_record(stat.unwrap(), desc.success);
+            desc.size.merge_record(stat.stat, desc.success);
         }
 
         return new PerfAccumulationBuilder(desc, new EmptyProtobufBodyContent()).owner(this.desc().owner()!.unwrap()).dec_id(this.desc().dec_id().unwrap()).build(PerfAccumulation)
+    }
+
+    add_stats(stats: PerfAccumulationItem[]): PerfAccumulation {
+        const desc = this.desc().content()
+
+        const stat_nums = [];
+        for (const stat of stats) {
+            if (stat.err !== BuckyErrorCode.Ok) {
+                desc.failed += 1;
+            } else {
+                desc.success += 1;
+                stat_nums.push(stat.stat)
+            }
+        }
+
+        desc.size.merge_records(stat_nums, desc.success);
+
+        return new PerfAccumulationBuilder(desc, new EmptyProtobufBodyContent())
+            .owner(this.desc().owner()!.unwrap())
+            .dec_id(this.desc().dec_id().unwrap())
+            .build(PerfAccumulation)
     }
 
     merge(value: PerfAccumulation) {
@@ -471,10 +568,34 @@ export class PerfActionTypeInfo extends DescTypeInfo {
     }
 }
 
+export class PerfActionItem {
+    time: JSBI
+
+    constructor(public err: BuckyErrorCode, public key: string, public value: string){
+        this.time = bucky_time_now()
+    }
+
+    try_to_proto(): BuckyResult<protos.PerfActionItem> {
+        const target = new protos.PerfActionItem()
+        target.setErr(this.err)
+        target.setKey(this.key)
+        target.setValue(this.value)
+        target.setTime(this.time.toString())
+
+        return Ok(target);
+    }
+
+    static try_from_proto(value: protos.PerfActionItem): BuckyResult<PerfActionItem> {
+        const ret = new PerfActionItem(value.getErr(), value.getKey(), value.getValue())
+        ret.time = JSBI.BigInt(value.getTime())
+        return Ok(ret);
+    }
+}
+
 const PERF_ACTION_DESC_TYPE_INFO = new PerfActionTypeInfo();
 
 export class PerfActionDesc extends ProtobufDescContent {
-    constructor(public err: BuckyErrorCode, public key: string, public value: string) {
+    constructor(public actions: PerfActionItem[]) {
         super();
     }
 
@@ -484,9 +605,13 @@ export class PerfActionDesc extends ProtobufDescContent {
 
     try_to_proto(): BuckyResult<protos.PerfAction> {
         const target = new protos.PerfAction()
-        target.setErr(this.err)
-        target.setKey(this.key)
-        target.setValue(this.value)
+        for (const action of this.actions) {
+            const r = action.try_to_proto();
+            if (r.err) {
+                return r;
+            }
+            target.addActions(r.unwrap())
+        }
 
         return Ok(target);
     }
@@ -502,7 +627,16 @@ export class PerfActionDescDecoder extends ProtobufDescContentDecoder<PerfAction
     }
 
     try_from_proto(value: protos.PerfAction): BuckyResult<PerfActionDesc> {
-        const ret = new PerfActionDesc(value.getErr(), value.getKey(), value.getValue())
+        const actions = [];
+        for (const action of value.getActionsList()) {
+            const r = PerfActionItem.try_from_proto(action)
+            if (r.err) {
+                return r;
+            }
+
+            actions.push(r.unwrap())
+        }
+        const ret = new PerfActionDesc(actions)
         return Ok(ret);
     }
 }
@@ -536,21 +670,19 @@ export class PerfActionDecoder extends NamedObjectDecoder<PerfActionDesc, EmptyP
 }
 
 export class PerfAction extends NamedObject<PerfActionDesc, EmptyProtobufBodyContent> {
-    static create(owner: ObjectId, dec_id: ObjectId, stat: BuckyResult<[string, string]>): PerfAction {
-        let err = BuckyErrorCode.Ok;
-        let key = "";
-        let value = "";
-        if (stat.ok) {
-            key = stat.unwrap()[0];
-            value = stat.unwrap()[1];
-        } else {
-            err = stat.val.code;
-        }
-        return new PerfActionBuilder(new PerfActionDesc(err, key, value), new EmptyProtobufBodyContent()).owner(owner).dec_id(dec_id).build(PerfAction)
+    static create(owner: ObjectId, dec_id: ObjectId): PerfAction {
+        return new PerfActionBuilder(new PerfActionDesc([]), new EmptyProtobufBodyContent()).owner(owner).dec_id(dec_id).build(PerfAction)
     }
 
-    err_code(): BuckyErrorCode {
-        return this.desc().content().err
+    add_stat(action: PerfActionItem): PerfAction {
+        const desc = this.desc().content()
+        
+        desc.actions.push(action)
+
+        return new PerfActionBuilder(desc, new EmptyProtobufBodyContent())
+            .owner(this.desc().owner()!.unwrap())
+            .dec_id(this.desc().dec_id().unwrap())
+            .build(PerfAction) 
     }
 }
 
