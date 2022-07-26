@@ -22,7 +22,7 @@ export class RouterWSAddEventParamJsonCodec extends JsonCodec<RouterWSAddEventPa
         const ret: any = {
             category: param.category,
             id: param.id,
-            index: param.index,
+            index: param.index.toString(),
             routine: param.routine
         }
         if (param.dec_id) {
@@ -33,10 +33,10 @@ export class RouterWSAddEventParamJsonCodec extends JsonCodec<RouterWSAddEventPa
     }
 
     decode_object(o: any): BuckyResult<RouterWSAddEventParam> {
-        const ret: RouterWSAddEventParam= {
+        const ret: RouterWSAddEventParam = {
             category: o.category as RouterEventCategory,
             id: o.id,
-            index: o.index,
+            index: parseInt(o.index),
             routine: o.routine
         }
 
