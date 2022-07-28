@@ -270,7 +270,6 @@ async function run(options: any, default_stack: SharedCyfsStack): Promise<void> 
 
 import {table, getBorderCharacters} from 'table';
 import {posix as path} from "path";
-import { dump_object } from "./dump";
 
 function show_table(table_head: string[], table_data: string[][]) {
     console_orig.log(table([table_head].concat(table_data), {
@@ -440,10 +439,12 @@ function next_dimension(cur_path: string): string | undefined {
 function reslove_full_path(cur_path: string) {
     const target_id = device_list[local_device_index].value.object_id;
     const [dec_id, sub_path] = extract_path(cur_path);
-    // 拼接dec_id + perf-dec-id/<owner>/<device> + ...
+    // 拼接perf-dec-id/<owner>/<device> + dec_id + ...
     let dst_path = cur_path;
     if (dec_id !== undefined) {
-        dst_path = `/${dec_id.to_base_58()}` + `/${PERF_DEC_ID_STR}/${people_id.to_base_58()}/${target_id.to_base_58()}` + sub_path;
+        dst_path = `/${PERF_DEC_ID_STR}/${people_id.to_base_58()}/${target_id.to_base_58()}` +  `/${dec_id.to_base_58()}${sub_path}`;
+    } else {
+        dst_path = `/${PERF_DEC_ID_STR}/${people_id.to_base_58()}/${target_id.to_base_58()}`;
     }
 
     return dst_path;
@@ -455,7 +456,8 @@ async function show(cur_path: string, type: string, default_stack: SharedCyfsSta
     if (vaild) {
         // 指定type时候, 就显示这个type对应的列表(只有一个的时候也展示)
         if (validate(cur_path, type)) {
-            await objects_info(cur_path, type, device_list[local_device_index].value.object_id, default_stack, true);
+            const dst_path = reslove_full_path(cur_path);
+            await objects_info(dst_path, type, device_list[local_device_index].value.object_id, default_stack, true);
         }
 
     } else {
