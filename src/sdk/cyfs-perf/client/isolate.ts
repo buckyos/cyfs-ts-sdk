@@ -194,108 +194,108 @@ export class PerfIsolate {
     }
     // 统计一个操作的耗时, 流量统计
     async end_request(id: string, key: string, spend_time: number, stat: BuckyResult<Option<JSBI>>): Promise<BuckyResult<void>> {
-        const full_id = `${id}_${key}`;
+        // const full_id = `${id}_${key}`;
 
-        const path = this.get_local_cache_path(this.dec_id, this.isolate_id, this.id, PerfType.Requests);
+        // const path = this.get_local_cache_path(this.dec_id, this.isolate_id, this.id, PerfType.Requests);
 
-        let dec_id = ObjectId.from_base_58(PERF_DEC_ID_STR).unwrap();
-        if(this.dec_id.is_some()){
-            dec_id = this.dec_id.unwrap();
-        }
+        // let dec_id = ObjectId.from_base_58(PERF_DEC_ID_STR).unwrap();
+        // if(this.dec_id.is_some()){
+        //     dec_id = this.dec_id.unwrap();
+        // }
 
-        const ret = await this.stack
-        .root_state_access_stub(this.device_id.object_id, dec_id)
-        .get_object_by_path(path)
+        // const ret = await this.stack
+        // .root_state_access_stub(this.device_id.object_id, dec_id)
+        // .get_object_by_path(path)
 
-        if (ret.err) {
-            if (this.pending_reqs.delete(full_id)) {
-                const perf_obj = PerfRequest.create(this.people_id, dec_id);
-                const v = perf_obj.add_stat(spend_time, stat);
-                const object_raw = v.to_vec().unwrap();
-                const object_id = v.desc().object_id();
-                await this.put_noc_and_root_state(object_id, object_raw, PerfType.Requests);
-            }
-            return Ok(undefined);
-        }
-        console.info(`ret: ${ret}`);
-        const v = ret.unwrap().object.object_id;
-        const req = {
-            object_id: v,
-            common: {
-                dec_id,
-                flags: 0,
-                level: NONAPILevel.NOC
-            }
-        };
+        // if (ret.err) {
+        //     if (this.pending_reqs.delete(full_id)) {
+        //         const perf_obj = PerfRequest.create(this.people_id, dec_id);
+        //         const v = perf_obj.add_stat(spend_time, stat);
+        //         const object_raw = v.to_vec().unwrap();
+        //         const object_id = v.desc().object_id();
+        //         await this.put_noc_and_root_state(object_id, object_raw, PerfType.Requests);
+        //     }
+        //     return Ok(undefined);
+        // }
+        // console.info(`ret: ${ret}`);
+        // const v = ret.unwrap().object.object_id;
+        // const req = {
+        //     object_id: v,
+        //     common: {
+        //         dec_id,
+        //         flags: 0,
+        //         level: NONAPILevel.NOC
+        //     }
+        // };
     
-        const ret_result = await this.stack.non_service().get_object(req);
-        if (ret_result.err) {
-            if (this.pending_reqs.delete(full_id)) {
-                const perf_obj = PerfRequest.create(this.people_id, dec_id);
-                const v = perf_obj.add_stat(spend_time, stat);
-                const object_raw = v.to_vec().unwrap();
-                const object_id = v.desc().object_id();
-                await this.put_noc_and_root_state(object_id, object_raw, PerfType.Requests);
-            }
-        } else {
-            if (this.pending_reqs.delete(full_id)) {
-                const perf_obj = ProtobufCodecHelper.decode_buf(ret_result.unwrap().object.object_raw, new PerfRequestDecoder()).unwrap();
-                const v = perf_obj.add_stat(spend_time, stat);
-                const object_raw = v.to_vec().unwrap();
-                const object_id = v.desc().object_id();
-                await this.put_noc_and_root_state(object_id, object_raw, PerfType.Requests);
-            }
-        }
+        // const ret_result = await this.stack.non_service().get_object(req);
+        // if (ret_result.err) {
+        //     if (this.pending_reqs.delete(full_id)) {
+        //         const perf_obj = PerfRequest.create(this.people_id, dec_id);
+        //         const v = perf_obj.add_stat(spend_time, stat);
+        //         const object_raw = v.to_vec().unwrap();
+        //         const object_id = v.desc().object_id();
+        //         await this.put_noc_and_root_state(object_id, object_raw, PerfType.Requests);
+        //     }
+        // } else {
+        //     if (this.pending_reqs.delete(full_id)) {
+        //         const perf_obj = ProtobufCodecHelper.decode_buf(ret_result.unwrap().object.object_raw, new PerfRequestDecoder()).unwrap();
+        //         const v = perf_obj.add_stat(spend_time, stat);
+        //         const object_raw = v.to_vec().unwrap();
+        //         const object_id = v.desc().object_id();
+        //         await this.put_noc_and_root_state(object_id, object_raw, PerfType.Requests);
+        //     }
+        // }
 
         return Ok(undefined);
     }
 
     async acc(id: string, stat: BuckyResult<JSBI>) : Promise<BuckyResult<void>> {
 
-       const path = this.get_local_cache_path(this.dec_id, this.isolate_id, this.id, PerfType.Accumulations);
+    //    const path = this.get_local_cache_path(this.dec_id, this.isolate_id, this.id, PerfType.Accumulations);
 
-        let dec_id = ObjectId.from_base_58(PERF_DEC_ID_STR).unwrap();
-        if(this.dec_id.is_some()){
-            dec_id = this.dec_id.unwrap();
-        }
+    //     let dec_id = ObjectId.from_base_58(PERF_DEC_ID_STR).unwrap();
+    //     if(this.dec_id.is_some()){
+    //         dec_id = this.dec_id.unwrap();
+    //     }
 
-        const ret = await this.stack
-        .root_state_access_stub(this.device_id.object_id, dec_id)
-        .get_object_by_path(path)
+    //     const ret = await this.stack
+    //     .root_state_access_stub(this.device_id.object_id, dec_id)
+    //     .get_object_by_path(path)
 
-        if (ret.err) {
-            const perf_obj = PerfAccumulation.create(this.people_id, dec_id);
-            const v = perf_obj.add_stat(stat);
-            const object_raw = v.to_vec().unwrap();
-            const object_id = v.desc().object_id();
-            await this.put_noc_and_root_state(object_id, object_raw, PerfType.Accumulations);
-            return Ok(undefined);
-        }
-        const v = ret.unwrap().object.object_id;
+    //     if (ret.err) {
+    //         const perf_obj = PerfAccumulation.create(this.people_id, dec_id);
+    //         const v = perf_obj.add_stat(stat);
+    //         const object_raw = v.to_vec().unwrap();
+    //         const object_id = v.desc().object_id();
+    //         await this.put_noc_and_root_state(object_id, object_raw, PerfType.Accumulations);
+    //         return Ok(undefined);
+    //     }
+    //     const v = ret.unwrap().object.object_id;
 
-        const req = {
-            object_id: v,
-            common: {
-                dec_id,
-                flags: 0,
-                level: NONAPILevel.NOC
-            }
-        };
+    //     const req = {
+    //         object_id: v,
+    //         common: {
+    //             dec_id,
+    //             flags: 0,
+    //             level: NONAPILevel.NOC
+    //         }
+    //     };
     
-        const ret_result = await this.stack.non_service().get_object(req);
-        if (ret_result.err) {
-            const perf_obj = PerfAccumulation.create(this.people_id, dec_id);
-            const v = perf_obj.add_stat(stat);
-            const object_raw = v.to_vec().unwrap();
-            const object_id = v.desc().object_id();
-            await this.put_noc_and_root_state(object_id, object_raw, PerfType.Accumulations);
-        } else {
-            const perf_obj = ProtobufCodecHelper.decode_buf(ret_result.unwrap().object.object_raw, new PerfAccumulationDecoder()).unwrap();
-            const v = perf_obj.add_stat(stat);
-            const object_raw = v.to_vec().unwrap();
-            const object_id = v.desc().object_id();
-            await this.put_noc_and_root_state(object_id, object_raw, PerfType.Accumulations);
-        }
+    //     const ret_result = await this.stack.non_service().get_object(req);
+    //     if (ret_result.err) {
+    //         const perf_obj = PerfAccumulation.create(this.people_id, dec_id);
+    //         const v = perf_obj.add_stat(stat);
+    //         const object_raw = v.to_vec().unwrap();
+    //         const object_id = v.desc().object_id();
+    //         await this.put_noc_and_root_state(object_id, object_raw, PerfType.Accumulations);
+    //     } else {
+    //         const perf_obj = ProtobufCodecHelper.decode_buf(ret_result.unwrap().object.object_raw, new PerfAccumulationDecoder()).unwrap();
+    //         const v = perf_obj.add_stat(stat);
+    //         const object_raw = v.to_vec().unwrap();
+    //         const object_id = v.desc().object_id();
+    //         await this.put_noc_and_root_state(object_id, object_raw, PerfType.Accumulations);
+    //     }
 
         return Ok(undefined);
     }
@@ -309,58 +309,58 @@ export class PerfIsolate {
             dec_id = this.dec_id.unwrap();
         }
 
-        const v = PerfAction.create(this.people_id, dec_id, stat);
-        const object_raw = v.to_vec().unwrap();
-        const object_id = v.desc().object_id();
-        await this.put_noc_and_root_state(object_id, object_raw, PerfType.Actions);
+        // const v = PerfAction.create(this.people_id, dec_id, stat);
+        // const object_raw = v.to_vec().unwrap();
+        // const object_id = v.desc().object_id();
+        // await this.put_noc_and_root_state(object_id, object_raw, PerfType.Actions);
         return Ok(undefined);
     }
 
     async record(id: string, total: JSBI, total_size: Option<JSBI>) : Promise<BuckyResult<void>> {
-        const path = this.get_local_cache_path(this.dec_id, this.isolate_id, this.id, PerfType.Records);
+        // const path = this.get_local_cache_path(this.dec_id, this.isolate_id, this.id, PerfType.Records);
 
-        let dec_id = ObjectId.from_base_58(PERF_DEC_ID_STR).unwrap();
-        if(this.dec_id.is_some()){
-            dec_id = this.dec_id.unwrap();
-        }
+        // let dec_id = ObjectId.from_base_58(PERF_DEC_ID_STR).unwrap();
+        // if(this.dec_id.is_some()){
+        //     dec_id = this.dec_id.unwrap();
+        // }
 
-        const ret = await this.stack
-        .root_state_access_stub(this.device_id.object_id, dec_id)
-        .get_object_by_path(path)
+        // const ret = await this.stack
+        // .root_state_access_stub(this.device_id.object_id, dec_id)
+        // .get_object_by_path(path)
 
-        if (ret.err) {
-            const perf_obj = PerfRecord.create(this.people_id, dec_id, total, total_size);
-            const v = perf_obj.add_stat(total, total_size);
-            const object_raw = v.to_vec().unwrap();
-            const object_id = v.desc().object_id();
-            await this.put_noc_and_root_state(object_id, object_raw, PerfType.Records);
-            return Ok(undefined);
-        }
-        const v = ret.unwrap().object.object_id;
+        // if (ret.err) {
+        //     const perf_obj = PerfRecord.create(this.people_id, dec_id, total, total_size);
+        //     const v = perf_obj.add_stat(total, total_size);
+        //     const object_raw = v.to_vec().unwrap();
+        //     const object_id = v.desc().object_id();
+        //     await this.put_noc_and_root_state(object_id, object_raw, PerfType.Records);
+        //     return Ok(undefined);
+        // }
+        // const v = ret.unwrap().object.object_id;
 
-        const req = {
-            object_id: v,
-            common: {
-                dec_id,
-                flags: 0,
-                level: NONAPILevel.NOC
-            }
-        };
+        // const req = {
+        //     object_id: v,
+        //     common: {
+        //         dec_id,
+        //         flags: 0,
+        //         level: NONAPILevel.NOC
+        //     }
+        // };
     
-        const ret_result = await this.stack.non_service().get_object(req);
-        if (ret_result.err) {
-            const perf_obj = PerfRecord.create(this.people_id, dec_id, total, total_size);
-            const v = perf_obj.add_stat(total, total_size);
-            const object_raw = v.to_vec().unwrap();
-            const object_id = v.desc().object_id();
-            await this.put_noc_and_root_state(object_id, object_raw, PerfType.Records);
-        } else {
-            const perf_obj = ProtobufCodecHelper.decode_buf(ret_result.unwrap().object.object_raw, new PerfRecordDecoder()).unwrap();
-            const v = perf_obj.add_stat(total, total_size);
-            const object_raw = v.to_vec().unwrap();
-            const object_id = v.desc().object_id();
-            await this.put_noc_and_root_state(object_id, object_raw, PerfType.Records);
-        }
+        // const ret_result = await this.stack.non_service().get_object(req);
+        // if (ret_result.err) {
+        //     const perf_obj = PerfRecord.create(this.people_id, dec_id, total, total_size);
+        //     const v = perf_obj.add_stat(total, total_size);
+        //     const object_raw = v.to_vec().unwrap();
+        //     const object_id = v.desc().object_id();
+        //     await this.put_noc_and_root_state(object_id, object_raw, PerfType.Records);
+        // } else {
+        //     const perf_obj = ProtobufCodecHelper.decode_buf(ret_result.unwrap().object.object_raw, new PerfRecordDecoder()).unwrap();
+        //     const v = perf_obj.add_stat(total, total_size);
+        //     const object_raw = v.to_vec().unwrap();
+        //     const object_id = v.desc().object_id();
+        //     await this.put_noc_and_root_state(object_id, object_raw, PerfType.Records);
+        // }
 
         return Ok(undefined);
     }

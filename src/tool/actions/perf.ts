@@ -420,11 +420,11 @@ function next_dimension(cur_path: string): string | undefined {
 
     const path_parts = cur_path.split(path.sep);
 
-    if (path_parts.length <= 2) {
+    if (path_parts.length <= 1) {
         return "iso"
     }
 
-    if (path_parts.length <= 3) {
+    if (path_parts.length <= 2) {
         return "id"
     }
 
@@ -606,6 +606,9 @@ async function traverse<T>(cur_path: string, id: string, stack: SharedCyfsStack,
             is_latest = true;
             // 存在最近的时间片的date
             const [size, objects] = await objects_info(full_path, "objects", device_list[local_device_index].value.object_id, stack, false);
+            if (size <= 0) {
+                return Err(new BuckyError(BuckyErrorCode.InvalidFormat, `${full_path} not found`));
+            }
             for (const date of objects.reverse()) {
                 latest_date = date.key;
                 break;
@@ -626,7 +629,10 @@ async function traverse<T>(cur_path: string, id: string, stack: SharedCyfsStack,
 
         // 存在最近的时间片time
         const [size, objects] = await objects_info(full_path, "objects", device_list[local_device_index].value.object_id, stack, false);
-        if (size <= 0) {
+        if (size <= 0 && is_latest) {
+            return Err(new BuckyError(BuckyErrorCode.InvalidFormat, `${full_path} not found`));
+        }
+        if (size <= 0 ) {
             continue;
         }
         for (const time of objects.reverse()) {
@@ -686,7 +692,6 @@ async function view_request(cur_path: string, id: string, stack: SharedCyfsStack
     let perf_obj: PerfRequest;
     let counter = 0;
     if (ret.err) {
-        console_orig.log(`view_request: err: ${ret.err}`);
         return;
     }
     for (const object of ret.unwrap()) {
