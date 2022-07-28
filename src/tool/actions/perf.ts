@@ -200,7 +200,7 @@ async function runPrompt(cur_path: string, stack: SharedCyfsStack): Promise<stri
 
     if (cmd.indexOf("cat") !== -1) {
         const next_type = next_dimension(cur_path);
-        if (next_type === "type" || next_type === undefined) {
+        if (next_type === undefined) {
             cmd = cmd.replace('cat', 'cat .');
         }
     }
@@ -237,7 +237,7 @@ async function run(options: any, default_stack: SharedCyfsStack): Promise<void> 
 
         .addCommand(new Command('cat')
         .description('show object info in json format')
-        .argument('<id>')
+        .argument('[id]')
         .option('-t, --type <type>', "list objects support `request, acc, action, record` type", undefined)
         .option('-s, --start <start>', "start format datatime `YYYY-MM-DD hh:mm`", undefined)
         .option('-e, --end <end>', "end format datatime `YYYY-MM-DD hh:mm`", undefined)
@@ -711,6 +711,9 @@ async function view_acc(cur_path: string, id: string, stack: SharedCyfsStack, st
     const ret = await traverse<PerfAccumulation>(cur_path, id, stack, start_date, start_time, end_date, end_time, type);
     let perf_obj: PerfAccumulation;
     let counter = 0;
+    if (ret.err) {
+        return;
+    }
     //console_orig.log("view_acc: " + JSON.stringify(ret.unwrap()));
     for (const object of ret.unwrap()) {
         perf_obj = object;
@@ -726,6 +729,9 @@ async function view_acc(cur_path: string, id: string, stack: SharedCyfsStack, st
 
 async function view_record(cur_path: string, id: string, stack: SharedCyfsStack, start_date: string, start_time: string, end_date: string, end_time: string, type: string) {
     const ret = await traverse<PerfRecord>(cur_path, id, stack, start_date, start_time, end_date, end_time, type);
+    if (ret.err) {
+        return;
+    }
     //console_orig.log("view_record: " + JSON.stringify(ret.unwrap()));
     for (const perf_obj of ret.unwrap().reverse()) {
         // 取最近的一个时间片1h
@@ -736,6 +742,9 @@ async function view_record(cur_path: string, id: string, stack: SharedCyfsStack,
 
 async function view_action(cur_path: string, id: string, stack: SharedCyfsStack, start_date: string, start_time: string, end_date: string, end_time: string, type: string) {
     const ret = await traverse<PerfAction>(cur_path, id, stack, start_date, start_time, end_date, end_time, type);
+    if (ret.err) {
+        return;
+    }
     //console_orig.log("view_action: " + JSON.stringify(ret.unwrap()));
     for (const perf_obj of ret.unwrap()) {
         console_orig.log(`${type}: ${JSON.stringify(perf_obj.desc().content(), null, 4)}`);
@@ -756,6 +765,9 @@ async function view_object(cur_path: string, id: string, stack: SharedCyfsStack,
 
 // cat -s "2022-07-21 03:32"  -e  "2022-07-25 20:00"
 async function cat(cur_path: string, id: string, stack: SharedCyfsStack, type: string, start: string, end: string) {
+    if (id === undefined) {
+        id = ".";
+    }
     if (type === undefined) {
         type = "all";
     }
@@ -777,7 +789,7 @@ async function cat(cur_path: string, id: string, stack: SharedCyfsStack, type: s
     
     const [start_date, start_time] = formatUTCDate(s);
     const [end_date, end_time] = formatUTCDate(e);
-    console_orig.log(` start_date: ${start_date}, start_time: ${start_time}, end_date: ${end_date}, end_time: ${end_time}`);
+    console_orig.log(` start_date: ${start_date}, start_time: ${start_time}, end_date: ${end_date}, end_time: ${end_time}, type: ${type}, id: ${id}`);
     const  s1 = Date.parse(start_date + " " + start_time);
     const  s2 = Date.parse(end_date + " " + end_time);
     if (s1 > s2) {
