@@ -437,20 +437,19 @@ function next_dimension(cur_path: string): string | undefined {
 
 
 function reslove_full_path(cur_path: string) {
-    const target_id = device_list[local_device_index].value.object_id;
     const [dec_id, sub_path] = extract_path(cur_path);
     // 拼接perf-dec-id/<owner>/<device> + dec_id + ...
     let dst_path = cur_path;
     if (dec_id !== undefined) {
-        dst_path = `/${PERF_DEC_ID_STR}/${people_id.to_base_58()}/${target_id.to_base_58()}` +  `/${dec_id.to_base_58()}${sub_path}`;
+        dst_path = `/${PERF_DEC_ID_STR}` + `/local/${dec_id.to_base_58()}${sub_path}`;
     } else {
-        dst_path = `/${PERF_DEC_ID_STR}/${people_id.to_base_58()}/${target_id.to_base_58()}`;
+        dst_path = `/${PERF_DEC_ID_STR}/local`;
     }
 
     return dst_path;
 }
 
-// /dec-id/perf-dec-id/<owner>/<device>/<isolate_id>/<id>/<PerfType>/<Date>/<TimeSpan>
+// perf-dec-id/local/dec-id/<isolate_id>/<id>/<PerfType>/<Date>/<TimeSpan>
 async function show(cur_path: string, type: string, default_stack: SharedCyfsStack) {
     const vaild = dimensions.some(e => e === type);
     if (vaild) {

@@ -18,7 +18,7 @@ export function makeCommand(config: CyfsToolConfig): Command {
         .requiredOption("-e, --endpoint <endpoint>", "cyfs endpoint, ood or runtime", "runtime")
         .requiredOption("-s, --save <save_path>", "save dir obj to path, default current path", ".")
         .action(async (olink, options) => {
-            console.log("options:", options)
+            console.log("options:", options.endpoint)
             const [stack, writable] = await create_stack(options.endpoint, config, default_dec_id)
             await stack.online();
             await run(olink, options, stack);
@@ -37,7 +37,7 @@ function objToStrMap(obj){
 
 // 从一个已经挂到inner_path上的对象起，将后续的对象树全部从target的下载
 async function download_obj(stack: SharedCyfsStack, link: string, target?: ObjectId, dec_id?: ObjectId, inner_path?: string, options?: any): Promise<Map<string, ObjectId> | undefined> {
-    console.log(`target: ${target}, download obj from root state path, ${inner_path}`)
+    //console.log(`target: ${target}, download obj from root state path, ${inner_path}`)
     let files = new Map();
 
     const json = await dump.dump_object(stack, link, true);
@@ -93,7 +93,7 @@ function isDirectory(path) {
     return fs.statSync(path).isDirectory();
 }
 
-async function download_files(stack: SharedCyfsStack, options: any, files, file_target_id, dec_id, relative_root, is_dir: boolean, link_type?: string) {  
+async function download_files(stack: SharedCyfsStack, options: any, files, file_target_id, dec_id, relative_root, is_dir: boolean, link: string, link_type?: string) {  
     let base_save = options.save;
     const option_str: string = options.save;
     if (!path.isAbsolute(options.save)) {
@@ -148,16 +148,20 @@ async function download_files(stack: SharedCyfsStack, options: any, files, file_
         }catch (error){
             // ignore
         }
-        console.log(`download file ${save_path} object: ${file[1]}`);
+        //console.log(`download file ${save_path} object: ${file[1]}`);
         options.data = true;
         options.save = save_path;
         
-        let link = makeOLink(file_target_id, file[1], file_path);
-        if (link_type === "r") {
-            link = makeRLink(file_target_id, dec_id, file[0]);
+        let new_link = makeOLink(file_target_id, file[1], file_path);
+        if (!is_dir) {
+            new_link = link;
         }
 
-        const [new_url_str, headers, uri] = convert_cyfs_url(link, stack, false, true);
+        if (link_type === "r") {
+            new_link = makeRLink(file_target_id, dec_id, file[0]);
+        }
+
+        const [new_url_str, headers, uri] = convert_cyfs_url(new_link, stack, false, true);
         console.log(`convert cyfs url: ${link} to non url: ${new_url_str}`);
         const response  = await fetch(new_url_str, {headers});
         if (!response.ok) {
@@ -208,12 +212,12 @@ export async function run(link: string, options:any, stack: SharedCyfsStack, tar
                 return
             }
 
-            await download_files(stack, options, files, target_id, dec_id, relative_root, is_dir, link_type)
+            await download_files(stack, options, files, target_id, dec_id, relative_root, is_dir, link, link_type)
         } else {
             const files = new Map();
             const file_name = `${inner_path}`;
             files.set(file_name, object_id);
-            await download_files(stack, options, files, target_id, dec_id, relative_root, is_dir, link_type)
+            await download_files(stack, options, files, target_id, dec_id, relative_root, is_dir, link, link_type)
         }
 
     } else {
@@ -228,13 +232,14 @@ export async function run(link: string, options:any, stack: SharedCyfsStack, tar
                 return;
             }
 
-            await download_files(stack, options, files, target_id, default_dec_id, relative_root, is_dir, link_type)
+            await download_files(stack, options, files, target_id, default_dec_id, relative_root, is_dir, link, link_type)
 
         } else {
             const files = new Map();
             const file_name = `${relative_root}`;
+            //files.set(file_name, object_id);
             files.set(file_name, object_id);
-            await download_files(stack, options, files, target_id, default_dec_id, relative_root, is_dir, link_type);
+            await download_files(stack, options, files, target_id, default_dec_id, relative_root, is_dir, link, link_type);
 
         }
 
