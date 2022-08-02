@@ -652,26 +652,12 @@ async function traverse<T>(cur_path: string, id: string, stack: SharedCyfsStack,
                 return Err(new BuckyError(BuckyErrorCode.InvalidFormat, "not found dec_id extract path"));
             }
             
-            if (type === "action") {
-                const [size, objects] = await objects_info(new_path, "objects", device_list[local_device_index].value.object_id, stack, false);
-                for (const object of objects) {
-                    const ret = await get_object<T>(dec_id, path.resolve(sub_path, object.key), type, stack);
-                    if (ret.err) {
-                        continue;
-                    }
-                    result.push(ret.unwrap());
-                }
-    
-    
-            } else {
-                const ret = await get_object<T>(dec_id, sub_path, type, stack);
-                if (ret.err) {
-                    continue;
-                }
-    
-                result.push(ret.unwrap());
-    
+            const ret = await get_object<T>(dec_id, sub_path, type, stack);
+            if (ret.err) {
+                continue;
             }
+
+            result.push(ret.unwrap());
             if (is_latest) {
                 break;
             }
@@ -762,7 +748,7 @@ async function view_object(cur_path: string, id: string, stack: SharedCyfsStack,
     }
 }
 
-// cat -s "2022-07-21 03:32"  -e  "2022-07-25 20:00"
+// cat -s "2022-07-21 03:32"  -e  "2022-08-03 20:00"
 async function cat(cur_path: string, id: string, stack: SharedCyfsStack, type: string, start: string, end: string) {
     if (id === undefined) {
         id = ".";
