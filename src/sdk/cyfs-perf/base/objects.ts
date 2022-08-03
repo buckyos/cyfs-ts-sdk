@@ -1,10 +1,11 @@
 import JSBI from "jsbi";
-import { BuckyErrorCode, BuckyResult, bucky_time_now, DescTypeInfo, EmptyProtobufBodyContent, EmptyProtobufBodyContentDecoder, NamedObject, NamedObjectBuilder, 
+import { BuckyErrorCode, BuckyResult, bucky_time_now, DescTypeInfo, EmptyProtobufBodyContent, EmptyProtobufBodyContentDecoder, HashValue, NamedObject, NamedObjectBuilder, 
     NamedObjectDecoder, 
     NamedObjectId, named_id_from_base_58, named_id_gen_default, named_id_try_from_object_id, None, 
-    ObjectId, Ok, Option, ProtobufCodecHelper, ProtobufDescContent, ProtobufDescContentDecoder, Some, SubDescType } from "../../cyfs-base";
+    ObjectId, Ok, Option, ProtobufBodyContent, ProtobufBodyContentDecoder, ProtobufCodecHelper, ProtobufDescContent, ProtobufDescContentDecoder, Some, SubDescType, to_buf } from "../../cyfs-base";
 import { PerfObjectType } from "./type";
 import {perf_protos as protos} from "../codec/index"
+import { Message } from "google-protobuf";
 
 function jsbi_min(t1: JSBI, t2: JSBI, ignore?: JSBI): JSBI {
     if (ignore && JSBI.equal(t1, ignore)) {
@@ -595,8 +596,12 @@ export class PerfActionItem {
 const PERF_ACTION_DESC_TYPE_INFO = new PerfActionTypeInfo();
 
 export class PerfActionDesc extends ProtobufDescContent {
-    constructor(public actions: PerfActionItem[]) {
+    constructor(public body_hash: HashValue) {
         super();
+    }
+
+    static new(body: PerfActionBody): PerfActionDesc {
+        return new PerfActionDesc(HashValue.hash_data(to_buf(body).unwrap()))
     }
 
     type_info(): DescTypeInfo {
@@ -605,13 +610,7 @@ export class PerfActionDesc extends ProtobufDescContent {
 
     try_to_proto(): BuckyResult<protos.PerfAction> {
         const target = new protos.PerfAction()
-        for (const action of this.actions) {
-            const r = action.try_to_proto();
-            if (r.err) {
-                return r;
-            }
-            target.addActions(r.unwrap())
-        }
+        target.setBodyHash(this.body_hash.as_slice())
 
         return Ok(target);
     }
@@ -627,6 +626,40 @@ export class PerfActionDescDecoder extends ProtobufDescContentDecoder<PerfAction
     }
 
     try_from_proto(value: protos.PerfAction): BuckyResult<PerfActionDesc> {
+        const ret = new PerfActionDesc(HashValue.copy_from_slice(value.getBodyHash_asU8()))
+        return Ok(ret);
+    }
+}
+
+export class PerfActionBody extends ProtobufBodyContent {
+    constructor(public actions: PerfActionItem[]) {
+        super();
+    }
+
+    try_to_proto(): BuckyResult<protos.PerfActionBody> {
+        const target = new protos.PerfActionBody()
+        for (const action of this.actions) {
+            const r = action.try_to_proto();
+            if (r.err) {
+                return r;
+            }
+            target.addActions(r.unwrap())
+        }
+
+        return Ok(target);
+    }
+}
+
+export class PerfActionBodyDecoder extends ProtobufBodyContentDecoder<PerfActionBody, protos.PerfActionBody> {
+    constructor() {
+        super(protos.PerfActionBody.deserializeBinary);
+    }
+
+    type_info(): DescTypeInfo {
+        return PERF_ACTION_DESC_TYPE_INFO;
+    }
+
+    try_from_proto(value: protos.PerfActionBody): BuckyResult<PerfActionBody> {
         const actions = [];
         for (const action of value.getActionsList()) {
             const r = PerfActionItem.try_from_proto(action)
@@ -636,16 +669,16 @@ export class PerfActionDescDecoder extends ProtobufDescContentDecoder<PerfAction
 
             actions.push(r.unwrap())
         }
-        const ret = new PerfActionDesc(actions)
+        const ret = new PerfActionBody(actions)
         return Ok(ret);
     }
 }
 
-export class PerfActionBuilder extends NamedObjectBuilder<PerfActionDesc, EmptyProtobufBodyContent> {
+export class PerfActionBuilder extends NamedObjectBuilder<PerfActionDesc, PerfActionBody> {
     // ignore
 }
 
-export class PerfActionId extends NamedObjectId<PerfActionDesc, EmptyProtobufBodyContent> {
+export class PerfActionId extends NamedObjectId<PerfActionDesc, PerfActionBody> {
     constructor(id: ObjectId) {
         super(PerfObjectType.Action, id);
     }
@@ -663,23 +696,34 @@ export class PerfActionId extends NamedObjectId<PerfActionDesc, EmptyProtobufBod
     }
 }
 
-export class PerfActionDecoder extends NamedObjectDecoder<PerfActionDesc, EmptyProtobufBodyContent, PerfAction> {
+export class PerfActionDecoder extends NamedObjectDecoder<PerfActionDesc, PerfActionBody, PerfAction> {
     constructor() {
-        super(new PerfActionDescDecoder(), new EmptyProtobufBodyContentDecoder(), PerfAction);
+        super(new PerfActionDescDecoder(), new PerfActionBodyDecoder(), PerfAction);
     }
 }
 
-export class PerfAction extends NamedObject<PerfActionDesc, EmptyProtobufBodyContent> {
+export class PerfAction extends NamedObject<PerfActionDesc, PerfActionBody> {
     static create(owner: ObjectId, dec_id: ObjectId): PerfAction {
-        return new PerfActionBuilder(new PerfActionDesc([]), new EmptyProtobufBodyContent()).owner(owner).dec_id(dec_id).build(PerfAction)
+        const body = new PerfActionBody([]);
+        return new PerfActionBuilder(PerfActionDesc.new(body), body).owner(owner).dec_id(dec_id).build(PerfAction)
     }
 
     add_stat(action: PerfActionItem): PerfAction {
-        const desc = this.desc().content()
+        const body = this.body_expect().content()
         
-        desc.actions.push(action)
+        body.actions.push(action)
 
-        return new PerfActionBuilder(desc, new EmptyProtobufBodyContent())
+        return new PerfActionBuilder(PerfActionDesc.new(body), body)
+            .owner(this.desc().owner()!.unwrap())
+            .dec_id(this.desc().dec_id().unwrap())
+            .build(PerfAction) 
+    }
+
+    add_stats(actions: PerfActionItem[]): PerfAction {
+        const body = this.body_expect().content()
+        body.actions = body.actions.concat(actions);
+        
+        return new PerfActionBuilder(PerfActionDesc.new(body), body)
             .owner(this.desc().owner()!.unwrap())
             .dec_id(this.desc().dec_id().unwrap())
             .build(PerfAction) 
