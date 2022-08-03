@@ -732,7 +732,7 @@ async function view_action(cur_path: string, id: string, stack: SharedCyfsStack,
     }
     //console_orig.log("view_action: " + JSON.stringify(ret.unwrap()));
     for (const perf_obj of ret.unwrap()) {
-        console_orig.log(`${type}: ${JSON.stringify(perf_obj.desc().content(), null, 4)}`);
+        console_orig.log(`${type}: ${JSON.stringify(perf_obj.body_expect(), null, 4)}`);
     }
 }
 
