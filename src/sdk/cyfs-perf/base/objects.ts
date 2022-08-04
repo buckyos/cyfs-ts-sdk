@@ -814,6 +814,12 @@ export class PerfRecordDecoder extends NamedObjectDecoder<PerfRecordDesc, EmptyP
     }
 }
 
+export interface PerfRecordItem {
+    time: JSBI,
+    total: JSBI,
+    total_size: Option<JSBI>
+}
+
 export class PerfRecord extends NamedObject<PerfRecordDesc, EmptyProtobufBodyContent> {
     static create(owner: ObjectId, dec_id: ObjectId, total: JSBI, total_size: Option<JSBI>): PerfRecord {
         return new PerfRecordBuilder(new PerfRecordDesc(total, total_size), new EmptyProtobufBodyContent()).owner(owner).dec_id(dec_id).build(PerfRecord)
@@ -827,10 +833,10 @@ export class PerfRecord extends NamedObject<PerfRecordDesc, EmptyProtobufBodyCon
         return this.desc().content().total_size
     }
 
-    add_stat(total: JSBI, total_size: Option<JSBI>): PerfRecord {
+    add_stat(stat: PerfRecordItem): PerfRecord {
         const desc = this.desc().content()
-        desc.total = total;
-        desc.total_size = total_size;
+        desc.total = stat.total;
+        desc.total_size = stat.total_size;
 
         return new PerfRecordBuilder(desc, new EmptyProtobufBodyContent())
             .owner(this.desc().owner()!.unwrap())

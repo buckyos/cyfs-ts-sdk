@@ -26,15 +26,15 @@
         async perf_example() {
             (await this.m_sharedStatck.online()).unwrap();
 
-            // 获取PerfClient 对象 一个bdt isolate 
-            let client = await cyfs.PerfClient.new("test-perf-h5", "1.0.0", 10 /*[1, 1440)*/, cyfs.Some(this.dec_id), this.m_sharedStatck);
-            let perfIsolate = client.new_isolate("main");
+            // 获取PerfManager 
+            let manager = await cyfs.PerfManager.new("test-perf-h5", 10 /*[1, 1440)*/, 60 * 10 * 1000 /*write interval*/, this.dec_id, this.m_sharedStatck);
+            // 对象 一个bdt isolate 
+            let perfIsolate = manager.new_isolate("main");
             perfIsolate.begin_request("bdt", "channel");
-            await perfIsolate.end_request("bdt", "channel", 60 * 1000 , cyfs.Ok(cyfs.Some(cyfs.JSBI.BigInt(100))));
+            await perfIsolate.end_request("bdt", "channel", cyfs.BuckyErrorCode.Unknown, cyfs.Some(cyfs.JSBI.BigInt(100)));
 
-            await perfIsolate.acc("bdt", cyfs.Ok(cyfs.JSBI.BigInt(100)));
-            await perfIsolate.action("bdt", cyfs.Ok(["bdt", "404"]));
-            await perfIsolate.action("bdt", cyfs.Err(new cyfs.BuckyError(cyfs.BuckyErrorCode.Unknown, "xxx")));
+            await perfIsolate.acc("bdt", cyfs.BuckyErrorCode.Unknown, cyfs.JSBI.BigInt(100));
+            await perfIsolate.action("bdt", cyfs.BuckyErrorCode.Unknown, "bdt", "404");
             await perfIsolate.record("bdt", cyfs.JSBI.BigInt(100), cyfs.Some(cyfs.JSBI.BigInt(100)));
 
             console.log("*".repeat(128));

@@ -7,19 +7,19 @@ import {
 import { PerfIsolate } from "./isolate";
 import { SharedCyfsStack } from "../../cyfs-lib";
 
-export class PerfClient {
+export class PerfManager {
     id: string
-    version: string
+    write_interval: number
     span_times: number[]
-    dec_id: Option<ObjectId>
+    dec_id: ObjectId
     stack: SharedCyfsStack
     people_id: ObjectId
     device_id: DeviceId
     isolates: Map<string, PerfIsolate>
 
-    constructor(id: string, version: string, span_times: number[], dec_id: Option<ObjectId>, stack: SharedCyfsStack, people_id: ObjectId, device_id: DeviceId) {
+    constructor(id: string, write_interval: number, span_times: number[], dec_id: ObjectId, stack: SharedCyfsStack, people_id: ObjectId, device_id: DeviceId) {
         this.id = id;
-        this.version = version;
+        this.write_interval = write_interval;
         this.span_times = span_times;
         this.dec_id = dec_id;
         this.stack = stack;
@@ -28,7 +28,7 @@ export class PerfClient {
         this.isolates = new Map<string, PerfIsolate>();
     }
 
-    static async new(id: string, version: string, span_duration: number, dec_id: Option<ObjectId>, stack: SharedCyfsStack): Promise<PerfClient> {
+    static async new(id: string, write_interval: number, span_duration: number, dec_id: ObjectId, stack: SharedCyfsStack): Promise<PerfManager> {
         const device_id = stack.local_device_id();
         const resp = (await stack.util().get_zone({
             common: {
@@ -51,8 +51,11 @@ export class PerfClient {
             span_times.push(span_time);
         }
 
-        const perf_client = new PerfClient(id, version, span_times, dec_id, stack, people_id, device_id);
-        return perf_client;
+        const perf_manager = new PerfManager(id, write_interval, span_times, dec_id, stack, people_id, device_id);
+        
+        perf_manager._inner_save();
+
+        return perf_manager;
     }
 
     is_isolates_exists(isolate_id: string) : boolean {
@@ -72,5 +75,18 @@ export class PerfClient {
     get_isolate(id: string) : PerfIsolate | undefined {
         return this.isolates.get(id);
     }
+
+    // 异步写
+    _inner_save(): void {
+        const interval = setInterval(async () => {
+            for (const [isolate_id, isolate] of this.isolates) {
+                console.log(isolate_id, isolate);
+                await isolate.inner_save();
+
+            }
+        }, this.write_interval);
+        
+        console.log('_inner_save', interval);
+    }   
 
 }
