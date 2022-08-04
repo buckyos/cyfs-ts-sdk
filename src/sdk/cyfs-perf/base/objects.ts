@@ -87,7 +87,8 @@ export class SizeResult {
 
         this.min = jsbi_min(this.min, min, JSBI.BigInt(0))
         this.max = jsbi_max(this.max, max)
-        this.avg = JSBI.divide(this.total, JSBI.BigInt(total_num))
+        
+        this.avg = total_num > 0 ? JSBI.divide(this.total, JSBI.BigInt(total_num)) : JSBI.BigInt(0);
     }
 }
 
@@ -373,7 +374,7 @@ export class PerfRequest extends NamedObject<PerfRequestDesc, EmptyProtobufBodyC
 
         desc.time.merge_records(spend_times, desc.success)
         desc.size.merge_records(stat_nums, desc.success);
-        desc.speed.avg = JSBI.toNumber(JSBI.divide(desc.size.total, JSBI.BigInt(desc.time.total / 1000)))
+        desc.speed.avg = desc.time.total / 1000 > 0 ? JSBI.toNumber(JSBI.divide(desc.size.total, JSBI.BigInt(desc.time.total / 1000))) : 0;
         desc.speed.merge_records(speeds);
 
         return new PerfRequestBuilder(desc, new EmptyProtobufBodyContent()).owner(this.desc().owner()!.unwrap()).dec_id(this.desc().dec_id().unwrap()).build(PerfRequest)

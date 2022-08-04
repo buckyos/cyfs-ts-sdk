@@ -29,15 +29,12 @@ export class PerfIsolate {
     stack: SharedCyfsStack
 
     people_id: ObjectId
-    device_id: DeviceId
 
     dec_id: ObjectId
 
     isolate_id: string
 
     span_times: number[]
-
-    id: string
 
     actions: Map<string, PerfActionItem[]>
 
@@ -48,13 +45,11 @@ export class PerfIsolate {
     pending_reqs: Map<string, JSBI>
     requests: Map<string, PerfRequestItem[]>
     
-    constructor(isolate_id: string, span_times: number[], people_id: ObjectId, device_id: DeviceId, dec_id: ObjectId, id: string, stack: SharedCyfsStack) {
+    constructor(isolate_id: string, span_times: number[], people_id: ObjectId, dec_id: ObjectId, stack: SharedCyfsStack) {
         this.isolate_id = isolate_id;
         this.span_times = span_times;
         this.people_id = people_id;
-        this.device_id = device_id;
         this.dec_id = dec_id;
-        this.id = id;
         this.stack = stack;
 
         this.actions = new Map<string, PerfActionItem[]>();
@@ -196,7 +191,7 @@ export class PerfIsolate {
                 const time_span = split[1];
                 const path = this.get_local_cache_path(this.isolate_id, id,  date_span, time_span, PerfType.Requests);
                 const ret = await op_env.get_by_path(path);
-                if (ret.err) {
+                if (ret.err || ret.unwrap() === undefined) {
                     const perf_obj = PerfRequest.create(this.people_id, dec_id);
                     const v = perf_obj.add_stats(items);
                     const object_raw = v.to_vec().unwrap();
@@ -248,7 +243,7 @@ export class PerfIsolate {
                 const time_span = split[1];
                 const path = this.get_local_cache_path(this.isolate_id, id,  date_span, time_span, PerfType.Accumulations);
                 const ret = await op_env.get_by_path(path);
-                if (ret.err) {
+                if (ret.err || ret.unwrap() === undefined) {
                     const perf_obj = PerfAccumulation.create(this.people_id, dec_id);
                     const v = perf_obj.add_stats(items);
                     const object_raw = v.to_vec().unwrap();
@@ -300,7 +295,7 @@ export class PerfIsolate {
                 const time_span = split[1];
                 const path = this.get_local_cache_path(this.isolate_id, id,  date_span, time_span, PerfType.Actions);
                 const ret = await op_env.get_by_path(path);
-                if (ret.err) {
+                if (ret.err || ret.unwrap() === undefined) {
                     const perf_obj = PerfAction.create(this.people_id, dec_id);
                     const v = perf_obj.add_stats(items);
                     const object_raw = v.to_vec().unwrap();
@@ -352,7 +347,7 @@ export class PerfIsolate {
                 const time_span = split[1];
                 const path = this.get_local_cache_path(this.isolate_id, id,  date_span, time_span, PerfType.Records);
                 const ret = await op_env.get_by_path(path);
-                if (ret.err) {
+                if (ret.err || ret.unwrap() === undefined) {
                     const perf_obj = PerfRecord.create(this.people_id, dec_id, JSBI.BigInt(0), None);
                     const v = perf_obj.add_stat(items[items.length -1]);
                     const object_raw = v.to_vec().unwrap();
@@ -381,6 +376,13 @@ export class PerfIsolate {
         return Ok(undefined);
     }
 
+    clear_cache() {
+        this.requests.clear();
+        this.accumulations.clear();
+        this.actions.clear();
+        this.records.clear();
+    }
+
     async inner_save(): Promise<BuckyResult<void>> {
         const dec_id = ObjectId.from_base_58(PERF_DEC_ID_STR).unwrap();
         const root_state = this.stack.root_state_stub(undefined, dec_id);
@@ -394,6 +396,9 @@ export class PerfIsolate {
 
         const root = await op_env.commit();
         console.info(`new dec root is: ${root}`);
+
+        // 清理缓存数据
+        this.clear_cache();
 
         return Ok(undefined);
     }
@@ -491,6 +496,6 @@ export class PerfIsolate {
     }
 
     get_id() : string {
-        return this.id;
+        return this.isolate_id;
     }
 }

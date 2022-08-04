@@ -9,23 +9,23 @@ import { SharedCyfsStack } from "../../cyfs-lib";
 
 export class PerfManager {
     id: string
-    write_interval: number
     span_times: number[]
     dec_id: ObjectId
     stack: SharedCyfsStack
     people_id: ObjectId
-    device_id: DeviceId
     isolates: Map<string, PerfIsolate>
+    start_timer: boolean
+    write_interval: number
 
-    constructor(id: string, write_interval: number, span_times: number[], dec_id: ObjectId, stack: SharedCyfsStack, people_id: ObjectId, device_id: DeviceId) {
+    constructor(id: string, span_times: number[], write_interval: number, dec_id: ObjectId, stack: SharedCyfsStack, people_id: ObjectId) {
         this.id = id;
-        this.write_interval = write_interval;
         this.span_times = span_times;
         this.dec_id = dec_id;
         this.stack = stack;
         this.people_id = people_id;
-        this.device_id = device_id;
         this.isolates = new Map<string, PerfIsolate>();
+        this.start_timer = false;
+        this.write_interval = write_interval;
     }
 
     static async new(id: string, write_interval: number, span_duration: number, dec_id: ObjectId, stack: SharedCyfsStack): Promise<PerfManager> {
@@ -51,10 +51,7 @@ export class PerfManager {
             span_times.push(span_time);
         }
 
-        const perf_manager = new PerfManager(id, write_interval, span_times, dec_id, stack, people_id, device_id);
-        
-        perf_manager._inner_save();
-
+        const perf_manager = new PerfManager(id, span_times, write_interval, dec_id, stack, people_id);
         return perf_manager;
     }
 
@@ -66,9 +63,12 @@ export class PerfManager {
         if (this.is_isolates_exists(id)) {
             return this.isolates.get(id)!;
         } else {
-            const isolate = new PerfIsolate(id, this.span_times, this.people_id, this.device_id, this.dec_id, this.id, this.stack);
+            const isolate = new PerfIsolate(id, this.span_times, this.people_id, this.dec_id, this.stack);
             this.isolates.set(id, isolate);
-
+            if (!this.start_timer) {
+                this.start_timer = true;
+                this._inner_save();
+            }
             return isolate;
         }
     }
@@ -79,14 +79,14 @@ export class PerfManager {
     // 异步写
     _inner_save(): void {
         const interval = setInterval(async () => {
-            for (const [isolate_id, isolate] of this.isolates) {
-                console.log(isolate_id, isolate);
-                await isolate.inner_save();
-
+            console.log("tick");
+            if (this.isolates.size > 0) {
+                for (const [isolate_id, isolate] of this.isolates) {
+                    await isolate.inner_save();
+                }
             }
-        }, this.write_interval);
-        
-        console.log('_inner_save', interval);
+
+        }, 10 * 1000);
     }   
 
 }
