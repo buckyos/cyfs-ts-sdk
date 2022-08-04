@@ -1,51 +1,54 @@
 import { Err, Ok, BuckyResult, BuckyError, BuckyErrorCode } from "../base/results";
-import { RawEncode, RawDecode } from "../base/raw_encode";
+import { RawEncode, RawDecode, to_vec } from "../base/raw_encode";
 import { } from "../base/buffer";
 import { BuckyNumber, BuckyNumberDecoder } from "../base/bucky_number";
 import { Vec, VecDecoder } from "../base/vec";
 import { AesKey } from "./aes_key";
-import { ObjectId, ObjectIdDecoder, ObjectLink, ObjectLinkDecoder } from "../objects/object_id";
+import { ObjectLink, ObjectLinkDecoder } from "../objects/object_id";
 import { base_trace } from "../base/log";
 import bs58 from 'bs58';
 import JSBI from 'jsbi';
+
+import {asn1, pki, util} from 'node-forge'
+import { HashValue } from "./hash";
 
 //const bs58 = require('../base/bs58');
 
 /*************************************
  * 签名
  *************************************/
-export const SIGNATURE_REF_INDEX: number = 0;
-export const SIGNATURE_OBJECT: number = 1;
-export const SIGNATURE_KEY: number = 2;
+export const SIGNATURE_REF_INDEX = 0;
+export const SIGNATURE_OBJECT = 1;
+export const SIGNATURE_KEY = 2;
 
 // 1.obj_desc.ref_objs,取值范围为[0, 127]
-export const SIGNATURE_SOURCE_REFINDEX_REF_OBJ_BEGIN: number = 0;
-export const SIGNATURE_SOURCE_REFINDEX_REF_OBJ_END: number = 127;
+export const SIGNATURE_SOURCE_REFINDEX_REF_OBJ_BEGIN = 0;
+export const SIGNATURE_SOURCE_REFINDEX_REF_OBJ_END = 127;
 
 // 2.逻辑ref (从128-255（可以根据需要扩展）
 // ref[255] = 自己 （适用于有权对象）
 // ref[254] = owner （使用于有主对象）
 // ref[253] = author (适用于填写了作者的对象） 
 // ref[252-236] = ood_list[x] (适用于所在Zone的ood对象）
-export const SIGNATURE_SOURCE_REFINDEX_SELF: number = 255;
-export const SIGNATURE_SOURCE_REFINDEX_OWNER: number = 254;
-export const SIGNATURE_SOURCE_REFINDEX_AUTHOR: number = 253;
+export const SIGNATURE_SOURCE_REFINDEX_SELF = 255;
+export const SIGNATURE_SOURCE_REFINDEX_OWNER = 254;
+export const SIGNATURE_SOURCE_REFINDEX_AUTHOR = 253;
 
-export const SIGNATURE_SOURCE_REFINDEX_ZONE_OOD_BEGIN: number = 252;
-export const SIGNATURE_SOURCE_REFINDEX_ZONE_OOD_END: number = 236;
+export const SIGNATURE_SOURCE_REFINDEX_ZONE_OOD_BEGIN = 252;
+export const SIGNATURE_SOURCE_REFINDEX_ZONE_OOD_END = 236;
 
-export const SIGN_DATA_FLAG_RSA1024: number = 0;
-export const SIGN_DATA_FLAG_RSA2048: number = 1;
-export const SIGN_DATA_FLAG_ECC: number = 2;
+export const SIGN_DATA_FLAG_RSA1024 = 0;
+export const SIGN_DATA_FLAG_RSA2048 = 1;
+export const SIGN_DATA_FLAG_ECC = 2;
 
-export const SIGN_DATA_LEN_RSA1024: number = 32;
-export const SIGN_DATA_LEN_RSA2048: number = 64;
-export const SIGN_DATA_LEN_ECC: number = 16;
+export const SIGN_DATA_LEN_RSA1024 = 32;
+export const SIGN_DATA_LEN_RSA2048 = 64;
+export const SIGN_DATA_LEN_ECC = 16;
 
 export const SIGN_DATA_UNIT = 4; // 4 bytes = 32bit = u32
-export const SIGN_DATA_SIZE_RSA1024: number = SIGN_DATA_LEN_RSA1024 * SIGN_DATA_UNIT;
-export const SIGN_DATA_SIZE_RSA2048: number = SIGN_DATA_LEN_RSA2048 * SIGN_DATA_UNIT;
-export const SIGN_DATA_SIZE_ECC: number = SIGN_DATA_LEN_ECC * SIGN_DATA_UNIT;
+export const SIGN_DATA_SIZE_RSA1024 = SIGN_DATA_LEN_RSA1024 * SIGN_DATA_UNIT;
+export const SIGN_DATA_SIZE_RSA2048 = SIGN_DATA_LEN_RSA2048 * SIGN_DATA_UNIT;
+export const SIGN_DATA_SIZE_ECC = SIGN_DATA_LEN_ECC * SIGN_DATA_UNIT;
 
 export interface SignDataPartten<T> {
     Rsa1024SignData: (obj: Rsa1024SignData) => T;
@@ -408,7 +411,7 @@ export class Signature implements RawEncode {
                 buf = buf.offset(1);
 
                 // data
-                let slice = data.as_slice();
+                const slice = data.as_slice();
                 buf.set(slice);
                 buf = buf.offset(slice.length);
             },
@@ -539,33 +542,27 @@ export class SignatureDecoder implements RawDecode<Signature>{
  *************************************/
 
 // RSA
-export const RAW_PUBLIC_KEY_RSA_1024_CODE: number = 0;
-export const RAW_PUBLIC_KEY_RSA_1024_LENGTH: number = 162;
+export const RAW_PUBLIC_KEY_RSA_1024_CODE = 0;
+export const RAW_PUBLIC_KEY_RSA_1024_LENGTH = 162;
 
-export const RAW_PUBLIC_KEY_RSA_2048_CODE: number = 1;
-export const RAW_PUBLIC_KEY_RSA_2048_LENGTH: number = 294;
+export const RAW_PUBLIC_KEY_RSA_2048_CODE = 1;
+export const RAW_PUBLIC_KEY_RSA_2048_LENGTH = 294;
 
-export const RAW_PUBLIC_KEY_RSA_3072_CODE: number = 2;
-export const RAW_PUBLIC_KEY_RSA_3072_LENGTH: number = 422;
+export const RAW_PUBLIC_KEY_RSA_3072_CODE = 2;
+export const RAW_PUBLIC_KEY_RSA_3072_LENGTH = 422;
 
 // SECP256K1
-export const RAW_PUBLIC_KEY_SECP256K1_CODE: number = 10;
-export const RAW_PUBLIC_KEY_SECP256K1_LENGTH: number = 33;
-
-// SM2
-export const RAW_PUBLIC_KEY_SM2_CODE: number = 12;
-export const RAW_PUBLIC_KEY_SM2_LENGTH: number = 33;
+export const RAW_PUBLIC_KEY_SECP256K1_CODE = 10;
+export const RAW_PUBLIC_KEY_SECP256K1_LENGTH = 33;
 
 // 密钥类型的编码
-export const KEY_TYPE_RSA: number = 0;
-export const KEY_TYPE_RSA2048: number = 1;
-export const KEY_TYPE_SECP256K1: number = 5;
-export const KEY_TYPE_SM2: number = 6;
+export const KEY_TYPE_RSA = 0;
+export const KEY_TYPE_RSA2048 = 1;
+export const KEY_TYPE_SECP256K1 = 5;
 
 export interface PublicKeyPattern<T> {
     RSAPublicKey: (obj: RSAPublicKey) => T;
     Secp256k1PublicKey: (obj: Secp256k1PublicKey) => T;
-    SM2PublicKey: (obj: SM2PublicKey) => T;
 }
 
 export interface PublicKeyMatcher {
@@ -574,20 +571,18 @@ export interface PublicKeyMatcher {
 
 export abstract class PublicKeyBase implements RawEncode {
     threshold: number;
-
     code: number;
-    private buffer: Uint8Array;
 
-    constructor(code: number, buffer: Uint8Array) {
+    constructor(code: number) {
         this.threshold = -1;
         this.code = code;
-        this.buffer = buffer;
     }
 
     abstract key_size(): number;
     abstract encrypt(data: Uint8Array, output: Uint8Array): BuckyResult<number>;
     abstract gen_aeskey_and_encrypt(): BuckyResult<[AesKey, Uint8Array]>;
     abstract verify(data: Uint8Array, sign: Signature): boolean;
+    abstract raw_encode(buf: Uint8Array): BuckyResult<Uint8Array>;
 
     toJSON(): string {
         const size = this.raw_measure().unwrap();
@@ -610,73 +605,77 @@ export abstract class PublicKeyBase implements RawEncode {
             case RAW_PUBLIC_KEY_SECP256K1_CODE: {
                 return Ok(RAW_PUBLIC_KEY_SECP256K1_LENGTH + 1);
             }
-            case RAW_PUBLIC_KEY_SM2_CODE: {
-                return Ok(RAW_PUBLIC_KEY_SM2_LENGTH + 1);
-            }
             default: {
                 throw Error("should not come here");
             }
         }
     }
 
-    raw_encode(buf: Uint8Array): BuckyResult<Uint8Array> {
-        const len = this.raw_measure().unwrap();
-        buf[0] = this.code;
-
-        const view = buf.offset(1);
-        view.set(this.buffer);
-
-        return Ok(buf.offset(len));
-    }
-
     abstract as_public_value(): PublicKeyValue;
-
-    to_base_58(): string {
-        return bs58.encode(this.buffer);
-    }
 }
 
 export class RSAPublicKey extends PublicKeyBase implements PublicKeyMatcher {
-    private readonly size: number;
+    constructor(code: number, private public_key: pki.rsa.PublicKey) {
+        super(code);
+    }
 
-    constructor(code: number, buffer: Uint8Array) {
-        super(code, buffer);
-        switch (this.code) {
-            case RAW_PUBLIC_KEY_RSA_1024_CODE: {
-                this.size = 128;
-                break;
-            }
-            case RAW_PUBLIC_KEY_RSA_2048_CODE: {
-                this.size = 256;
-                break;
-            }
-            case RAW_PUBLIC_KEY_RSA_3072_CODE: {
-                this.size = 384;
-                break;
-            }
-            default: {
-                throw new Error("not support public key code");
-            }
-        }
-
-        // TODO: 转换buffer到具体的公玥对象
-        // 先假设在js里不需要验证逻辑，这里不用转换到公钥对象了
+    static from_buffer(code: number, buffer: Uint8Array): RSAPublicKey {
+        let key = pki.publicKeyFromAsn1(asn1.fromDer(util.binary.raw.encode(buffer)));
+        return new RSAPublicKey(code, key as pki.rsa.PublicKey);
     }
 
     key_size(): number {
-        return this.size;
+        return this.public_key.n.bitLength() / 8;
+    }
+
+    raw_encode(buf: Uint8Array): BuckyResult<Uint8Array> {
+        let len = this.raw_measure().unwrap();
+        let r = new BuckyNumber('u8', this.code).raw_encode(buf);
+        if (r.err) {
+            return r;
+        }
+        buf = r.unwrap();
+
+        const der_key = asn1.toDer(pki.publicKeyToAsn1(this.public_key))
+
+        buf.set(util.binary.raw.decode(der_key.bytes()) as Uint8Array);
+
+        buf = buf.offset(der_key.length())
+        const padding_len = len - 1 - der_key.length();
+        if (padding_len > 0) {
+            buf.fill(0, 0, padding_len)
+            buf = buf.offset(padding_len);
+        }
+        return Ok(buf)
     }
 
     encrypt(data: Uint8Array, output: Uint8Array): BuckyResult<number> {
-        throw Error("not implemented");
+        let msg = this.public_key.encrypt(util.binary.raw.encode(data), 'RSAES-PKCS1-V1_5');
+        return Ok(util.binary.raw.decode(msg, output) as unknown as number)
     }
 
     gen_aeskey_and_encrypt(): BuckyResult<[AesKey, Uint8Array]> {
-        throw Error("not implemented");
+        // 先产生一个临时的aes_key
+        let key = AesKey.random();
+
+        // 使用publicKey对aes_key加密
+        let output = new Uint8Array(this.key_size());
+        let r = this.encrypt(key.as_slice(), output);
+        if (r.err) {
+            return r
+        }
+
+        return Ok([key, output])
     }
 
     verify(data: Uint8Array, sign: Signature): boolean {
-        throw Error("not implemented");
+        let sign_time = new BuckyNumber('u64', sign.sign_time);
+        let final_data = new Uint8Array(data.length + sign_time.raw_measure().unwrap());
+        final_data.set(data);
+        sign_time.raw_encode(final_data.offset(data.length)).unwrap();
+
+        let hash = HashValue.hash_data(final_data);
+        return this.public_key.verify(util.binary.raw.encode(hash.as_slice()), util.binary.raw.encode(sign.sign.as_slice()), 'RSAES-PKCS1-V1_5')
     }
 
     match<T>(p: PublicKeyPattern<T>): T {
@@ -689,8 +688,8 @@ export class RSAPublicKey extends PublicKeyBase implements PublicKeyMatcher {
 }
 
 export class Secp256k1PublicKey extends PublicKeyBase implements PublicKeyMatcher {
-    constructor(buffer: Uint8Array) {
-        super(RAW_PUBLIC_KEY_SECP256K1_CODE, buffer);
+    constructor(public buffer: Uint8Array) {
+        super(RAW_PUBLIC_KEY_SECP256K1_CODE);
 
         // TODO: 转换buffer到具体的公玥对象
     }
@@ -718,41 +717,23 @@ export class Secp256k1PublicKey extends PublicKeyBase implements PublicKeyMatche
     as_public_value(): PublicKeyValue {
         return new PublicKeyWithTag(this);
     }
-}
 
-export class SM2PublicKey extends PublicKeyBase implements PublicKeyMatcher {
-    constructor(buffer: Uint8Array) {
-        super(RAW_PUBLIC_KEY_SM2_CODE, buffer);
+    raw_encode(buf: Uint8Array): BuckyResult<Uint8Array> {
+        let len = this.raw_measure().unwrap();
+        let r = new BuckyNumber('u8', this.code).raw_encode(buf);
+        if (r.err) {
+            return r;
+        }
+        buf = r.unwrap();
 
-        // TODO: 转换buffer到具体的公玥对象
-    }
+        buf.set(this.buffer);
 
-    key_size(): number {
-        throw Error("not implemented");
-    }
-
-    encrypt(data: Uint8Array, output: Uint8Array): BuckyResult<number> {
-        throw Error("not implemented");
-    }
-
-    gen_aeskey_and_encrypt(): BuckyResult<[AesKey, Uint8Array]> {
-        throw Error("not implemented");
-    }
-
-    verify(data: Uint8Array, sign: Signature): boolean {
-        throw Error("not implemented");
-    }
-
-    match<T>(p: PublicKeyPattern<T>): T {
-        return p.SM2PublicKey(this);
-    }
-
-    as_public_value(): PublicKeyValue {
-        return new PublicKeyWithTag(this);
+        buf = buf.offset(this.buffer.length)
+        return Ok(buf)
     }
 }
 
-export type PublicKey = RSAPublicKey | Secp256k1PublicKey | SM2PublicKey;
+export type PublicKey = RSAPublicKey | Secp256k1PublicKey;
 
 export class PublicKeyDecoder implements RawDecode<PublicKey>{
     constructor() {
@@ -767,7 +748,7 @@ export class PublicKeyDecoder implements RawDecode<PublicKey>{
             case RAW_PUBLIC_KEY_RSA_1024_CODE: {
                 const len = RAW_PUBLIC_KEY_RSA_1024_LENGTH;
                 const buffer = buf.slice(0, len);
-                const pk = new RSAPublicKey(code, buffer);
+                const pk = RSAPublicKey.from_buffer(code, buffer);
                 buf = buf.offset(len);
                 const ret: [PublicKey, Uint8Array] = [pk, buf];
                 return Ok(ret);
@@ -775,7 +756,7 @@ export class PublicKeyDecoder implements RawDecode<PublicKey>{
             case RAW_PUBLIC_KEY_RSA_2048_CODE: {
                 const len = RAW_PUBLIC_KEY_RSA_2048_LENGTH;
                 const buffer = buf.slice(0, len);
-                const pk = new RSAPublicKey(code, buffer);
+                const pk = RSAPublicKey.from_buffer(code, buffer);
                 buf = buf.offset(len);
                 const ret: [PublicKey, Uint8Array] = [pk, buf];
                 return Ok(ret);
@@ -783,7 +764,7 @@ export class PublicKeyDecoder implements RawDecode<PublicKey>{
             case RAW_PUBLIC_KEY_RSA_3072_CODE: {
                 const len = RAW_PUBLIC_KEY_RSA_3072_LENGTH;
                 const buffer = buf.slice(0, len);
-                const pk = new RSAPublicKey(code, buffer);
+                const pk = RSAPublicKey.from_buffer(code, buffer);
                 buf = buf.offset(len);
                 const ret: [PublicKey, Uint8Array] = [pk, buf];
                 return Ok(ret);
@@ -792,14 +773,6 @@ export class PublicKeyDecoder implements RawDecode<PublicKey>{
                 const len = RAW_PUBLIC_KEY_SECP256K1_LENGTH;
                 const buffer = buf.slice(0, len);
                 const pk = new Secp256k1PublicKey(buffer);
-                buf = buf.offset(len);
-                const ret: [PublicKey, Uint8Array] = [pk, buf];
-                return Ok(ret);
-            }
-            case RAW_PUBLIC_KEY_SM2_CODE: {
-                const len = RAW_PUBLIC_KEY_SM2_LENGTH;
-                const buffer = buf.slice(0, len);
-                const pk = new SM2PublicKey(buffer);
                 buf = buf.offset(len);
                 const ret: [PublicKey, Uint8Array] = [pk, buf];
                 return Ok(ret);

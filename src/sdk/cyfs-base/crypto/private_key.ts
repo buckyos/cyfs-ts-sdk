@@ -1,12 +1,13 @@
-import { Err, Ok, BuckyResult, BuckyError, BuckyErrorCode } from "../base/results";
+import { Err, Ok, BuckyResult} from "../base/results";
 import { RawEncode, RawDecode, RawEncodePurpose } from "../base/raw_encode";
 import {} from "../base/buffer";
 import { BuckyNumber, BuckyNumberDecoder } from "../base/bucky_number";
 
 // import crypto from 'crypto';
-import NodeRSA from 'node-rsa'
-import { KEY_TYPE_RSA, KEY_TYPE_SECP256K1, KEY_TYPE_SM2, PublicKey, RAW_PUBLIC_KEY_RSA_1024_CODE, RAW_PUBLIC_KEY_RSA_2048_CODE, RAW_PUBLIC_KEY_RSA_3072_CODE, Rsa1024SignData, Rsa2048SignData, RSAPublicKey, Signature, SignatureSource } from "./public_key";
+import {pki, asn1, util} from 'node-forge'
+import { KEY_TYPE_RSA, KEY_TYPE_SECP256K1, PublicKey, RAW_PUBLIC_KEY_RSA_1024_CODE, RAW_PUBLIC_KEY_RSA_2048_CODE, RAW_PUBLIC_KEY_RSA_3072_CODE, Rsa1024SignData, Rsa2048SignData, RSAPublicKey, Signature, SignatureSource } from "./public_key";
 import { bucky_time_now } from "../base/time";
+import { HashValue } from "./hash";
 
 function bits_2_keysize(bits: number): number {
     let code;
@@ -42,19 +43,17 @@ export abstract class PrivateKey implements RawEncode{
     }
 
     static generate_rsa(bits: number): BuckyResult<PrivateKey> {
-        let code = bits_2_keysize(bits);
-        let ret = new NodeRSA({b: bits});
-        ret.setOptions({signingScheme: 'pkcs1-sha256'});
-        //let ret = crypto.generateKeyPairSync('rsa', {modulusLength: bits});
-        return Ok(new RSAPrivateKey(code, ret));
+        return PrivateKey.generate_rsa_by_rng(undefined, bits);
+    }
+
+    static generate_rsa_by_rng(rng: any, bits: number): BuckyResult<PrivateKey> {
+        const keypair = pki.rsa.generateKeyPair({bits: bits, prng: rng});
+        const code = bits_2_keysize(bits);
+        return Ok(new RSAPrivateKey(code, keypair.privateKey))
     }
 
     static generate_secp256k1(): BuckyResult<PrivateKey> {
         throw new Error("secp256k1 not supported.");
-    }
-
-    static generate_sm2(): BuckyResult<PrivateKey> {
-        throw new Error("sm2 not supported.");
     }
 
     abstract public(): PublicKey;
@@ -74,12 +73,12 @@ export abstract class PrivateKey implements RawEncode{
 }
 
 export class RSAPrivateKey extends PrivateKey{
-    constructor(public code: number, public value: NodeRSA) {
+    constructor(public code: number, public value: pki.rsa.PrivateKey) {
         super(KEY_TYPE_RSA)
     }
     raw_measure(ctx?: any, purpose?: RawEncodePurpose): BuckyResult<number> {
-        let buf = this.value.exportKey("pkcs1-private-der")
-        return Ok(buf.length + 3);
+        const der_key = asn1.toDer(pki.privateKeyToAsn1(this.value))
+        return Ok(der_key.length() + 3);
     }
     raw_encode(buf: Uint8Array, ctx?: any, purpose?: RawEncodePurpose): BuckyResult<Uint8Array> {
         let r = new BuckyNumber('u8', this.type).raw_encode(buf);
@@ -87,19 +86,18 @@ export class RSAPrivateKey extends PrivateKey{
             return r;
         }
         buf = r.unwrap();
-
-        let der_key = new Uint8Array(this.value.exportKey("pkcs1-private-der"));
-        r = new BuckyNumber('u16', der_key.length).raw_encode(buf);
+        const der_key = asn1.toDer(pki.privateKeyToAsn1(this.value))
+        r = new BuckyNumber('u16', der_key.length()).raw_encode(buf);
         if (r.err) {
             return r;
         }
         buf = r.unwrap();
 
-        buf.set(der_key);
-        return Ok(buf.offset(der_key.length));
+        buf.set(util.binary.raw.decode(der_key.bytes()) as Uint8Array);
+        return Ok(buf.offset(der_key.length()));
     }
     public(): PublicKey {
-        let pub_key = new Uint8Array(this.value.exportKey('pkcs1-public-der'));
+        let pub_key = pki.rsa.setPublicKey(this.value.n, this.value.e)
         return new RSAPublicKey(this.code, pub_key);
     }
     sign(data: Uint8Array, sign_source: SignatureSource): Signature {
@@ -107,15 +105,16 @@ export class RSAPrivateKey extends PrivateKey{
         let data_new = new Uint8Array(data.length + create_time.raw_measure().unwrap());
         data_new.set(data);
         create_time.raw_encode(data_new.offset(data.length)).unwrap();
-        let sign_buf = this.value.sign(Buffer.from(data_new));
+        let hash = HashValue.hash_data(data_new);
+        let sign_buf = this.value.sign(util.binary.raw.encode(hash.as_slice()), 'RSASSA-PKCS1-V1_5');
         let sign_data;
         switch (this.code){
             case RAW_PUBLIC_KEY_RSA_1024_CODE: {
-                sign_data = new Rsa1024SignData(new Uint8Array(sign_buf));
+                sign_data = new Rsa1024SignData(util.binary.raw.decode(sign_buf));
                 break;
             }
             case RAW_PUBLIC_KEY_RSA_2048_CODE: {
-                sign_data = new Rsa2048SignData(new Uint8Array(sign_buf));
+                sign_data = new Rsa2048SignData(util.binary.raw.decode(sign_buf));
                 break;
             }
             default: {
@@ -126,8 +125,8 @@ export class RSAPrivateKey extends PrivateKey{
         return sign;
     }
     decrypt(input: Uint8Array, out: Uint8Array): BuckyResult<number> {
-        let ret = this.value.decrypt(Buffer.from(input))
-        out.set(ret);
+        let ret = this.value.decrypt(util.binary.raw.encode(input), 'RSAES-PKCS1-V1_5');
+        out.set(util.binary.raw.decode(ret));
         return Ok(ret.length);
     }
 }
@@ -153,28 +152,7 @@ export class Secp256k1PrivateKey extends PrivateKey{
     }
 }
 
-export class SM2PrivateKey extends PrivateKey{
-    constructor(){
-        super(KEY_TYPE_SM2)
-    }
-    raw_measure(ctx?: any, purpose?: RawEncodePurpose): BuckyResult<number> {
-        return Ok(32);
-    }
-    raw_encode(buf: Uint8Array, ctx?: any, purpose?: RawEncodePurpose): BuckyResult<Uint8Array> {
-        throw new Error("sm2 not supported.");
-    }
-    public(): PublicKey {
-        throw new Error("Method not implemented.");
-    }
-    sign(data: Uint8Array, sign_source: SignatureSource): Signature {
-        throw new Error("Method not implemented.");
-    }
-    decrypt(input: Uint8Array, out: Uint8Array): BuckyResult<number> {
-        throw new Error("Method not implemented.");
-    }
-}
-
-// export type PrivateKey = RSAPrivateKey | Secp256k1PrivateKey | SM2PrivateKey
+// export type PrivateKey = RSAPrivateKey | Secp256k1PrivateKey
 
 export class PrivatekeyDecoder implements RawDecode<PrivateKey> {
     raw_decode(buf: Uint8Array, ctx?: any): BuckyResult<[PrivateKey, Uint8Array]> {
@@ -191,11 +169,11 @@ export class PrivatekeyDecoder implements RawDecode<PrivateKey> {
                         }
                         [len, buf] = r.unwrap();
                     }
-                    let der_buf = Buffer.from(buf.slice(0, len.toNumber()));
-                    let pk = new NodeRSA(der_buf, 'pkcs1-private-der', {signingScheme: 'pkcs1-sha256'})
-
+                    let der_buf = buf.slice(0, len.toNumber()).toString();
+                    let pk = pki.privateKeyFromAsn1(asn1.fromDer(der_buf)) as pki.rsa.PrivateKey
                     buf = buf.offset(len.toNumber());
-                    let keySize = pk.getKeySize();
+
+                    let keySize = pk.n.bitLength();
                     let rsa = new RSAPrivateKey(bits_2_keysize(keySize), pk);
                     return Ok([rsa, buf] as [PrivateKey, Uint8Array]);
                 }

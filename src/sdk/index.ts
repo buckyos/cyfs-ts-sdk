@@ -13,3 +13,5 @@ export * from './cyfs-lib';
 
 export * from './ethabi';
 export * from './util';
+
+export * from './cyfs-cip';

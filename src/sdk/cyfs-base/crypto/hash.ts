@@ -1,10 +1,9 @@
-import { sha256 } from "js-sha256";
-
 import { Ok, BuckyResult, Err, BuckyError, BuckyErrorCode } from "../base/results";
 import { RawEncode, RawDecode } from "../base/raw_encode";
 import { } from "../base/buffer";
 
 import bs58 from 'bs58';
+import {md, util} from 'node-forge'
 //const bs58 = require('../base/bs58');
 
 export const HASH_VALUE_LEN = 32;
@@ -38,12 +37,12 @@ export class HashValue implements RawEncode {
 
     static hash_data(data: Uint8Array): HashValue {
         // calc hash
-        const hash = sha256.create();
-        hash.update(data);
-        const val = hash.arrayBuffer();
+        const hash = md.sha256.create()
+        hash.update(util.binary.raw.encode(data), 'raw')
+        const val = hash.digest();
 
         // construct
-        return new HashValue(new Uint8Array(val));
+        return new HashValue(util.binary.raw.decode(val.bytes()));
     }
 
     raw_measure(): BuckyResult<number> {
