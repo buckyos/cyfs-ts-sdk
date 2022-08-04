@@ -27,15 +27,19 @@
             (await this.m_sharedStatck.online()).unwrap();
 
             // 获取PerfManager 
-            let manager = await cyfs.PerfManager.new("test-perf-h5", 60 /*[1, 1440)*/, 10 * 1000 /*write interval*/, this.dec_id, this.m_sharedStatck);
+            let manager = await cyfs.PerfManager.new("test-perf-h5", 60 /*[1, 1440)*/, 10  /*write interval  seconds*/, this.dec_id, this.m_sharedStatck);
             // 对象 一个bdt isolate 
             let perfIsolate = manager.new_isolate("main");
-            //perfIsolate.begin_request("bdt", "channel");
-            // await perfIsolate.end_request("bdt", "channel", cyfs.BuckyErrorCode.Unknown, cyfs.Some(cyfs.JSBI.BigInt(100)));
 
-            // await perfIsolate.acc("bdt", cyfs.BuckyErrorCode.Unknown, cyfs.JSBI.BigInt(100));
-            // await perfIsolate.action("bdt", cyfs.BuckyErrorCode.Unknown, "bdt", "404");
-            // await perfIsolate.record("bdt", cyfs.JSBI.BigInt(100), cyfs.Some(cyfs.JSBI.BigInt(100)));
+            for (let i = 0; i < 1_0000; i++) {
+                perfIsolate.begin_request("bdt", "channel");
+                perfIsolate.end_request("bdt", "channel", cyfs.BuckyErrorCode.Ok, cyfs.Some(cyfs.JSBI.BigInt(100)));
+
+                perfIsolate.acc("bdt", cyfs.BuckyErrorCode.Unknown, cyfs.JSBI.BigInt(100));
+                perfIsolate.action("bdt", cyfs.BuckyErrorCode.Unknown, "bdt", "404");
+                perfIsolate.record("bdt", cyfs.JSBI.BigInt(100), cyfs.Some(cyfs.JSBI.BigInt(100)));
+            }
+
 
             console.log("*".repeat(128));
 

@@ -343,7 +343,7 @@ export class PerfRequest extends NamedObject<PerfRequestDesc, EmptyProtobufBodyC
 
                 const speed = JSBI.divide(stat_num, JSBI.BigInt(stat.spend_time / 1000))
                 desc.speed.merge_record(JSBI.toNumber(speed));
-                desc.speed.avg = JSBI.toNumber(JSBI.divide(desc.size.total, JSBI.BigInt(desc.time.total / 1000)))
+                desc.speed.avg = desc.time.total / 1000 > 0 ? JSBI.toNumber(JSBI.divide(desc.size.total, JSBI.BigInt(desc.time.total / 1000))) : 0;
             }
         }
 
@@ -366,7 +366,7 @@ export class PerfRequest extends NamedObject<PerfRequestDesc, EmptyProtobufBodyC
                 if (stat.stat.is_some()) {
                     stat_nums.push(stat.stat.unwrap())
     
-                    const speed = JSBI.divide(stat.stat.unwrap(), JSBI.BigInt(stat.spend_time / 1000))
+                    const speed = stat.spend_time / 1000 > 0 ? JSBI.divide(stat.stat.unwrap(), JSBI.BigInt(stat.spend_time / 1000)) : JSBI.BigInt(0);
                     speeds.push(JSBI.toNumber(speed));
                 }
             }

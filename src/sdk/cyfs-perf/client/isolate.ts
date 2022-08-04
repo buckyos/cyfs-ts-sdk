@@ -140,10 +140,10 @@ export class PerfIsolate {
     }
 
 
-    async local_cache(op_env: PathOpEnvStub, dec_id: ObjectId, isolate_id: string, id: string, date_span: string, time_span: string, perf_object_id: ObjectId, perf_type: PerfType) : Promise<BuckyResult<void>> {
+    async local_cache(op_env: PathOpEnvStub, isolate_id: string, id: string, date_span: string, time_span: string, perf_object_id: ObjectId, perf_type: PerfType) : Promise<BuckyResult<void>> {
         // 把对象存到root_state, local cache
         const path = this.get_local_cache_path(isolate_id, id, date_span, time_span, perf_type);
-        await op_env.set_with_key(path, perf_object_id.to_base_58(), perf_object_id, undefined, true);
+        await op_env.set_with_path(path, perf_object_id, undefined, true);
         //const root = await op_env.commit();
         //console.info(`path: ${path}, value: ${perf_object_id.to_base_58()}, new dec root is: ${root}, perf_obj_id=${perf_object_id}`);
 
@@ -152,12 +152,8 @@ export class PerfIsolate {
 
     async put_noc_and_root_state(op_env: PathOpEnvStub, object_id: ObjectId, object_raw: Uint8Array, isolate_id: string, id: string, date_span: string, time_span: string, perf_type: PerfType) :  Promise<BuckyResult<void>> {
         await this.put_object(object_id, object_raw);
-
-        const dec_id = ObjectId.from_base_58(PERF_DEC_ID_STR).unwrap();
-
         await this.local_cache(
             op_env,
-            dec_id, 
             isolate_id, 
             id, 
             date_span,
@@ -384,21 +380,31 @@ export class PerfIsolate {
     }
 
     async inner_save(): Promise<BuckyResult<void>> {
-        const dec_id = ObjectId.from_base_58(PERF_DEC_ID_STR).unwrap();
-        const root_state = this.stack.root_state_stub(undefined, dec_id);
-        const op_env = (await root_state.create_path_op_env()).unwrap();
+        if (this.requests.size > 0 ||
+            this.accumulations.size > 0 ||
+            this.actions.size > 0 || 
+            this.records.size > 0) {
+        
+            console.time('elapsedTime') 
 
-        await this.inner_save_request(op_env, dec_id);
-        await this.inner_save_acc(op_env, dec_id);
-        await this.inner_save_action(op_env, dec_id);
-        await this.inner_save_record(op_env, dec_id);
+            const dec_id = ObjectId.from_base_58(PERF_DEC_ID_STR).unwrap();
+            const root_state = this.stack.root_state_stub(undefined, dec_id);
+            const op_env = (await root_state.create_path_op_env()).unwrap();
+    
+            await this.inner_save_request(op_env, dec_id);
+            await this.inner_save_acc(op_env, dec_id);
+            await this.inner_save_action(op_env, dec_id);
+            await this.inner_save_record(op_env, dec_id);
+    
+    
+            const root = await op_env.commit();
+            console.info(`new dec root is: ${root}`);
+    
+            console.timeEnd('elapsedTime')
+            // 清理缓存数据
+            this.clear_cache();
+        }
 
-
-        const root = await op_env.commit();
-        console.info(`new dec root is: ${root}`);
-
-        // 清理缓存数据
-        this.clear_cache();
 
         return Ok(undefined);
     }
@@ -417,7 +423,7 @@ export class PerfIsolate {
 
     }
     // 统计一个操作的耗时, 流量统计
-    async end_request(id: string, key: string, err: BuckyErrorCode, bytes: Option<JSBI>): Promise<BuckyResult<void>> {
+    end_request(id: string, key: string, err: BuckyErrorCode, bytes: Option<JSBI>): void {
         const full_id = `${id}_${key}`;
         const tick = this.pending_reqs.get(full_id);
         if (tick !== undefined) {
@@ -440,10 +446,10 @@ export class PerfIsolate {
 
         }
         
-        return Ok(undefined);
+        return;
     }
 
-    async acc(id: string, err: BuckyErrorCode, size: JSBI) : Promise<BuckyResult<void>> {
+    acc(id: string, err: BuckyErrorCode, size: JSBI) :void {
         const now = bucky_time_now();
         const item: PerfAccumulationItem = {
             time: now,
@@ -458,15 +464,15 @@ export class PerfIsolate {
         }
         this.accumulations.set(id, items)
 
-        return Ok(undefined);
+        return;
     }
 
-    async action(
+    action(
         id: string,
         err: BuckyErrorCode,
         name: string,
         value: string,
-    ): Promise<BuckyResult<void>> {
+    ): void {
         const item = new PerfActionItem(err, name, value); 
         let items = this.actions.get(id);
         if (items !== undefined) {
@@ -475,10 +481,10 @@ export class PerfIsolate {
             items = [item];
         }
         this.actions.set(id, items)
-        return Ok(undefined);
+        return;
     }
 
-    async record(id: string, total: JSBI, total_size: Option<JSBI>) : Promise<BuckyResult<void>> {
+    record(id: string, total: JSBI, total_size: Option<JSBI>) : void {
         const item: PerfRecordItem = {
             time: bucky_time_now(),
             total,
@@ -492,7 +498,7 @@ export class PerfIsolate {
         }
         this.records.set(id, items)
 
-        return Ok(undefined);
+        return;
     }
 
     get_id() : string {

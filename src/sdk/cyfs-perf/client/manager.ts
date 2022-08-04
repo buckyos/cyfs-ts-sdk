@@ -28,7 +28,7 @@ export class PerfManager {
         this.write_interval = write_interval;
     }
 
-    static async new(id: string, write_interval: number, span_duration: number, dec_id: ObjectId, stack: SharedCyfsStack): Promise<PerfManager> {
+    static async new(id: string, span_duration: number, write_interval: number, dec_id: ObjectId, stack: SharedCyfsStack): Promise<PerfManager> {
         const device_id = stack.local_device_id();
         const resp = (await stack.util().get_zone({
             common: {
@@ -86,7 +86,7 @@ export class PerfManager {
                 }
             }
 
-        }, 10 * 1000);
+        }, this.write_interval * 1000);
     }   
 
 }
