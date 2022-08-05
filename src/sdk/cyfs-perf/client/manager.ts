@@ -59,7 +59,7 @@ export class PerfManager {
         return this.isolates.has(isolate_id);
     }
 
-    new_isolate(id: string) : PerfIsolate {
+    fork(id: string) : PerfIsolate {
         if (this.is_isolates_exists(id)) {
             return this.isolates.get(id)!;
         } else {
@@ -71,9 +71,6 @@ export class PerfManager {
             }
             return isolate;
         }
-    }
-    get_isolate(id: string) : PerfIsolate | undefined {
-        return this.isolates.get(id);
     }
 
     // 异步写
