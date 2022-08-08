@@ -27,8 +27,8 @@ export class ChaChaRng{
 
     getBytesSync(length: number): string {
         let output = new Uint8Array(length);
-        output = this.cipher.update(output)!;
-        output = output.reverse();
+        this.fillBytes(output);
+        console.log(`chacha rng get ${length} bytes, ret ${output.toHex()}`)
         return util.binary.raw.encode(output)
     }
 

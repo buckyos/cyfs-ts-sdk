@@ -91,11 +91,19 @@ export class Chacha20 {
         let cacheLen = 64 - this.cachePos;
         if (cacheLen) {
             if (cacheLen >= len) {
-                dst.set(this.output.slice(this.cachePos, 64), 0)
+                let src_array = this.output.slice(this.cachePos, 64)
+                if (src_array.length > len) {
+                    src_array = src_array.slice(0, len)
+                }
+                dst.set(src_array, 0)
                 this.cachePos += len;
                 return dst;
             } else {
-                dst.set(this.output.slice(this.cachePos, 64), 0)
+                let src_array = this.output.slice(this.cachePos, 64)
+                if (src_array.length > len) {
+                    src_array = src_array.slice(0, len)
+                }
+                dst.set(src_array, 0)
                 len -= cacheLen;
                 dpos += cacheLen;
                 this.cachePos = 64;
