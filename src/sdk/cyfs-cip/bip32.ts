@@ -62,8 +62,7 @@ export class ExtendedPrivateKey {
             if (bytes.err) {
                 return bytes;
             }
-
-            hmac1.update('\0');
+            hmac1.update("\0");
             hmac1.update(util.binary.raw.encode(bytes.unwrap()))
         }
 

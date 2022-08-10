@@ -3,11 +3,11 @@ import { RawEncode, RawDecode, RawEncodePurpose } from "../base/raw_encode";
 import {} from "../base/buffer";
 import { BuckyNumber, BuckyNumberDecoder } from "../base/bucky_number";
 
-// import crypto from 'crypto';
 import {pki, asn1, util} from 'node-forge'
 import { KEY_TYPE_RSA, KEY_TYPE_SECP256K1, PublicKey, RAW_PUBLIC_KEY_RSA_1024_CODE, RAW_PUBLIC_KEY_RSA_2048_CODE, RAW_PUBLIC_KEY_RSA_3072_CODE, Rsa1024SignData, Rsa2048SignData, RSAPublicKey, Signature, SignatureSource } from "./public_key";
 import { bucky_time_now } from "../base/time";
 import { HashValue } from "./hash";
+import {generate_rsa_by_rng} from './key_generator'
 
 function bits_2_keysize(bits: number): number {
     let code;
@@ -47,9 +47,10 @@ export abstract class PrivateKey implements RawEncode{
     }
 
     static generate_rsa_by_rng(rng: any, bits: number): BuckyResult<PrivateKey> {
-        const keypair = pki.rsa.generateKeyPair({bits: bits, prng: rng});
+        const pk = generate_rsa_by_rng(rng, bits);
+        //const keypair = pki.rsa.generateKeyPair({bits: bits, prng: rng});
         const code = bits_2_keysize(bits);
-        return Ok(new RSAPrivateKey(code, keypair.privateKey))
+        return Ok(new RSAPrivateKey(code, pk))
     }
 
     static generate_secp256k1(): BuckyResult<PrivateKey> {
