@@ -71,7 +71,9 @@ const copys = {
         "demo": "demo",
         "src/tool/cyfs.js": "cyfs.js",
         "src/tool/contract.js": "contract.js",
-        "package.json": "package.json"
+        "package.json": "package.json",
+        "public_ood/people.desc": "desc/public_people.desc",
+        "public_ood/people.sec": "desc/public_people.sec"
     }
 }
 

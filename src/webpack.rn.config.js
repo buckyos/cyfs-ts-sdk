@@ -38,6 +38,7 @@ module.exports = {
             "constants": require.resolve("constants-browserify"),
             "assert": false,
             "stream": require.resolve("stream-browserify"),
+            "fs": false,
         }
     },
     output: {
