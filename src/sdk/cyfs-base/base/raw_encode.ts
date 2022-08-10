@@ -1,6 +1,7 @@
 import { BuckyResult, Ok } from "./results";
 import { } from "./buffer";
 import { HashValue } from '../crypto/hash';
+import * as fs from "fs";
 
 /**
  * 编码接口
@@ -137,4 +138,12 @@ export function buffer_from_hex(hex: string): BuckyResult<Uint8Array> {
         buf = new Uint8Array(hexToArrayBuffer(hex));
     }
     return Ok(buf);
+}
+
+export function from_file<T>(path: fs.PathLike, decoder: RawDecode<T>): BuckyResult<T> {
+    return from_buf(new Uint8Array(fs.readFileSync(path)), decoder);
+}
+
+export function to_file(path: fs.PathLike, obj: RawEncode) {
+    return fs.writeFileSync(path, to_vec(obj).unwrap())
 }

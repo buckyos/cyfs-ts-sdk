@@ -176,8 +176,8 @@ export class PrivatekeyDecoder implements RawDecode<PrivateKey> {
                         }
                         [len, buf] = r.unwrap();
                     }
-                    let der_buf = buf.slice(0, len.toNumber()).toString();
-                    let pk = pki.privateKeyFromAsn1(asn1.fromDer(der_buf)) as pki.rsa.PrivateKey
+                    let der_buf = buf.slice(0, len.toNumber());
+                    let pk = pki.privateKeyFromAsn1(asn1.fromDer(util.binary.raw.encode(der_buf))) as pki.rsa.PrivateKey
                     buf = buf.offset(len.toNumber());
 
                     let keySize = pk.n.bitLength();
