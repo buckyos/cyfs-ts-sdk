@@ -99,7 +99,7 @@ export function data_to_biguint(data: Uint8Array): jsbn.BigInteger {
     return new jsbn.BigInteger(uint_num_str);
 }
 
-function gen_prime(rng: any, bit_size: number): jsbn.BigInteger {
+function gen_prime(rng: RsaRng, bit_size: number): jsbn.BigInteger {
     if (bit_size < 2) {
         throw new Error("prime size must be at least 2-bit")
     }
@@ -112,7 +112,7 @@ function gen_prime(rng: any, bit_size: number): jsbn.BigInteger {
     let bytes_len = Math.floor((bit_size + 7) / 8);
 
     while(true) {
-        let bytes: Uint8Array = rng.getBytesSync(bytes_len);
+        let bytes = rng.getBytesSync(bytes_len);
 
         // Clear bits in the first byte to make sure the candidate has a size <= bits.
         bytes[0] &= ((1 << b) - 1);
@@ -169,7 +169,11 @@ function gen_prime(rng: any, bit_size: number): jsbn.BigInteger {
     }
 }
 
-export function generate_rsa_by_rng(rng: any, bits: number): pki.rsa.PrivateKey {
+export interface RsaRng {
+    getBytesSync(length: number): Uint8Array;
+}
+
+export function generate_rsa_by_rng(rng: RsaRng, bits: number): pki.rsa.PrivateKey {
     let primes: jsbn.BigInteger[] = [];
     let n_final = jsbn.BigInteger.ZERO
     let d_final = jsbn.BigInteger.ZERO
