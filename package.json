@@ -30,7 +30,8 @@
     "protos_core": "protoc.exe --proto_path=./src/sdk/cyfs-core/codec/protos --js_out=import_style=commonjs,binary:./src/sdk/cyfs-core/codec/protos --ts_out=./src/sdk/cyfs-core/codec/protos ./src/sdk/cyfs-core/codec/protos/core_objects.proto",
     "protos_base": "protoc.exe --proto_path=./src/sdk/cyfs-base/codec/protobuf/protos --js_out=import_style=commonjs,binary:./src/sdk/cyfs-base/codec/protobuf/protos/ --ts_out=./src/sdk/cyfs-base/codec/protobuf/protos/ ./src/sdk/cyfs-base/codec/protobuf/protos/standard_objects.proto ./src/sdk/cyfs-base/codec/protobuf/protos/empty_content.proto",
     "protos_perf": "protoc.exe --proto_path=./src/sdk/cyfs-perf/codec/protos --js_out=import_style=commonjs,binary:./src/sdk/cyfs-perf/codec/protos --ts_out=./src/sdk/cyfs-perf/codec/protos ./src/sdk/cyfs-perf/codec/protos/perf_objects.proto",
-    "protos": "npm run prepare_protoc && npm run protos_core && npm run protos_base && npm run protos_perf"
+    "protos": "npm run prepare_protoc && npm run protos_core && npm run protos_base && npm run protos_perf",
+    "postinstall": "copy /Y 3rd\\node-forge.d.ts node_modules\\node_modules\\@types\\node-forge\\index.d.ts"
   },
   "bin": {
     "cyfs": "cyfs.js",

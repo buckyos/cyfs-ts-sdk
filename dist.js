@@ -87,18 +87,16 @@ const tool_only_deps = [
 
 const sdk_only_deps = [
     "bs58",
-    "buffer",
     "google-protobuf",
     "hex-to-array-buffer",
-    "js-sha256",
-    "jsencrypt",
     "node-localstorage",
-    "os-browserify",
-    "path-browserify",
-    "process",
     "ts-results",
     "tslib",
-    "websocket"
+    "websocket",
+    "node-forge",
+    "bip39",
+    "fs-extra",
+    "node-fetch"
 ]
 
 function main(){
