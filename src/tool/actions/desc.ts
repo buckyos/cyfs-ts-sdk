@@ -6,7 +6,7 @@ import { Command } from "commander";
 import { CyfsToolConfig } from "../lib/util";
 
 function stringToUint8Array(str:string): Uint8Array{
-    const arr = [];
+    const arr: number[] = [];
     for (let i = 0, j = str.length; i < j; ++i) {
       arr.push(str.charCodeAt(i));
     }
@@ -23,6 +23,15 @@ export function makeCommand(config: CyfsToolConfig) {
 
             process.exit(0);
         })
+}
+
+export function create_device(owner: cyfs.ObjectId, cat: cyfs.DeviceCategory): [cyfs.Device, cyfs.PrivateKey] {
+    let pk = cyfs.PrivateKey.generate_rsa(1024).unwrap();
+    let public_key = pk.public();
+    let unique = cyfs.UniqueId.copy_from_slice(stringToUint8Array(Date.now().toString()))
+    let device = cyfs.Device.create(cyfs.Some(owner), unique, [], [], [], public_key, cyfs.Area.default(), cat);
+
+    return [device, pk];
 }
 
 async function run(save_path: string) {
@@ -43,15 +52,6 @@ async function run(save_path: string) {
         let public_key = pk.public();
         let people = cyfs.People.create(cyfs.None, [], public_key, cyfs.None);
         return [people, pk];
-    }
-
-    function create_device(owner: cyfs.ObjectId, cat: cyfs.DeviceCategory): [cyfs.Device, cyfs.PrivateKey] {
-        let pk = cyfs.PrivateKey.generate_rsa(1024).unwrap();
-        let public_key = pk.public();
-        let unique = cyfs.UniqueId.copy_from_slice(stringToUint8Array(Date.now().toString()))
-        let device = cyfs.Device.create(cyfs.Some(owner), unique, [], [], [], public_key, cyfs.Area.default(), cat);
-
-        return [device, pk];
     }
 
     let people_desc_path = path.join(workspace, 'people.desc');
