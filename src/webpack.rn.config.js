@@ -37,6 +37,7 @@ module.exports = {
             "path": require.resolve("path-browserify"),
             "constants": require.resolve("constants-browserify"),
             "assert": false,
+            "stream": require.resolve("stream-browserify"),
         }
     },
     output: {

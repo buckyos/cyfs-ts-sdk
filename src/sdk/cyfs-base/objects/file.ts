@@ -24,7 +24,8 @@ import { ObjectId } from "./object_id";
 import JSBI from 'jsbi';
 import { ProtobufBodyContent, ProtobufBodyContentDecoder, ProtobufCodecHelper, protos } from '../codec';
 import { to_buf } from '../base/raw_encode';
-import { sha256 } from 'js-sha256';
+// import { sha256 } from 'js-sha256';
+import {md, util} from 'node-forge'
 
 export class FileDescTypeInfo extends DescTypeInfo {
     obj_type(): number {
@@ -132,15 +133,18 @@ export class ChunkBundle {
     }
 
     calc_serial_hash_value(): HashValue {
-        const hash = sha256.create();
+        const hash = md.sha256.create()
+        // const hash = sha256.create();
 
         for (const chunk_id of this.chunk_list) {
-            hash.update(chunk_id.as_slice());
+            // hash.update(chunk_id.as_slice());
+            hash.update(util.binary.raw.encode(chunk_id.as_slice()))
         }
 
-        const val = hash.arrayBuffer();
+        // const val = hash.arrayBuffer();
+        const val = util.binary.raw.decode(hash.digest().bytes());
 
-        return new HashValue(new Uint8Array(val));
+        return new HashValue(val);
     }
 }
 

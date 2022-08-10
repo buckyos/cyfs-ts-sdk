@@ -37,13 +37,12 @@ module.exports = {
             "process": require.resolve("process/browser"),
             "path": require.resolve("path-browserify"),
             "constants": require.resolve("constants-browserify"),
-            "crypto": false,
             "assert": false,
             "node-fetch": false,
             "node-localstorage": false,
-            "stream": false,
             "util": false,
             "fs": false,
+            "stream": require.resolve("stream-browserify"),
         }
     },
     output: {
@@ -55,7 +54,6 @@ module.exports = {
     externals: {
         'fs-extra': 'commonjs2 fs-extra',
         'react-native-fs': 'commonjs2 react-native-fs',
-        'node-rsa': 'node-rsa'
     },
     plugins: [
         new DtsBundleWebpack({

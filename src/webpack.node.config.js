@@ -49,8 +49,9 @@ module.exports = {
         'bs58': 'commonjs2 bs58',
         'hex-to-array-buffer': 'commonjs2 hex-to-array-buffer',
         'ts-results': 'commonjs2 ts-results',
-        'js-sha256': 'commonjs2 js-sha256',
         "node-localstorage": 'commonjs2 node-localstorage',
+        'node-forge': 'commonjs2 node-forge',
+        'bip39': 'commonjs2 bip39'
     },
     plugins: [
         new DtsBundleWebpack({

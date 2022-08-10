@@ -65,7 +65,6 @@ export class CyfsSeedKeyBip {
 
     sub_key(path: CyfsChainBipPath): BuckyResult<PrivateKey> {
         const path_str = path.to_string();
-        console.debug(`will derive by path=${path_str}`);
 
         let dpath = DerivationPath.from_str(path_str);
         if (dpath.err) {

@@ -4,7 +4,6 @@ import { } from "../base/buffer";
 
 import bs58 from 'bs58';
 import {md, util} from 'node-forge'
-//const bs58 = require('../base/bs58');
 
 export const HASH_VALUE_LEN = 32;
 

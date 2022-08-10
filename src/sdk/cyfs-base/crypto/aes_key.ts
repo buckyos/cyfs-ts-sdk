@@ -1,17 +1,17 @@
-import { Err, Ok, BuckyResult, BuckyError, BuckyErrorCode } from "../base/results";
+import { Ok, BuckyResult} from "../base/results";
 import { RawEncode, RawDecode } from "../base/raw_encode";
 import {} from "../base/buffer";
-import { BuckyNumber } from "../base/bucky_number";
 import { Option } from "../base/option";
-import {sha256} from "js-sha256";
+// import {sha256} from "js-sha256";
 import JSBI from 'jsbi';
 import { DataViewJSBIHelper } from '../../platform-spec';
+import {md, util} from 'node-forge'
 
 /**
  * KeyMixHash
  */
 
-export const KEY_MIX_LEN:number = 8;
+export const KEY_MIX_LEN = 8;
 
 export class KeyMixHash implements RawEncode {
     m_buf: Uint8Array;
@@ -65,7 +65,7 @@ export class KeyMixHashDecoder implements RawDecode<KeyMixHash>{
  * AesKey
  */
 
-export const AES_KEY_LEN:number = 32;
+export const AES_KEY_LEN = 32;
 
 export class AesKey implements RawEncode {
     m_buf: Uint8Array;
@@ -97,16 +97,18 @@ export class AesKey implements RawEncode {
     }
 
     static mix_hash(salt: Option<JSBI>): KeyMixHash {
-        const hash = sha256.create();
+        //const hash = sha256.create();
+        const hash = md.sha256.create()
         if(salt.is_some()){
             const buf = new Uint8Array(4);
             const view = buf.offsetView(0);
             DataViewJSBIHelper.setBigUint64(view, 0, salt.unwrap());
             // view.setBigUint64(0, salt.unwrap());
-            hash.update(view.buffer);
+            hash.update(util.binary.raw.encode(new Uint8Array(view.buffer)));
         }
-        const val = hash.arrayBuffer();
-        return new KeyMixHash(new Uint8Array(val));
+        // const val = hash.arrayBuffer();
+        const val = util.binary.raw.decode(hash.digest().bytes());
+        return new KeyMixHash(val);
     }
 
     static copy_from_slice(buf:Uint8Array): AesKey{

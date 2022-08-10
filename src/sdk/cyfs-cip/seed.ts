@@ -1,13 +1,14 @@
+// import * as bip39 from './bip39'
 import * as bip39 from 'bip39'
-import {pbkdf2Sync} from 'pbkdf2'
+import {pkcs5, util} from 'node-forge'
 
 const PBKDF2_ROUNDS = 2048;
 const PBKDF2_BYTES = 64;
 
 function pbkdf2(input: Uint8Array, salt: string): Uint8Array {
-    const seed = pbkdf2Sync(input, salt, PBKDF2_ROUNDS, PBKDF2_BYTES, 'sha512');
+    const seed = pkcs5.pbkdf2(util.binary.raw.encode(input), salt, PBKDF2_ROUNDS, PBKDF2_BYTES, 'sha512');
     
-    return new Uint8Array(seed)
+    return util.binary.raw.decode(seed)
 }
 
 export class Seed {

@@ -27,7 +27,8 @@ import {
     PerfTimeRange
 } from "../base";
 import {Perf, PerfDecoder} from "../base/perf";
-import {sha256} from "js-sha256";
+// import {sha256} from "js-sha256";
+import {md, util} from 'node-forge'
 import {isolates_exists, perf_acc, perf_action, perf_begin, perf_end, perf_record} from './stat';
 import {
     namespaces_perf_accumulation,
@@ -272,9 +273,9 @@ export class PerfClient {
         const perfObj = Perf.create(this.device_id, this.owner, Some(this.dec_app_id.object_id), this.id, this.version, list);
 
         const buf = perfObj.to_vec().unwrap();
-        const hash = sha256.create();
-        hash.update(buf);
-        const hash_result = hash.hex();
+        const hash = md.sha256.create();
+        hash.update(util.binary.raw.encode(buf));
+        const hash_result = hash.digest().toHex();
         perfObj.set_hash(hash_result);
 
         const r = await this.stack.non_service().put_object({
