@@ -675,7 +675,7 @@ export class RSAPublicKey extends PublicKeyBase implements PublicKeyMatcher {
         sign_time.raw_encode(final_data.offset(data.length)).unwrap();
 
         let hash = HashValue.hash_data(final_data);
-        return this.public_key.verify(util.binary.raw.encode(hash.as_slice()), util.binary.raw.encode(sign.sign.as_slice()), 'RSAES-PKCS1-V1_5')
+        return this.public_key.verify(util.binary.raw.encode(hash.as_slice()), util.binary.raw.encode(sign.sign.as_slice()), 'RSASSA-PKCS1-V1_5')
     }
 
     match<T>(p: PublicKeyPattern<T>): T {

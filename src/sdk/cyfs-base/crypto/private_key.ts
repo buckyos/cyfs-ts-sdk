@@ -3,7 +3,7 @@ import { RawEncode, RawDecode, RawEncodePurpose } from "../base/raw_encode";
 import {} from "../base/buffer";
 import { BuckyNumber, BuckyNumberDecoder } from "../base/bucky_number";
 
-import {pki, asn1, util, random} from 'node-forge'
+import {pki, asn1, util, random, md} from 'node-forge'
 import { KEY_TYPE_RSA, KEY_TYPE_SECP256K1, PublicKey, RAW_PUBLIC_KEY_RSA_1024_CODE, RAW_PUBLIC_KEY_RSA_2048_CODE, RAW_PUBLIC_KEY_RSA_3072_CODE, Rsa1024SignData, Rsa2048SignData, RSAPublicKey, Signature, SignatureSource } from "./public_key";
 import { bucky_time_now } from "../base/time";
 import { HashValue } from "./hash";
@@ -112,8 +112,9 @@ export class RSAPrivateKey extends PrivateKey{
         let data_new = new Uint8Array(data.length + create_time.raw_measure().unwrap());
         data_new.set(data);
         create_time.raw_encode(data_new.offset(data.length)).unwrap();
-        let hash = HashValue.hash_data(data_new);
-        let sign_buf = this.value.sign(util.binary.raw.encode(hash.as_slice()), 'RSASSA-PKCS1-V1_5');
+        let digest = md.sha256.create().update(util.binary.raw.encode(data_new));
+        // let hash = HashValue.hash_data(data_new);
+        let sign_buf = this.value.sign(digest, 'RSASSA-PKCS1-V1_5');
         let sign_data;
         switch (this.code){
             case RAW_PUBLIC_KEY_RSA_1024_CODE: {
