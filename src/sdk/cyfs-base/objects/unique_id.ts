@@ -2,6 +2,7 @@ import { Err, Ok, BuckyResult, BuckyError, BuckyErrorCode } from "../base/result
 import { RawEncode, RawDecode } from "../base/raw_encode";
 import { } from "../base/buffer";
 import bs58 from 'bs58';
+import {md, util} from 'node-forge';
 
 export const UNIQUE_VALUE_LEN = 16;
 
@@ -40,6 +41,13 @@ export class UniqueId implements RawEncode {
             id_buf.set(buf);
             return new UniqueId(id_buf);
         }
+    }
+
+    static create_with_hash(buf: Uint8Array): UniqueId {
+        let sha256 = md.sha256.create();
+        sha256.update(util.binary.raw.encode(buf));
+
+        return UniqueId.copy_from_slice(util.binary.raw.decode(sha256.digest().bytes()));
     }
 
     raw_measure(): BuckyResult<number> {

@@ -76,3 +76,10 @@ CYFS Shell是一个交互式命令行，可以让开发者以类似Linux Shell�
 
 Shell的详细操作指南见
 [CYFS TOOL Shell命令详解](./CYFS-SHELL使用.md)
+
+## 试用公共OOD
+在安装了CYFS浏览器，但尚未激活的情形下，可以使用该命令，快速让CYFS浏览器连接官方的公共OOD，可以体验CYFS网络的全部功能
+`cyfs trial [--force] [--clean]`
+在浏览器已激活的情况下，该命令不起作用
+- --force 强行激活试用，如果浏览器已激活，现存的身份文件会被备份
+- --clean 清除试用身份。如果有已存在的身份文件，会被还原
