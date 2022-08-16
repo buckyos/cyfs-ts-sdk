@@ -1,6 +1,6 @@
 import path from "path";
 import * as fs from 'fs-extra';
-import { AppExtInfo, DecApp, DecAppDecoder } from "../../sdk";
+import { AppExtInfo, AppExtInfoDecoder, DecApp, DecAppDecoder } from "../../sdk";
 
 // config版本，现在从1开始
 export const CUR_CONFIG_VERSION = 1;
@@ -147,6 +147,23 @@ export class CyfsToolContext {
             console.log("save app object success");
         }
         
+    }
+
+    get_app_ext_obj(): AppExtInfo {
+        if (this.app_ext_obj) {
+            return this.app_ext_obj;
+        } else {
+            const app = new AppExtInfoDecoder().from_raw(new Uint8Array(fs.readFileSync(this.get_app_ext_file()))).unwrap();
+            this.app_ext_obj = app;
+            return this.app_ext_obj;
+        }
+    }
+
+    save_app_ext_obj(): void {
+        if (this.app_ext_obj) {
+            fs.writeFileSync(this.get_app_ext_file(), this.app_ext_obj.to_vec().unwrap());
+            console.log("save app ext object success");
+        }
     }
 
     save_project_config(): void {

@@ -20,8 +20,9 @@ export function makeCommand(config: CyfsToolConfig) {
         .option("-o, --owner <new_owner_path>", "change project`s owner path")
         .option("-e, --endpoint <endpoint>", "cyfs endpoint", "runtime")
         .option("--ext", "update app ext info")
+        .option("--export-ext <export file path>", "export entire extinfo to file")
+        .option("--import-ext <ext file path>", "import entire extinfo to app ext info")
         .option("-r, --remove [versions]", "remove app versions")
-        .option("-u, --upload", "upload app info to meta")
         .option("-t, --tag <tag>:<version>", "set tag to version")
         .option("--remove-tag <tags>", "remove tags, split by comma")
         .action(async (options) => {
@@ -67,15 +68,41 @@ export async function run(options:any, config: CyfsToolConfig, ctx: CyfsToolCont
             process.exit(0);
         }
 
+        if (options["export-ext"]) {
+            let ext = ctx.get_app_ext_obj()
+            fs.writeFileSync(options["export-ext"], ext.info());
+            // export后就退出了
+            (console as any).origin.log(`export ext info to file ${options["export-ext"]}`);
+            process.exit(0);
+        }
+
         if (options.remove) {
             const versions = (options.remove as string).split(',');
+            let app_ext = ctx.get_app_ext_obj();
+            let app_ext_obj = JSON.parse(app_ext.info());
             for (const version of versions) {
                 app.remove_source(version);
+                if (app_ext_obj["cyfs-app-store"] && app_ext_obj["cyfs-app-store"]["releasedate"] && app_ext_obj["cyfs-app-store"]["releasedate"]) {
+                    delete app_ext_obj["cyfs-app-store"]["releasedate"][version]
+                }
             }
+            // 向app_ext对象添加extinfo
+            const new_info_str = JSON.stringify(app_ext_obj)
+            if (new_info_str !== app_ext.info()) {
+                console.log(`ext info change: ${app_ext.info()} => ${new_info_str}`);
+                app_ext.set_info(new_info_str)
+            }
+            ctx.save_app_ext_obj();
         }
     
         if (options.ext) {
-            update_ext_info(ctx);
+            update_ext_info(ctx, false);
+        }
+
+        if (options["import-ext"]) {
+            let ext = ctx.get_app_ext_obj()
+            ext.set_info(fs.readFileSync(options["import-ext"], {encoding: "utf-8"}));
+            ctx.save_app_ext_obj();
         }
     
         if (options.tag) {
@@ -111,11 +138,6 @@ export async function run(options:any, config: CyfsToolConfig, ctx: CyfsToolCont
             await stack.online();
             await put_app_obj(options, ctx, stack);
             stop_runtime();
-
-            if (options.upload) {
-                const meta_client = create_meta_client();
-                await upload_app_objs(ctx, meta_client);
-            }
         }
     }
 

@@ -65,6 +65,10 @@ async function run(option: any, config: CyfsToolConfig) {
         // People给runtime签名
         cyfs.sign_and_push_named_object(owner_pk, runtime, new cyfs.SignatureRefIndex(254)).unwrap();
 
+        if (!fs.existsSync(config.runtime_desc_path)) {
+            fs.mkdirSync(config.runtime_desc_path, {recursive: true});
+        }
+        
         cyfs.to_file(desc_path, runtime);
         cyfs.to_file(sec_path, runtime_pk);
         console_origin.log("init trial runtime identity files success")

@@ -79,7 +79,7 @@ export class ObjectIdBuilder<T extends RawEncode & ObjectDesc> {
                 // 这是一个core 对象
                 // 高2bits固定为10，
                 type_code = parseInt("00100000", 2);
-            };
+            }
 
             // | 是否有area_code | 是否有public_key | 是否是多Key对象 | 是否有owner |
             if (this.m_area.is_some()) {
@@ -144,7 +144,7 @@ export class ObjectIdBuilder<T extends RawEncode & ObjectDesc> {
             } else {
                 hash_value[0] = parseInt("01000000", 2) | type_code << 4 >> 2;
             }
-        };
+        }
 
         // base_trace("calc_id_hash:", hash_value[0]);
         // base_trace("calc_id_hash:", hash_value);
@@ -185,7 +185,7 @@ export class ObjectIdBuilder<T extends RawEncode & ObjectDesc> {
 // 14: 是否包含 public_key
 // 15: 保留，目前为0
 
-export const OBJECT_FLAG_CTYPTO: number = 0x01;
+export const OBJECT_FLAG_CTYPTO = 0x01;
 export const OBJECT_FLAG_MUT_BODY: number = 0x01 << 1;
 export const OBJECT_FLAG_DESC_SIGNS: number = 0x01 << 2;
 export const OBJECT_FLAG_BODY_SIGNS: number = 0x01 << 3;
@@ -207,19 +207,19 @@ export const OBJECT_FLAG_PUBLIC_KEY: number = 0x01 << 14;
 export const OBJECT_FLAG_EXT: number = 0x01 << 15;
 
 // 左闭右闭 区间定义
-export const OBJECT_TYPE_ANY: number = 0;
-export const OBJECT_TYPE_STANDARD_START: number = 1;
-export const OBJECT_TYPE_STANDARD_END: number = 16;
-export const OBJECT_TYPE_CORE_START: number = 17;
-export const OBJECT_TYPE_CORE_END: number = 32767;
-export const OBJECT_TYPE_DECAPP_START: number = 32768;
-export const OBJECT_TYPE_DECAPP_END: number = 65535;
+export const OBJECT_TYPE_ANY = 0;
+export const OBJECT_TYPE_STANDARD_START = 1;
+export const OBJECT_TYPE_STANDARD_END = 16;
+export const OBJECT_TYPE_CORE_START = 17;
+export const OBJECT_TYPE_CORE_END = 32767;
+export const OBJECT_TYPE_DECAPP_START = 32768;
+export const OBJECT_TYPE_DECAPP_END = 65535;
 
-export const OBJECT_PUBLIC_KEY_NONE: number = 0x00;
-export const OBJECT_PUBLIC_KEY_SINGLE: number = 0x01;
-export const OBJECT_PUBLIC_KEY_MN: number = 0x02;
+export const OBJECT_PUBLIC_KEY_NONE = 0x00;
+export const OBJECT_PUBLIC_KEY_SINGLE = 0x01;
+export const OBJECT_PUBLIC_KEY_MN = 0x02;
 
-export const OBJECT_BODY_FLAG_PREV: number = 0x01;
+export const OBJECT_BODY_FLAG_PREV = 0x01;
 export const OBJECT_BODY_FLAG_USER_DATA: number = 0x01 << 1;
 
 // 是否包含扩展字段，格式和desc一致
@@ -298,7 +298,6 @@ export abstract class ObjectDesc {
 
 export class NamedObjectBodyContext {
     private m_body_content_cached_size?: number;
-    constructor() { }
 
     cache_body_content_size(size: number): NamedObjectBodyContext {
         console.assert(this.m_body_content_cached_size == null);
@@ -1367,7 +1366,7 @@ export class NamedObjectId<
         this.m_object_id = object_id;
     }
 
-    get object_id() {
+    get object_id(): ObjectId {
         return this.m_object_id!;
     }
 
@@ -1399,7 +1398,7 @@ export class NamedObjectId<
             } else {
                 // 这是一个core 对象
                 type_code = parseInt("100000", 2);
-            };
+            }
 
             // 前 6 bit 写入类型信息
             hash_value[0] = type_code << 2;
@@ -1516,7 +1515,7 @@ export function named_id_gen_default<
         } else {
             // 这是一个core 对象
             type_code = parseInt("100000", 2);
-        };
+        }
 
         // 前 6 bit 写入类型信息
         hash_value[0] = type_code << 2;
@@ -1627,7 +1626,7 @@ export interface SubDescType {
     // "mn_key": M-N 公钥对,
     // "any": 任意类型(内部用)
     key_type: "disable" | "single_key" | "mn_key" | "any"
-};
+}
 
 // DescContent和BodyContent的编码相关信息
 export class ContentCodecInfo {
@@ -2186,8 +2185,6 @@ export class NamedObjectDesc<T extends DescContent> extends ObjectDesc implement
     }
 
     calculate_id(): ObjectId {
-        const t: RawEncode & ObjectDesc = this;
-
         let area;
         if (this.m_area != null) {
             area = this.m_area!;
@@ -2199,7 +2196,7 @@ export class NamedObjectDesc<T extends DescContent> extends ObjectDesc implement
         const has_mn_key = this.mn_key() != null;
         const has_owner = this.owner() == null ? false : this.owner()!.is_some();
 
-        return new ObjectIdBuilder(t, this.obj_type_code())
+        return new ObjectIdBuilder(this, this.obj_type_code())
             .area(area)
             .single_key(has_single_key)
             .mn_key(has_mn_key)

@@ -7,6 +7,8 @@ import {
     AnyNamedObject,
     NONAPILevel, NONObjectInfo,
     create_meta_client,
+    Some,
+    Option,
 } from '../../sdk';
 
 import { check_channel, create_stack, CyfsToolConfig, exec, get_owner_path, load_desc_and_sec, stop_runtime, upload_app_objs } from "../lib/util";
@@ -17,6 +19,11 @@ import * as fs from 'fs-extra';
 
 import { CyfsToolContext, CUR_CONFIG_VERSION } from '../lib/ctx';
 import { Command } from 'commander';
+
+interface DeployOptions {
+    tag?: string,
+    desc?: string
+}
 
 function upload_dec_app(config: CyfsToolConfig, ctx: CyfsToolContext) {
     // 上传 dec app 包到 chunk manager
@@ -41,36 +48,66 @@ function inc_app_version(ctx: CyfsToolContext) {
     return old_version;
 }
 
-export function update_ext_info(ctx: CyfsToolContext) {
-    const app_ext_obj = ctx.get_app_ext_file();
-    const appext = new AppExtInfoDecoder().from_raw(new Uint8Array(fs.readFileSync(app_ext_obj))).unwrap();
-    let ext_info;
+export function update_ext_info(ctx: CyfsToolContext, update_release_date: boolean) {
+    const appext = ctx.get_app_ext_obj();
+
+    let old_ext_info;
     try {
-        ext_info = JSON.parse(appext.info())
+        old_ext_info = JSON.parse(appext.info())
     } catch (error) {
-        ext_info = {};
+        old_ext_info = {};
     }
     // 准备新的ext_info
     const new_info = ctx.app.ext_info || {};
-    ext_info.default = new_info;
+    // 拷贝旧的上传时间字段
+    if (old_ext_info["cyfs-app-store"] && old_ext_info["cyfs-app-store"]["releasedate"]) {
+        if (new_info["cyfs-app-store"] === undefined) {
+            new_info["cyfs-app-store"] = {};
+        }
+        new_info["cyfs-app-store"]["releasedate"] = old_ext_info["cyfs-app-store"]["releasedate"];
+    }
+    // ext_info.default = new_info;
+
+    // 添加版本的上传时间到ext_info
+    if (!new_info["cyfs-app-store"]) {
+        new_info["cyfs-app-store"] = {};
+        if (!new_info["cyfs-app-store"]["releasedate"]) {
+            new_info["cyfs-app-store"]["releasedate"] = {};
+        }
+    }
+
+    if (update_release_date) {
+        let date = new Date()
+        new_info["cyfs-app-store"]["releasedate"][ctx.app.version] = `${date.getFullYear()}-${date.getMonth()}-${date.getDay()}`
+    }
     
     // 向app_ext对象添加extinfo
-    const new_info_str = JSON.stringify(ext_info)
+    const new_info_str = JSON.stringify(new_info)
     if (new_info_str !== appext.info()) {
         console.log(`ext info change: ${appext.info()} => ${new_info}`);
         appext.set_info(new_info_str)
-        fs.writeFileSync(app_ext_obj, appext.to_vec().unwrap());
     }
+
+    ctx.save_app_ext_obj();
 }
 
-function update_app_version(options: any, ctx: CyfsToolContext) {
+function update_app_version(options: DeployOptions, ctx: CyfsToolContext) {
     // 读取 dec app 上传后生成的 fid 文件的内容
     const fid_path = ctx.get_app_fid_path();
     const fid = fs.readFileSync(fid_path).toString();
 
     // 向 app 对象添加 version 和 fid ：
     const app = ctx.get_app_obj();
-    app.set_source(ctx.app.version, ObjectId.from_base_58(fid).unwrap(), None);
+    let source_desc: Option<string> = None;
+    if (options.desc) {
+        let desc = options.desc;
+        if (fs.existsSync(desc)) {
+            desc = fs.readFileSync(desc, {encoding: 'utf-8'});
+        }
+
+        source_desc = Some(desc);
+    }
+    app.set_source(ctx.app.version, ObjectId.from_base_58(fid).unwrap(), source_desc);
 
     // 设置当前version的tag
     const tag = options.tag || "latest";
@@ -79,7 +116,7 @@ function update_app_version(options: any, ctx: CyfsToolContext) {
     ctx.save_app_obj();
 
     // 向app_ext对象添加extinfo
-    update_ext_info(ctx);
+    update_ext_info(ctx, true);
 }
 
 // 更新app对象的desc和icon部分
@@ -125,7 +162,7 @@ export async function put_app_obj(options: any, ctx: CyfsToolContext, stack: Sha
     const id = app.calculate_id();
     const owner = app.desc().owner()!.unwrap();
     console.log(`decoded app_id is: ${id}`);
-    const [ext, ext_buf] = await put_obj_file(ctx.get_app_ext_file(), stack, undefined);
+    await put_obj_file(ctx.get_app_ext_file(), stack, undefined);
 
     const meta_client = create_meta_client();
     await upload_app_objs(ctx, meta_client);
@@ -135,15 +172,15 @@ export async function put_app_obj(options: any, ctx: CyfsToolContext, stack: Sha
 
 function check_owner(config: CyfsToolConfig, ctx: CyfsToolContext, stack: SharedCyfsStack): boolean {
     // 先检测本地project的owner和app obj的owner是不是同一个
-    const app_owner = ctx.get_app_obj().desc().owner().unwrap();
-    const [cur_owner, cur_key] = load_desc_and_sec(get_owner_path(undefined, config, ctx));
+    const app_owner = ctx.get_app_obj().desc().owner()!.unwrap();
+    const [cur_owner, cur_key] = load_desc_and_sec(get_owner_path(undefined, config, ctx)!);
 
     if (!cur_owner.calculate_id().eq(app_owner)) {
         console.error(`app obj's owner ${app_owner} not match current project owner ${cur_owner.calculate_id()}`);
         return false;
     }
     // 再检测device的owner和app obj的owner是不是同一个
-    const device_owner = stack.local_device().desc().owner().unwrap()
+    const device_owner = stack.local_device().desc().owner()!.unwrap()
     if (!device_owner.eq(app_owner)) {
         console.error(`app obj's owner ${app_owner} not match current device's owner ${device_owner}`);
         return false;
@@ -163,7 +200,7 @@ function check_config(ctx: CyfsToolContext) {
     }
 }
 
-async function deploy_dec_app(options:any, config: CyfsToolConfig, ctx: CyfsToolContext, stack: SharedCyfsStack): Promise<void> {
+async function deploy_dec_app(options:DeployOptions, config: CyfsToolConfig, ctx: CyfsToolContext, stack: SharedCyfsStack): Promise<void> {
     // 目前deploy app需要用到runtime带的cyfs-client工具，这里检查工具的channel和sdk的channel是否匹配
     if (!check_channel(config)) {
         console.error('channel mismatch, exit deploy.');
@@ -187,7 +224,8 @@ export function makeCommand(config:CyfsToolConfig): Command {
     return new Command("deploy")
         .description("deploy cyfs project`s service or web to ood")
         .option("--tag <tag>", "set version tag, default latest", "latest")
-        .action(async (options) => {
+        .option("-d, --desc <desc or desc file>", "set version desc when deploy a new version, can input text or file path")
+        .action(async (options: DeployOptions) => {
             const ctx = new CyfsToolContext(process.cwd());
             ctx.init();
 
@@ -211,7 +249,7 @@ export function makeCommand(config:CyfsToolConfig): Command {
         })
 } 
 
-export async function run(options:any, config: CyfsToolConfig, ctx: CyfsToolContext, stack: SharedCyfsStack): Promise<void> {
+export async function run(options:DeployOptions, config: CyfsToolConfig, ctx: CyfsToolContext, stack: SharedCyfsStack): Promise<void> {
     console.log('will deploy service');
     await deploy_dec_app(options, config, ctx, stack);
 }
