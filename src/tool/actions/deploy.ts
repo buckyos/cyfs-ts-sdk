@@ -58,7 +58,8 @@ export function update_ext_info(ctx: CyfsToolContext, update_release_date: boole
         old_ext_info = {};
     }
     // 准备新的ext_info
-    const new_info = ctx.app.ext_info || {};
+    let new_info = ctx.app.ext_info || {};
+    new_info = JSON.parse(JSON.stringify(new_info));
     // 拷贝旧的上传时间字段
     if (old_ext_info["cyfs-app-store"] && old_ext_info["cyfs-app-store"]["releasedate"]) {
         if (new_info["cyfs-app-store"] === undefined) {
@@ -71,14 +72,15 @@ export function update_ext_info(ctx: CyfsToolContext, update_release_date: boole
     // 添加版本的上传时间到ext_info
     if (!new_info["cyfs-app-store"]) {
         new_info["cyfs-app-store"] = {};
-        if (!new_info["cyfs-app-store"]["releasedate"]) {
-            new_info["cyfs-app-store"]["releasedate"] = {};
-        }
+    }
+
+    if (!new_info["cyfs-app-store"]["releasedate"]) {
+        new_info["cyfs-app-store"]["releasedate"] = {};
     }
 
     if (update_release_date) {
         let date = new Date()
-        new_info["cyfs-app-store"]["releasedate"][ctx.app.version] = `${date.getFullYear()}-${date.getMonth()}-${date.getDay()}`
+        new_info["cyfs-app-store"]["releasedate"][ctx.app.version] = `${date.getFullYear()}-${date.getMonth()+1}-${date.getDate()}`
     }
     
     // 向app_ext对象添加extinfo
