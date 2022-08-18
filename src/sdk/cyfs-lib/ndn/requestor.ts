@@ -131,7 +131,7 @@ export class NDNRequestor {
         const resp = r.unwrap();
 
         if (resp.status === 200) {
-            console.info("put data to ndn service success:", req.object_id);
+            console.debug("put data to ndn service success:", req.object_id);
             return await this.decode_put_data_response(resp);
         } else {
             const e = await RequestorHelper.error_from_resp(resp);
@@ -204,7 +204,7 @@ export class NDNRequestor {
         const resp = r.unwrap();
 
         if (resp.status === 200) {
-            console.info("get data from ndn service success:", req.object_id);
+            console.debug("get data from ndn service success:", req.object_id);
             return await this.decode_get_data_response(req, resp);
         } else {
             const e = await RequestorHelper.error_from_resp(resp);
@@ -243,7 +243,7 @@ export class NDNRequestor {
         const resp = r.unwrap();
 
         if (resp.status === 200) {
-            console.info("delete data from ndn service success:", req.object_id);
+            console.debug("delete data from ndn service success:", req.object_id);
             return await this.decode_delete_data_response(resp);
         } else {
             const e = await RequestorHelper.error_from_resp(resp);

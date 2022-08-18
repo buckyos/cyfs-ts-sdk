@@ -194,7 +194,7 @@ export class NONRequestor {
         const resp = r.unwrap();
 
         if (resp.status === 200) {
-            console.info("put object to non service success:", req.object.object_id);
+            console.debug("put object to non service success:", req.object.object_id);
             return await this.decode_put_object_response(resp)
         } else {
             const e = await RequestorHelper.error_from_resp(resp);
@@ -228,7 +228,7 @@ export class NONRequestor {
         const resp = r.unwrap();
 
         if (resp.status === 200) {
-            console.info("get object from non service success:", req.object_id);
+            console.debug("get object from non service success:", req.object_id);
             return await NONRequestorHelper.decode_get_object_response(resp);
         } else {
             const e = await RequestorHelper.error_from_resp(resp);
@@ -280,7 +280,7 @@ export class NONRequestor {
         const resp = r.unwrap();
 
         if (resp.status === 200) {
-            console.info("post object to non service success:", req.object.object_id);
+            console.debug("post object to non service success:", req.object.object_id);
             return await this.decode_post_object_response(req.object.object_id, resp)
         } else {
             const e = await RequestorHelper.error_from_resp(resp);
@@ -373,7 +373,7 @@ export class NONRequestor {
         const resp = r.unwrap();
 
         if (resp.status === 200) {
-            console.info("delete object from non service success:", req.object_id);
+            console.debug("delete object from non service success:", req.object_id);
             return await this.decode_delete_object_response(req, resp);
         } else {
             const e = await RequestorHelper.error_from_resp(resp);
