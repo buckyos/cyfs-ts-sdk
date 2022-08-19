@@ -1,6 +1,10 @@
 // 重新导出一些依赖的第三方库，方便外部使用
 import JSBI from 'jsbi';
 export { JSBI };
+import * as forge from 'node-forge';
+export {forge}
+import * as bip39 from 'bip39';
+export {bip39}
 
 export * from './platform-spec';
 export * from './cyfs-debug';
