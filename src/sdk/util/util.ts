@@ -43,7 +43,12 @@ export function encodeRequest(request: HttpRequest): Uint8Array {
 
     fixNormalHeader(request, body_buf?.length);
 
-    let head = `${reqMethod(request)} ${url.pathname} HTTP/1.1\r\n`;
+    let full_path = url.pathname;
+    if (url.search.length > 0) {
+        full_path += `?${url.search}`;
+    }
+
+    let head = `${reqMethod(request)} ${full_path} HTTP/1.1\r\n`;
     head += `HOST:${url.host}\r\n`;
     for (const [key, value] of (request.init.headers as Headers)) {
         head += `${key}: ${value}\r\n`;
@@ -89,11 +94,12 @@ function findBody(buf: Uint8Array): number {
 }
 
 export function decodeResponse(buf: Uint8Array): Response {
-    const body_index = findBody(buf);
+    
+    const body_index = findBody(buf);   // 这个index返回的是最后一个\n的位置，header在之前3个字符，body在之后一个字符
     let head_buf, body_buf;
     if (body_index > -1) {
-        head_buf = buf.slice(0, body_index);
-        body_buf = buf.slice(body_index);
+        head_buf = buf.slice(0, body_index-3);
+        body_buf = buf.slice(body_index+1);
     } else {
         head_buf = buf;
     }
