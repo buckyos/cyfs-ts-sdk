@@ -81,18 +81,21 @@ class WSHttpRequestorHandler extends WebSocketRequestHandler {
 
 export class WSHttpRequestor extends BaseRequestor {
     private client: WebSocketClient;
+    private service_url: URL;
 
-    constructor(private service_url: string) {
+    constructor(service_url: string) {
         super();
 
         console.log('WSHttpRequestor service_url', service_url);
+        this.service_url = new URL(service_url);
 
         const handler = new WSHttpRequestorHandler();
         this.client = new WebSocketClient(service_url, handler);
+        this.client.start();
     }
 
     remote_addr(): string {
-        return this.service_url;
+        return this.service_url.host;
     }
 
     async request(req: HttpRequest): Promise<BuckyResult<Response>> {

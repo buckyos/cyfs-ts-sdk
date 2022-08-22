@@ -19,7 +19,7 @@ export class WebSocketClient {
         return this.session_manager.select_session();
     }
 
-    async run() {
+    async run(): Promise<void> {
         let retry_interval = WS_CONNECT_RETRY_MIN_INTERVAL_SECS;
 
         while (1) {
@@ -75,7 +75,7 @@ export class WebSocketClient {
     }
 
 
-    start() {
+    start(): void {
         this.run();
     }
 }

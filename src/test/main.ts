@@ -12,7 +12,7 @@ import { test_core_objects } from './test_core_object';
 import { test_acl } from './test_acl';
 import { test_perf } from './test_perf';
 import { test_root_state } from './test_root_state';
-import { BuckyErrorCode, BuckyError, BUCKY_DEC_ERROR_CODE_END, BUCKY_DEC_ERROR_CODE_START, BUCKY_META_ERROR_CODE_START, SavedMetaObject, People, PeopleDecoder, StandardObjectDecoder, EmptyContentV1, protos, DeviceId, to_buf, BuckySize, BuckySizeDecoder, Some, } from '../sdk';
+import { BuckyErrorCode, BuckyError, BUCKY_DEC_ERROR_CODE_END, BUCKY_DEC_ERROR_CODE_START, BUCKY_META_ERROR_CODE_START, SavedMetaObject, People, PeopleDecoder, StandardObjectDecoder, EmptyContentV1, protos, DeviceId, to_buf, BuckySize, BuckySizeDecoder, Some, sleep, } from '../sdk';
 import {JSBI} from '../sdk';
 import { test_object_map } from './test_object_map';
 import { test_base } from './test_base';
@@ -117,9 +117,12 @@ async function main() {
       ).unwrap();
     const test_dec_id = cyfs.DecApp.generate_id(owner, "dec-app-test");
     const param = cyfs.SharedCyfsStackParam.new_with_ws_event_ports(21000, 21001, test_dec_id).unwrap();
+    
+    param.requestor_config = cyfs.SharedCyfsStackParam.ws_requestor_config();
     //const param = cyfs.SharedCyfsStackParam.new_with_ws_event_ports(1321, 1323, test_dec_id).unwrap();
     //const stack = cyfs.SharedCyfsStack.open_runtime(test_dec_id);
     const stack = cyfs.SharedCyfsStack.open(param);
+    await sleep(1000 * 2);
     await stack.wait_online(Some(JSBI.BigInt(1000 * 1000 * 5)));
     (await stack.online()).unwrap();
 
