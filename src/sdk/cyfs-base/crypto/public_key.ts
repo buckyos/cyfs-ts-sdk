@@ -585,10 +585,30 @@ export abstract class PublicKeyBase implements RawEncode {
     abstract raw_encode(buf: Uint8Array): BuckyResult<Uint8Array>;
 
     toJSON(): string {
-        const size = this.raw_measure().unwrap();
-        const buf = new Uint8Array(size);
-        const _ = this.raw_encode(buf).unwrap();
-        return bs58.encode(buf);
+        let ret = this.to_vec().unwrap();
+        return bs58.encode(ret);
+    }
+
+    to_vec(): BuckyResult<Uint8Array> {
+        const size = this.raw_measure();
+        if (size.err) {
+            return size;
+        }
+        const buf = new Uint8Array(size.unwrap());
+        const ret = this.raw_encode(buf);
+        if (ret.err) {
+            return ret;
+        }
+
+        return Ok(buf);
+    }
+
+    toHex(): BuckyResult<string> {
+        let ret = this.to_vec();
+        if (ret.err) {
+            return ret;
+        }
+        return Ok(ret.unwrap().toHex());
     }
 
     raw_measure(): BuckyResult<number> {

@@ -50,7 +50,8 @@ module.exports = {
         'ts-results': 'commonjs2 ts-results',
         "node-localstorage": 'commonjs2 node-localstorage',
         'node-forge': 'commonjs2 node-forge',
-        'bip39': 'commonjs2 bip39'
+        'bip39': 'commonjs2 bip39',
+        'google-protobuf': 'commonjs2 google-protobuf'
     },
     plugins: [
         new DtsBundleWebpack({
