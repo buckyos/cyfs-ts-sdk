@@ -1,11 +1,19 @@
 import { Command } from "commander";
-import { CyfsToolConfig } from "../lib/util";
+import { CyfsToolConfig, stringToUint8Array } from "../lib/util";
 import * as fs from 'fs'
 import * as path from 'path'
 import * as cyfs from '../../sdk';
-import { create_device } from "./desc";
 
 const console_origin = (console as any).origin;
+
+function create_device(owner: cyfs.ObjectId, cat: cyfs.DeviceCategory): [cyfs.Device, cyfs.PrivateKey] {
+    let pk = cyfs.PrivateKey.generate_rsa(1024).unwrap();
+    let public_key = pk.public();
+    let unique = cyfs.UniqueId.copy_from_slice(stringToUint8Array(Date.now().toString()))
+    let device = cyfs.Device.create(cyfs.Some(owner), unique, [], [], [], public_key, cyfs.Area.default(), cat);
+
+    return [device, pk];
+}
 
 export function makeCommand(config: CyfsToolConfig) {
     return new Command("trial")

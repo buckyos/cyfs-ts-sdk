@@ -77,6 +77,15 @@ export abstract class PrivateKey implements RawEncode{
         }
         return Ok(buf);
     }
+
+    to_hex(): BuckyResult<string> {
+        let ret = this.to_vec();
+        if (ret.err) {
+            return ret;
+        }
+
+        return Ok(ret.unwrap().toHex())
+    }
 }
 
 export class RSAPrivateKey extends PrivateKey{

@@ -42,6 +42,15 @@ export function exec(cmd: string, workspace: string): void {
     child_process.execSync(cmd, { stdio: 'inherit', cwd: workspace })
 }
 
+export function stringToUint8Array(str:string): Uint8Array{
+    const arr: number[] = [];
+    for (let i = 0, j = str.length; i < j; ++i) {
+      arr.push(str.charCodeAt(i));
+    }
+   
+    return new Uint8Array(arr)
+}
+
 export function get_owner_path(option_value: any, config: CyfsToolConfig|undefined, ctx: CyfsToolContext): string|undefined {
     // 优先使用 option_value
     // 如果没有，使用ctx.owner
