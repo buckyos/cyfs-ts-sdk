@@ -42,17 +42,19 @@ export class GlobalStatePathGroupAccess {
     }
 
     to_obj(): any {
-        if (this.default) {
-            return {default: this.default}
-        } else if (this.specified) {
-            return {specified: this.specified}
+        if (this.default !== undefined) {
+            return {Default: this.default}
+        } else if (this.specified !== undefined) {
+            return {Specified: this.specified}
+        } else {
+            return {}
         }
     }
 
     static from_obj(obj: any): GlobalStatePathGroupAccess {
-        if (obj.default) {
+        if (obj.Default) {
             return GlobalStatePathGroupAccess.Default(obj.default)
-        } else if (obj.specified) {
+        } else if (obj.Specified) {
             return GlobalStatePathGroupAccess.Specified({
                 zone: obj.specified.zone?ObjectId.from_base_58(obj.specified.zone).unwrap():undefined,
                 dec: obj.specified.dec?ObjectId.from_base_58(obj.specified.dec).unwrap():undefined,
@@ -71,7 +73,7 @@ export class GlobalStatePathAccessItem {
     // Access value
     access: GlobalStatePathGroupAccess;
 
-    static fix_path(path: string): string {
+    private static fix_path(path: string): string {
         let new_path = path.trim();
         if (new_path.endsWith("/")) {
             return new_path
@@ -85,11 +87,11 @@ export class GlobalStatePathAccessItem {
         this.access = access;
     }
 
-    public new(path: string, access: number): GlobalStatePathAccessItem {
+    public static new(path: string, access: number): GlobalStatePathAccessItem {
         return new GlobalStatePathAccessItem(GlobalStatePathAccessItem.fix_path(path), GlobalStatePathGroupAccess.Default(access))
     }
 
-    public new_group(path: string, zone: ObjectId|undefined, dec: ObjectId|undefined, access: number): GlobalStatePathAccessItem {
+    public static new_group(path: string, zone: ObjectId|undefined, dec: ObjectId|undefined, access: number): GlobalStatePathAccessItem {
         return new GlobalStatePathAccessItem(GlobalStatePathAccessItem.fix_path(path), GlobalStatePathGroupAccess.Specified({
             zone,
             dec,

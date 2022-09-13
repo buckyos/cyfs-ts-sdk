@@ -72,7 +72,7 @@ export class GlobalStateMetaRequestor {
 
         if (resp.status === 200) {
             let p = (await resp.json()) as GlobalStateMetaAddAccessOutputResponse;
-            console.info(`global state meta add access success: req=${req}, resp=${p}`);
+            console.info(`global state meta add access success: req=${JSON.stringify(req)}, resp=${JSON.stringify(p)}`);
             return Ok(p)
         } else {
             let e = await RequestorHelper.error_from_resp(resp);
@@ -106,8 +106,7 @@ export class GlobalStateMetaRequestor {
         if (resp.status === 200) {
             let p = await MetaRequestorHelper.decode_remove_resp(resp)
             console.info(
-                `global state meta remove access success: req=${req}, resp=${resp}`,
-                req, p,
+                `global state meta remove access success: req=${JSON.stringify(req)}, resp=${JSON.stringify(p)}`,
             );
             return Ok(p)
         } else {
@@ -144,7 +143,7 @@ export class GlobalStateMetaRequestor {
         if (resp.status === 200) {
             let p = (await resp.json()) as GlobalStateMetaClearAccessOutputResponse
             console.info(
-                `global state meta clear access success: req=${req}, resp=${p}`
+                `global state meta clear access success: req=${req}, resp=${JSON.stringify(p)}`
             );
             return Ok(p)
         } else {
@@ -177,7 +176,7 @@ export class GlobalStateMetaRequestor {
         if (resp.status === 200) {
             let p = (await resp.json()) as GlobalStateMetaAddLinkOutputResponse
             console.info(
-                `global state meta add link success: req=${req}, resp=${p}`,
+                `global state meta add link success: req=${req}, resp=${JSON.stringify(p)}`,
             );
             return Ok(p)
         } else {
@@ -214,8 +213,7 @@ export class GlobalStateMetaRequestor {
         if (resp.status === 200) {
             let p = (await resp.json()) as GlobalStateMetaRemoveLinkOutputResponse
             console.info(
-                `global state meta remove link success: req=${req}, resp=${p}`,
-                req, resp,
+                `global state meta remove link success: req=${req}, resp=${JSON.stringify(p)}`,
             );
             return Ok(p)
         } else {
@@ -248,7 +246,7 @@ export class GlobalStateMetaRequestor {
         if (resp.status === 200) {
             let p = (await resp.json()) as GlobalStateMetaClearLinkOutputResponse
             console.info(
-                `global state meta clear links success: req=${req}, resp=${p}`
+                `global state meta clear links success: req=${req}, resp=${JSON.stringify(p)}`
             );
             return Ok(p)
         } else {
