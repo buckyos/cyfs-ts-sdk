@@ -81,5 +81,8 @@ export const CYFS_OP_ENV_PATH = "cyfs-op-env-path";
 export const CYFS_OP_ENV_KEY = "cyfs-op-env-key";
 export const CYFS_OP_ENV_VALUE = "cyfs-op-env-value";
 
+// meta
+export const CYFS_META_ACTION = "cyfs-meta-aciton";
+
 // 关联对象id
 // export const CYFS_ASSOC_OBJECT_ID: string = "cyfs-assoc-object-id";

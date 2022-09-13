@@ -43,3 +43,8 @@ export * from "./zone/def";
 export * from "./admin/admin_object";
 export * from "./storage/state_storage";
 export * from './access/access_string';
+export * from './rmeta/def';
+export * from './rmeta/output_request';
+export * from './rmeta/request';
+export * from './rmeta/requestor';
+export * from './rmeta/stub';

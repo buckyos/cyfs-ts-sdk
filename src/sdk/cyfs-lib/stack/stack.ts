@@ -31,6 +31,8 @@ import { GlobalStateCategory } from '../root_state/def';
 import { SyncRequestor } from "../sync/requestor";
 import { StateStorage } from "../storage/state_storage";
 import { RouterEventManager } from "../events/handler";
+import { GlobalStateMetaRequestor } from "../rmeta/requestor";
+import { GlobalStateMetaStub } from "../rmeta/stub";
 
 
 export enum CyfsStackEventType {
@@ -190,6 +192,9 @@ export class SharedCyfsStack {
     private m_root_state_access :GlobalStateAccessRequestor;
     private m_local_cache_access :GlobalStateAccessRequestor;
 
+    private m_root_state_meta: GlobalStateMetaRequestor;
+    private m_local_cache_meta: GlobalStateMetaRequestor;
+
     // router handlers事件处理器
     private m_router_handlers: RouterHandlerManager;
 
@@ -219,6 +224,9 @@ export class SharedCyfsStack {
 
         this.m_root_state_access = GlobalStateAccessRequestor.new_root_state_access(SharedCyfsStack.select_requestor(param, param.requestor_config!.root_state), this.dec_id);
         this.m_local_cache_access = GlobalStateAccessRequestor.new_local_cache_access(SharedCyfsStack.select_requestor(param, param.requestor_config!.local_cache), this.dec_id);
+
+        this.m_root_state_meta = GlobalStateMetaRequestor.new_root_state(SharedCyfsStack.select_requestor(param, param.requestor_config!.root_state), this.dec_id);
+        this.m_local_cache_meta = GlobalStateMetaRequestor.new_local_cache(SharedCyfsStack.select_requestor(param, param.requestor_config!.root_state), this.dec_id);
 
         this.m_router_handlers = new RouterHandlerManager(CyfsStackEventType.WebSocket, ws_url, this.dec_id);
 
@@ -383,6 +391,24 @@ export class SharedCyfsStack {
     local_cache_access_stub(dec_id?: ObjectId): GlobalStateAccessStub {
         return new GlobalStateAccessStub(this.local_cache_access(), undefined, dec_id);
     }
+
+    root_state_meta(): GlobalStateMetaRequestor {
+        return this.m_root_state_meta;
+    }
+
+    root_state_meta_stub(target?: ObjectId, dec_id?: ObjectId): GlobalStateMetaStub {
+        return new GlobalStateMetaStub(this.root_state_meta(), target, dec_id);
+    }
+
+    local_cache_meta(): GlobalStateMetaRequestor {
+        return this.m_local_cache_meta;
+    }
+
+    local_cache_meta_stub(dec_id?: ObjectId): GlobalStateMetaStub {
+        return new GlobalStateMetaStub(this.local_cache_meta(), undefined, dec_id);
+    }
+
+    
 
     // state_storage
     global_state_storage(
