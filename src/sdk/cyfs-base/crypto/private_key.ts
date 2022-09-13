@@ -53,9 +53,8 @@ export abstract class PrivateKey implements RawEncode{
     }
 
     static generate_rsa_by_rng(rng: RsaRng, bits: number): BuckyResult<PrivateKey> {
-        const pk = generate_rsa_by_rng(rng, bits);
-        //const keypair = pki.rsa.generateKeyPair({bits: bits, prng: rng});
         const code = bits_2_keysize(bits);
+        const pk = generate_rsa_by_rng(rng, bits);
         return Ok(new RSAPrivateKey(code, pk))
     }
 
