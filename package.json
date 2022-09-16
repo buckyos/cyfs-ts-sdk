@@ -79,6 +79,7 @@
   },
   "dependencies": {
     "bip39": "^3.0.4",
+    "bitset": "^5.1.1",
     "bs58": "^4.0.1",
     "buffer": "^6.0.3",
     "colors-console": "^1.0.3",
