@@ -3,7 +3,7 @@ import * as process from 'process';
 import * as path from 'path';
 import { ensureDirSync } from '../../platform-spec';
 
-export const CFYS_ROOT_NAME: string = "cyfs";
+export const CFYS_ROOT_NAME = "cyfs";
 
 function get_system_app_data_dir(): string {
     return process.env.APPDATA || (os.platform() === 'darwin' ?
