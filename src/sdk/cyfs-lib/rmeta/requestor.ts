@@ -1,4 +1,4 @@
-import { BuckyResult, CYFS_DEC_ID, CYFS_FLAGS, CYFS_META_ACTION, CYFS_TARGET, Err, error, ObjectId, Ok } from "../../cyfs-base";
+import { BuckyResult, CYFS_DEC_ID, CYFS_FLAGS, CYFS_META_ACTION, CYFS_TARGET, CYFS_TARGET_DEC_ID, Err, error, ObjectId, Ok } from "../../cyfs-base";
 import { BaseRequestor, RequestorHelper } from "../base/base_requestor";
 import { HttpRequest } from "../base/http_request";
 import { GlobalStateCategory } from "../root_state/def";
@@ -43,6 +43,9 @@ export class GlobalStateMetaRequestor {
         }
         if (com_req.target) {
             http_req.insert_header(CYFS_TARGET, com_req.target.to_base_58());
+        }
+        if (com_req.target_dec_id) {
+            http_req.insert_header(CYFS_TARGET_DEC_ID, com_req.target_dec_id.to_base_58());
         }
 
         http_req.insert_header(CYFS_FLAGS, com_req.flags.toString());

@@ -1,16 +1,17 @@
 // non_stack的http服务url
-export const NON_STACK_HTTP_URL: string = "http://127.0.0.1:1318";
-export const NON_STACK_WS_URL: string = "ws://127.0.0.1:1319";
+export const NON_STACK_HTTP_URL = "http://127.0.0.1:1318";
+export const NON_STACK_WS_URL = "ws://127.0.0.1:1319";
 
-export const RUNTIME_NON_STACK_HTTP_URL: string = "http://127.0.0.1:1322";
-export const RUNTIME_NON_STACK_WS_URL: string = "ws://127.0.0.1:1323";
+export const RUNTIME_NON_STACK_HTTP_URL = "http://127.0.0.1:1322";
+export const RUNTIME_NON_STACK_WS_URL = "ws://127.0.0.1:1323";
 
-export enum NONProtocol {
+export enum RequestProtocol {
     Native = "native",
     Meta = "meta",
     Sync = "sync",
     HttpBdt = "http-bdt",
     HttpLocal = "http-local",
+    HttpLocalAuth = "http-local-auth",
     DatagramBdt = "datagram-bdt",
     // bdt层的chunk数据传输
     DataBdt = "data-bdt",

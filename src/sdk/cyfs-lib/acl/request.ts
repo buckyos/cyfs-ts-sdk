@@ -1,13 +1,13 @@
 import { JsonCodec } from "..";
 import { BuckyResult, DeviceId, Ok } from "../../cyfs-base";
-import { NONProtocol } from "../base/protocol";
+import { RequestProtocol } from "../base/protocol";
 import { NDNDataRefererObject, NDNDataRefererObjectJsonCodec } from "../ndn/def";
 import { NONSlimObjectInfo, NONSlimObjectInfoJsonCodec } from "../non/def";
 import { AclAccess, AclAction } from "./def";
 
 export interface AclHandlerRequest {
     // 来源协议
-    protocol: NONProtocol,
+    protocol: RequestProtocol,
 
     // 动作
     action: AclAction,

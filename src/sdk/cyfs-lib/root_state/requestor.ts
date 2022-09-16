@@ -59,7 +59,6 @@ import {
     OpEnvGetCurrentRootOutputRequest,
     OpEnvGetCurrentRootOutputResponse,
     OpEnvGetCurrentRootOutputResponseJsonCodec,
-    OpEnvGetCurrentRootOutputRequestJsonCodec,
     OpEnvResetOutputRequest,
     OpEnvListOutputRequest,
     OpEnvListOutputResponse,
@@ -76,8 +75,6 @@ import {
     CYFS_OP_ENV_VALUE,
     CYFS_OP_ENV_ACTION,
     CYFS_OP_ENV_SID,
-    CYFS_OBJECT_UPDATE_TIME,
-    CYFS_OBJECT_EXPIRES_TIME,
     Err,
     ObjectId,
     Ok,
@@ -85,12 +82,12 @@ import {
     BuckyErrorCode,
     CYFS_REVISION,
     CYFS_ROOT,
+    CYFS_TARGET_DEC_ID,
 } from "../../cyfs-base";
 import { BaseRequestor, RequestorHelper } from "../base/base_requestor";
 import { HttpRequest } from "../base/http_request";
 import { RootStateAction, ObjectMapOpEnvType, OpEnvAction, GlobalStateCategory } from "./def";
-import { NONGetObjectOutputResponse } from '../non/output_request';
-import { NONRequestor, NONRequestorHelper } from "../non/requestor";
+import { NONRequestorHelper } from "../non/requestor";
 import JSBI from "jsbi";
 
 export class GlobalStateRequestor {
@@ -127,6 +124,10 @@ export class GlobalStateRequestor {
             http_req.insert_header(CYFS_DEC_ID, com_req.dec_id.to_string());
         } else if (this.dec_id_) {
             http_req.insert_header(CYFS_DEC_ID, this.dec_id_.to_string());
+        }
+
+        if (com_req.target_dec_id) {
+            http_req.insert_header(CYFS_TARGET_DEC_ID, com_req.target_dec_id.to_string())
         }
 
         if (com_req.target) {

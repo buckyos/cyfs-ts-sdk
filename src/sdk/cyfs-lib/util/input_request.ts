@@ -1,5 +1,5 @@
 import { DeviceId, ObjectId } from "../../cyfs-base"
-import { NONProtocol } from "../base/protocol";
+import { RequestProtocol } from "../base/protocol";
 import { UtilGetDeviceOutputResponse, UtilGetDeviceStaticInfoOutputResponse, UtilGetNetworkAccessInfoOutputResponse, UtilGetNOCInfoOutputResponse, UtilGetOODStatusOutputResponse, UtilGetSystemInfoOutputResponse, UtilGetVersionInfoOutputResponse, UtilGetZoneOutputResponse, UtilResolveOODOutputResponse } from "./output_request";
 
 export interface UtilInputRequestCommon {
@@ -11,7 +11,7 @@ export interface UtilInputRequestCommon {
 
     // 来源设备和协议
     source: DeviceId;
-    protocol: NONProtocol;
+    protocol: RequestProtocol;
 
     // 用以默认行为
     target?: ObjectId;

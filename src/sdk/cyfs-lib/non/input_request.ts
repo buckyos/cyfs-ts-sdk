@@ -1,7 +1,7 @@
 import JSBI from "jsbi";
 import { BuckyResult, DeviceId, ObjectId, Ok } from "../../cyfs-base";
 import { JsonCodec, JsonCodecHelper } from "../base/codec";
-import { NONProtocol } from "../base/protocol";
+import { RequestProtocol } from "../base/protocol";
 import { SelectFilter, SelectFilterJsonCodec, SelectOption, SelectOptionJsonCodec, SelectResponseObjectInfo, SelectResponseObjectInfoJsonCodec } from "../base/select_request";
 import { NONAPILevel, NONObjectInfo, NONObjectInfoJsonCodec, NONPutObjectResult } from "./def";
 
@@ -14,7 +14,7 @@ export interface NONInputRequestCommon {
 
     // 来源设备和协议
     source: DeviceId,
-    protocol: NONProtocol,
+    protocol: RequestProtocol,
 
     // api级别
     level: NONAPILevel,
@@ -70,7 +70,7 @@ export class NONInputRequestCommonJsonCodec extends JsonCodec<NONInputRequestCom
 
             // 来源设备和协议
             source,
-            protocol: o.protocol as NONProtocol,
+            protocol: o.protocol as RequestProtocol,
 
             // api级别
             level: o.level as NONAPILevel,

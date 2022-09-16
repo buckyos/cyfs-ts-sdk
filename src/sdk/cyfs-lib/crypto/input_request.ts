@@ -1,6 +1,6 @@
 import { JsonCodec, VerifyObjectTypeJsonCodec } from "..";
 import { BuckyResult, DeviceId, ObjectId, Ok } from "../../cyfs-base";
-import { NONProtocol } from "../base/protocol";
+import { RequestProtocol } from "../base/protocol";
 import { NONObjectInfo, NONObjectInfoJsonCodec } from "../non/def";
 import { CryptoSignObjectOutputResponse, CryptoVerifyObjectOutputResponse, VerifyObjectType, VerifySignType } from "./output_request";
 
@@ -13,7 +13,7 @@ export interface CryptoInputRequestCommon {
 
     // 来源设备和协议
     source: DeviceId;
-    protocol: NONProtocol;
+    protocol: RequestProtocol;
 
     // 用以默认行为
     target?: ObjectId;
@@ -65,7 +65,7 @@ export class CryptoInputRequestCommonJsonCodec extends JsonCodec<CryptoInputRequ
             req_path: o.req_path,
             dec_id,
             source,
-            protocol: o.protocol as NONProtocol,
+            protocol: o.protocol as RequestProtocol,
             target,
             flags: o.flags
         })

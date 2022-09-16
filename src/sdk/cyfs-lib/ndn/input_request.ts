@@ -1,7 +1,7 @@
 import JSBI from 'jsbi'
 import { BuckyResult, Ok, ObjectId, DeviceId, Attributes, HashValue, ChunkId, BuckyError, BuckyErrorCode, Err, FileId } from "../../cyfs-base"
 import { JsonCodec, JsonCodecHelper } from "../base/codec"
-import { NONProtocol } from "../base/protocol"
+import { RequestProtocol } from "../base/protocol"
 import { FileDirRef } from '../trans/request'
 import { NDNAPILevel, NDNDataRefererObject, NDNDataRefererObjectJsonCodec, NDNPutDataResult } from "./def"
 
@@ -14,7 +14,7 @@ export interface NDNInputRequestCommon {
 
     // 来源设备和协议
     source: DeviceId,
-    protocol: NONProtocol,
+    protocol: RequestProtocol,
 
     // api级别
     level: NDNAPILevel,
@@ -124,7 +124,7 @@ export class NDNInputRequestCommonJsonCodec extends JsonCodec<NDNInputRequestCom
             req_path: o.req_path,
             dec_id,
             source,
-            protocol: o.protocol as NONProtocol,
+            protocol: o.protocol as RequestProtocol,
             level: o.level as NDNAPILevel,
             referer_object,
             target,
@@ -331,8 +331,8 @@ export class NDNDeleteDataInputResponseJsonCodec extends JsonCodec<NDNDeleteData
 }
 
 // query flags for the return value optional fields
-export const NDN_QUERY_FILE_REQUEST_FLAG_QUICK_HASN: number = 2;
-export const NDN_QUERY_FILE_REQUEST_FLAG_REF_DIRS: number = 4;
+export const NDN_QUERY_FILE_REQUEST_FLAG_QUICK_HASN = 2;
+export const NDN_QUERY_FILE_REQUEST_FLAG_REF_DIRS = 4;
 
 export enum NDNQueryFileParamType {
     File = "file",

@@ -47,19 +47,7 @@ export interface DecRootInfo {
 }
 
 export class GlobalStateStub {
-    private requestor_: GlobalStateRequestor;
-    private target_?: ObjectId;
-    private dec_id_: ObjectId;
-
-    constructor(requestor: GlobalStateRequestor, target?: ObjectId, dec_id?: ObjectId) {
-        this.requestor_ = requestor;
-        this.target_ = target;
-
-        if (dec_id) {
-            this.dec_id_ = dec_id;
-        } else {
-            this.dec_id_ = requestor.get_dec_id();
-        }
+    constructor(private requestor: GlobalStateRequestor, private target?: ObjectId, private target_dec_id?: ObjectId) {
     }
 
     // return (global_root, revision,)
@@ -67,12 +55,12 @@ export class GlobalStateStub {
         const req: RootStateGetCurrentRootOutputRequest = {
             common: {
                 flags: 0,
-                target: this.target_,
-                dec_id: this.dec_id_,
+                target: this.target,
+                target_dec_id: this.target_dec_id,
             },
             root_type: RootStateRootType.Global,
         };
-        const r = await this.requestor_.get_current_root(req);
+        const r = await this.requestor.get_current_root(req);
         if (r.err) {
             return r;
         }
@@ -90,12 +78,12 @@ export class GlobalStateStub {
         const req: RootStateGetCurrentRootOutputRequest = {
             common: {
                 flags: 0,
-                target: this.target_,
-                dec_id: this.dec_id_,
+                target: this.target,
+                target_dec_id: this.target_dec_id,
             },
             root_type: RootStateRootType.Dec,
         };
-        const r = await this.requestor_.get_current_root(req);
+        const r = await this.requestor.get_current_root(req);
         if (r.err) {
             return r;
         }
@@ -112,18 +100,18 @@ export class GlobalStateStub {
         const req: RootStateCreateOpEnvOutputRequest = {
             common: {
                 flags: 0,
-                target: this.target_,
-                dec_id: this.dec_id_,
+                target: this.target,
+                target_dec_id: this.target_dec_id,
             },
             op_env_type: ObjectMapOpEnvType.Path,
         };
-        const r = await this.requestor_.create_op_env(req);
+        const r = await this.requestor.create_op_env(req);
         if (r.err) {
             return r;
         }
         const opEnvRequestor = r.unwrap();
 
-        const stub = new PathOpEnvStub(opEnvRequestor, this.target_, this.dec_id_);
+        const stub = new PathOpEnvStub(opEnvRequestor, this.target, this.target_dec_id);
         return Ok(stub);
     }
 
@@ -131,38 +119,33 @@ export class GlobalStateStub {
         const req: RootStateCreateOpEnvOutputRequest = {
             common: {
                 flags: 0,
-                target: this.target_,
-                dec_id: this.dec_id_,
+                target: this.target,
+                target_dec_id: this.target_dec_id,
             },
             op_env_type: ObjectMapOpEnvType.Single,
         };
-        const r = await this.requestor_.create_op_env(req);
+        const r = await this.requestor.create_op_env(req);
         if (r.err) {
             return r;
         }
         const opEnvRequestor = r.unwrap();
 
-        const stub = new SingleOpEnvStub(opEnvRequestor, this.target_, this.dec_id_);
+        const stub = new SingleOpEnvStub(opEnvRequestor, this.target, this.target_dec_id);
         return Ok(stub);
     }
 }
 
 export class SingleOpEnvStub {
-    private requestor_: OpEnvRequestor;
+    private requestor: OpEnvRequestor;
     private sid_: JSBI;
-    private target_?: ObjectId;
-    private dec_id_: ObjectId;
+    private target?: ObjectId;
+    private target_dec_id?: ObjectId;
 
-    public constructor(requestor: OpEnvRequestor, target?: ObjectId, dec_id?: ObjectId) {
-        this.requestor_ = requestor;
+    public constructor(requestor: OpEnvRequestor, target?: ObjectId, target_dec_id?: ObjectId) {
+        this.requestor = requestor;
         this.sid_ = requestor.get_sid();
-        this.target_ = target;
-
-        if (dec_id) {
-            this.dec_id_ = dec_id;
-        } else {
-            this.dec_id_ = requestor.get_dec_id();
-        }
+        this.target = target;
+        this.target_dec_id = target_dec_id;
     }
 
     // methods
@@ -172,13 +155,13 @@ export class SingleOpEnvStub {
         const req: OpEnvCreateNewOutputRequest = {
             common: {
                 flags: 0,
-                target: this.target_,
-                dec_id: this.dec_id_,
+                target: this.target,
+                target_dec_id: this.target_dec_id,
                 sid: this.sid_,
             },
             content_type,
         };
-        const r = await this.requestor_.create_new(req);
+        const r = await this.requestor.create_new(req);
         if (r.err) {
             return r;
         }
@@ -189,13 +172,13 @@ export class SingleOpEnvStub {
         const req: OpEnvLoadOutputRequest = {
             common: {
                 flags: 0,
-                target: this.target_,
-                dec_id: this.dec_id_,
+                target: this.target,
+                target_dec_id: this.target_dec_id,
                 sid: this.sid_,
             },
             target,
         };
-        const r = await this.requestor_.load(req);
+        const r = await this.requestor.load(req);
         if (r.err) {
             return r;
         }
@@ -206,13 +189,13 @@ export class SingleOpEnvStub {
         const req: OpEnvLoadByPathOutputRequest = {
             common: {
                 flags: 0,
-                target: this.target_,
-                dec_id: this.dec_id_,
+                target: this.target,
+                target_dec_id: this.target_dec_id,
                 sid: this.sid_,
             },
             path,
         };
-        const r = await this.requestor_.load_by_path(req);
+        const r = await this.requestor.load_by_path(req);
         if (r.err) {
             return r;
         }
@@ -224,13 +207,13 @@ export class SingleOpEnvStub {
         const req: OpEnvGetByKeyOutputRequest = {
             common: {
                 flags: 0,
-                target: this.target_,
-                dec_id: this.dec_id_,
+                target: this.target,
+                target_dec_id: this.target_dec_id,
                 sid: this.sid_,
             },
             key,
         };
-        const r = await this.requestor_.get_by_key(req);
+        const r = await this.requestor.get_by_key(req);
         if (r.err) {
             return r;
         }
@@ -249,14 +232,14 @@ export class SingleOpEnvStub {
         const req: OpEnvInsertWithKeyOutputRequest = {
             common: {
                 flags: 0,
-                target: this.target_,
-                dec_id: this.dec_id_,
+                target: this.target,
+                target_dec_id: this.target_dec_id,
                 sid: this.sid_,
             },
             key,
             value,
         };
-        const r = await this.requestor_.insert_with_key(req);
+        const r = await this.requestor.insert_with_key(req);
         if (r.err) {
             return r;
         }
@@ -272,8 +255,8 @@ export class SingleOpEnvStub {
         const req: OpEnvSetWithKeyOutputRequest = {
             common: {
                 flags: 0,
-                target: this.target_,
-                dec_id: this.dec_id_,
+                target: this.target,
+                target_dec_id: this.target_dec_id,
                 sid: this.sid_,
             },
             key,
@@ -281,7 +264,7 @@ export class SingleOpEnvStub {
             prev_value,
             auto_insert: auto_insert ? auto_insert : false,
         };
-        const r = await this.requestor_.set_with_key(req);
+        const r = await this.requestor.set_with_key(req);
         if (r.err) {
             return r;
         }
@@ -300,14 +283,14 @@ export class SingleOpEnvStub {
         const req: OpEnvRemoveWithKeyOutputRequest = {
             common: {
                 flags: 0,
-                target: this.target_,
-                dec_id: this.dec_id_,
+                target: this.target,
+                target_dec_id: this.target_dec_id,
                 sid: this.sid_,
             },
             key,
             prev_value,
         };
-        const r = await this.requestor_.remove_with_key(req);
+        const r = await this.requestor.remove_with_key(req);
         if (r.err) {
             return r;
         }
@@ -324,13 +307,13 @@ export class SingleOpEnvStub {
         const req: OpEnvContainsOutputRequest = {
             common: {
                 flags: 0,
-                target: this.target_,
-                dec_id: this.dec_id_,
+                target: this.target,
+                target_dec_id: this.target_dec_id,
                 sid: this.sid_,
             },
             value: object_id,
         };
-        const r = await this.requestor_.contains(req);
+        const r = await this.requestor.contains(req);
         if (r.err) {
             return r;
         }
@@ -342,13 +325,13 @@ export class SingleOpEnvStub {
         const req: OpEnvInsertOutputRequest = {
             common: {
                 flags: 0,
-                target: this.target_,
-                dec_id: this.dec_id_,
+                target: this.target,
+                target_dec_id: this.target_dec_id,
                 sid: this.sid_,
             },
             value: object_id,
         };
-        const r = await this.requestor_.insert(req);
+        const r = await this.requestor.insert(req);
         if (r.err) {
             return r;
         }
@@ -360,13 +343,13 @@ export class SingleOpEnvStub {
         const req: OpEnvRemoveOutputRequest = {
             common: {
                 flags: 0,
-                target: this.target_,
-                dec_id: this.dec_id_,
+                target: this.target,
+                target_dec_id: this.target_dec_id,
                 sid: this.sid_,
             },
             value: object_id,
         };
-        const r = await this.requestor_.remove(req);
+        const r = await this.requestor.remove(req);
         if (r.err) {
             return r;
         }
@@ -379,12 +362,12 @@ export class SingleOpEnvStub {
         const req: OpEnvGetCurrentRootOutputRequest = {
             common: {
                 flags: 0,
-                target: this.target_,
-                dec_id: this.dec_id_,
+                target: this.target,
+                target_dec_id: this.target_dec_id,
                 sid: this.sid_,
             },
         };
-        const r = await this.requestor_.get_current_root(req);
+        const r = await this.requestor.get_current_root(req);
         if (r.err) {
             return r;
         }
@@ -398,13 +381,13 @@ export class SingleOpEnvStub {
         const req: OpEnvCommitOutputRequest = {
             common: {
                 flags: 0,
-                target: this.target_,
-                dec_id: this.dec_id_,
+                target: this.target,
+                target_dec_id: this.target_dec_id,
                 sid: this.sid_,
             },
             op_type: OpEnvCommitOpType.Update,
         };
-        const r = await this.requestor_.commit(req);
+        const r = await this.requestor.commit(req);
         if (r.err) {
             return r;
         }
@@ -422,12 +405,12 @@ export class SingleOpEnvStub {
         const req: OpEnvCommitOutputRequest = {
             common: {
                 flags: 0,
-                target: this.target_,
-                dec_id: this.dec_id_,
+                target: this.target,
+                target_dec_id: this.target_dec_id,
                 sid: this.sid_,
             },
         };
-        const r = await this.requestor_.commit(req);
+        const r = await this.requestor.commit(req);
         if (r.err) {
             return r;
         }
@@ -445,12 +428,12 @@ export class SingleOpEnvStub {
         const req: OpEnvAbortOutputRequest = {
             common: {
                 flags: 0,
-                target: this.target_,
-                dec_id: this.dec_id_,
+                target: this.target,
+                target_dec_id: this.target_dec_id,
                 sid: this.sid_,
             },
         };
-        const r = await this.requestor_.abort(req);
+        const r = await this.requestor.abort(req);
         if (r.err) {
             return r;
         }
@@ -462,13 +445,13 @@ export class SingleOpEnvStub {
         const req: OpEnvNextOutputRequest = {
             common: {
                 flags: 0,
-                target: this.target_,
-                dec_id: this.dec_id_,
+                target: this.target,
+                target_dec_id: this.target_dec_id,
                 sid: this.sid_,
             },
             step,
         };
-        const r = await this.requestor_.next(req);
+        const r = await this.requestor.next(req);
         if (r.err) {
             return r;
         }
@@ -480,12 +463,12 @@ export class SingleOpEnvStub {
         const req: OpEnvResetOutputRequest = {
             common: {
                 flags: 0,
-                target: this.target_,
-                dec_id: this.dec_id_,
+                target: this.target,
+                target_dec_id: this.target_dec_id,
                 sid: this.sid_,
             },
         };
-        const r = await this.requestor_.reset(req);
+        const r = await this.requestor.reset(req);
         if (r.err) {
             return r;
         }
@@ -497,14 +480,14 @@ export class SingleOpEnvStub {
     public async list(): Promise<BuckyResult<ObjectMapContentItem[]>> {
         const req: OpEnvListOutputRequest = {
             common: {
-                dec_id: this.dec_id_,
-                target: this.target_,
+                target_dec_id: this.target_dec_id,
+                target: this.target,
                 flags: 0,
                 sid: JSBI.BigInt(0)
             }
         }
 
-        const r = await this.requestor_.list(req)
+        const r = await this.requestor.list(req)
         if (r.err) {
             return r;
         }
@@ -517,12 +500,12 @@ export class SingleOpEnvStub {
         const req: OpEnvMetadataOutputRequest = {
             common: {
                 flags: 0,
-                target: this.target_,
-                dec_id: this.dec_id_,
+                target: this.target,
+                target_dec_id: this.target_dec_id,
                 sid: this.sid_,
             },
         };
-        const r = await this.requestor_.metadata(req);
+        const r = await this.requestor.metadata(req);
         if (r.err) {
             return r;
         }
@@ -540,21 +523,16 @@ export class SingleOpEnvStub {
 }
 
 export class PathOpEnvStub {
-    private requestor_: OpEnvRequestor;
+    private requestor: OpEnvRequestor;
     private sid_: JSBI;
-    private target_?: ObjectId;
-    private dec_id_: ObjectId;
+    private target?: ObjectId;
+    private target_dec_id?: ObjectId;
 
-    public constructor(requestor: OpEnvRequestor, target?: ObjectId, dec_id?: ObjectId) {
-        this.requestor_ = requestor;
+    public constructor(requestor: OpEnvRequestor, target?: ObjectId, target_dec_id?: ObjectId) {
+        this.requestor = requestor;
         this.sid_ = requestor.get_sid();
-        this.target_ = target;
-
-        if (dec_id) {
-            this.dec_id_ = dec_id;
-        } else {
-            this.dec_id_ = requestor.get_dec_id();
-        }
+        this.target = target;
+        this.target_dec_id = target_dec_id;
     }
 
     // lock
@@ -580,15 +558,15 @@ export class PathOpEnvStub {
         const req: OpEnvLockOutputRequest = {
             common: {
                 flags: 0,
-                target: this.target_,
-                dec_id: this.dec_id_,
+                target: this.target,
+                target_dec_id: this.target_dec_id,
                 sid: this.sid_,
             },
             path_list,
             duration_in_millsecs,
             try_lock,
         };
-        const r = await this.requestor_.lock(req);
+        const r = await this.requestor.lock(req);
         if (r.err) {
             return r;
         }
@@ -602,14 +580,14 @@ export class PathOpEnvStub {
         const req: OpEnvGetByKeyOutputRequest = {
             common: {
                 flags: 0,
-                target: this.target_,
-                dec_id: this.dec_id_,
+                target: this.target,
+                target_dec_id: this.target_dec_id,
                 sid: this.sid_,
             },
             key,
             path,
         };
-        const r = await this.requestor_.get_by_key(req);
+        const r = await this.requestor.get_by_key(req);
         if (r.err) {
             return r;
         }
@@ -629,15 +607,15 @@ export class PathOpEnvStub {
         const req: OpEnvCreateNewOutputRequest = {
             common: {
                 flags: 0,
-                target: this.target_,
-                dec_id: this.dec_id_,
+                target: this.target,
+                target_dec_id: this.target_dec_id,
                 sid: this.sid_,
             },
             path,
             key,
             content_type,
         };
-        const r = await this.requestor_.create_new(req);
+        const r = await this.requestor.create_new(req);
         if (r.err) {
             return r;
         }
@@ -652,15 +630,15 @@ export class PathOpEnvStub {
         const req: OpEnvInsertWithKeyOutputRequest = {
             common: {
                 flags: 0,
-                target: this.target_,
-                dec_id: this.dec_id_,
+                target: this.target,
+                target_dec_id: this.target_dec_id,
                 sid: this.sid_,
             },
             key,
             value,
             path,
         };
-        const r = await this.requestor_.insert_with_key(req);
+        const r = await this.requestor.insert_with_key(req);
         if (r.err) {
             return r;
         }
@@ -677,8 +655,8 @@ export class PathOpEnvStub {
         const req: OpEnvSetWithKeyOutputRequest = {
             common: {
                 flags: 0,
-                target: this.target_,
-                dec_id: this.dec_id_,
+                target: this.target,
+                target_dec_id: this.target_dec_id,
                 sid: this.sid_,
             },
             path,
@@ -687,7 +665,7 @@ export class PathOpEnvStub {
             prev_value,
             auto_insert: auto_insert ? auto_insert : false,
         };
-        const r = await this.requestor_.set_with_key(req);
+        const r = await this.requestor.set_with_key(req);
         if (r.err) {
             return r;
         }
@@ -707,15 +685,15 @@ export class PathOpEnvStub {
         const req: OpEnvRemoveWithKeyOutputRequest = {
             common: {
                 flags: 0,
-                target: this.target_,
-                dec_id: this.dec_id_,
+                target: this.target,
+                target_dec_id: this.target_dec_id,
                 sid: this.sid_,
             },
             key,
             path,
             prev_value,
         };
-        const r = await this.requestor_.remove_with_key(req);
+        const r = await this.requestor.remove_with_key(req);
         if (r.err) {
             return r;
         }
@@ -734,13 +712,13 @@ export class PathOpEnvStub {
         const req: OpEnvGetByKeyOutputRequest = {
             common: {
                 flags: 0,
-                target: this.target_,
-                dec_id: this.dec_id_,
+                target: this.target,
+                target_dec_id: this.target_dec_id,
                 sid: this.sid_,
             },
             key: full_path,
         };
-        const r = await this.requestor_.get_by_key(req);
+        const r = await this.requestor.get_by_key(req);
         if (r.err) {
             return r;
         }
@@ -759,14 +737,14 @@ export class PathOpEnvStub {
         const req: OpEnvCreateNewOutputRequest = {
             common: {
                 flags: 0,
-                target: this.target_,
-                dec_id: this.dec_id_,
+                target: this.target,
+                target_dec_id: this.target_dec_id,
                 sid: this.sid_,
             },
             key: full_path,
             content_type,
         };
-        const r = await this.requestor_.create_new(req);
+        const r = await this.requestor.create_new(req);
         if (r.err) {
             return r;
         }
@@ -780,14 +758,14 @@ export class PathOpEnvStub {
         const req: OpEnvInsertWithKeyOutputRequest = {
             common: {
                 flags: 0,
-                target: this.target_,
-                dec_id: this.dec_id_,
+                target: this.target,
+                target_dec_id: this.target_dec_id,
                 sid: this.sid_,
             },
             key: full_path,
             value,
         };
-        const resp = await this.requestor_.insert_with_key(req);
+        const resp = await this.requestor.insert_with_key(req);
         if (resp.err) {
             return resp;
         }
@@ -803,8 +781,8 @@ export class PathOpEnvStub {
         const req: OpEnvSetWithKeyOutputRequest = {
             common: {
                 flags: 0,
-                target: this.target_,
-                dec_id: this.dec_id_,
+                target: this.target,
+                target_dec_id: this.target_dec_id,
                 sid: this.sid_,
             },
             value,
@@ -812,7 +790,7 @@ export class PathOpEnvStub {
             prev_value,
             key: full_path,
         };
-        const resp = await this.requestor_.set_with_key(req);
+        const resp = await this.requestor.set_with_key(req);
         if (resp.err) {
             return resp;
         }
@@ -830,14 +808,14 @@ export class PathOpEnvStub {
         const req: OpEnvRemoveWithKeyOutputRequest = {
             common: {
                 flags: 0,
-                target: this.target_,
-                dec_id: this.dec_id_,
+                target: this.target,
+                target_dec_id: this.target_dec_id,
                 sid: this.sid_,
             },
             key: full_path,
             prev_value,
         };
-        const resp = await this.requestor_.remove_with_key(req);
+        const resp = await this.requestor.remove_with_key(req);
         if (resp.err) {
             return resp;
         }
@@ -856,14 +834,14 @@ export class PathOpEnvStub {
         const req: OpEnvContainsOutputRequest = {
             common: {
                 flags: 0,
-                target: this.target_,
-                dec_id: this.dec_id_,
+                target: this.target,
+                target_dec_id: this.target_dec_id,
                 sid: this.sid_,
             },
             value: object_id,
             path,
         };
-        const resp = await this.requestor_.contains(req);
+        const resp = await this.requestor.contains(req);
         if (resp.err) {
             return resp;
         }
@@ -877,14 +855,14 @@ export class PathOpEnvStub {
         const req: OpEnvInsertOutputRequest = {
             common: {
                 flags: 0,
-                target: this.target_,
-                dec_id: this.dec_id_,
+                target: this.target,
+                target_dec_id: this.target_dec_id,
                 sid: this.sid_,
             },
             value: object_id,
             path,
         };
-        const resp = await this.requestor_.insert(req);
+        const resp = await this.requestor.insert(req);
         if (resp.err) {
             return resp;
         }
@@ -898,14 +876,14 @@ export class PathOpEnvStub {
         const req: OpEnvRemoveOutputRequest = {
             common: {
                 flags: 0,
-                target: this.target_,
-                dec_id: this.dec_id_,
+                target: this.target,
+                target_dec_id: this.target_dec_id,
                 sid: this.sid_,
             },
             value: object_id,
             path,
         };
-        const resp = await this.requestor_.remove(req);
+        const resp = await this.requestor.remove(req);
         if (resp.err) {
             return resp;
         }
@@ -917,12 +895,12 @@ export class PathOpEnvStub {
         const req: OpEnvGetCurrentRootOutputRequest = {
             common: {
                 flags: 0,
-                target: this.target_,
-                dec_id: this.dec_id_,
+                target: this.target,
+                target_dec_id: this.target_dec_id,
                 sid: this.sid_,
             },
         };
-        const r = await this.requestor_.get_current_root(req);
+        const r = await this.requestor.get_current_root(req);
         if (r.err) {
             return r;
         }
@@ -942,13 +920,13 @@ export class PathOpEnvStub {
         const req: OpEnvCommitOutputRequest = {
             common: {
                 flags: 0,
-                target: this.target_,
-                dec_id: this.dec_id_,
+                target: this.target,
+                target_dec_id: this.target_dec_id,
                 sid: this.sid_,
             },
             op_type: OpEnvCommitOpType.Update,
         };
-        const r = await this.requestor_.commit(req);
+        const r = await this.requestor.commit(req);
         if (r.err) {
             return r;
         }
@@ -967,12 +945,12 @@ export class PathOpEnvStub {
         const req: OpEnvCommitOutputRequest = {
             common: {
                 flags: 0,
-                target: this.target_,
-                dec_id: this.dec_id_,
+                target: this.target,
+                target_dec_id: this.target_dec_id,
                 sid: this.sid_,
             },
         };
-        const r = await this.requestor_.commit(req);
+        const r = await this.requestor.commit(req);
         if (r.err) {
             return r;
         }
@@ -991,12 +969,12 @@ export class PathOpEnvStub {
         const req: OpEnvAbortOutputRequest = {
             common: {
                 flags: 0,
-                target: this.target_,
-                dec_id: this.dec_id_,
+                target: this.target,
+                target_dec_id: this.target_dec_id,
                 sid: this.sid_,
             },
         };
-        const resp = await this.requestor_.abort(req);
+        const resp = await this.requestor.abort(req);
         if (resp.err) {
             return resp;
         }
@@ -1008,15 +986,15 @@ export class PathOpEnvStub {
     public async list(path: string): Promise<BuckyResult<ObjectMapContentItem[]>> {
         const req: OpEnvListOutputRequest = {
             common: {
-                dec_id: this.dec_id_,
-                target: this.target_,
+                target_dec_id: this.target_dec_id,
+                target: this.target,
                 flags: 0,
                 sid: JSBI.BigInt(0)
             },
             path
         }
 
-        const r = await this.requestor_.list(req)
+        const r = await this.requestor.list(req)
         if (r.err) {
             return r;
         }
@@ -1029,13 +1007,13 @@ export class PathOpEnvStub {
         const req: OpEnvMetadataOutputRequest = {
             common: {
                 flags: 0,
-                target: this.target_,
-                dec_id: this.dec_id_,
+                target: this.target,
+                target_dec_id: this.target_dec_id,
                 sid: this.sid_,
             },
             path,
         };
-        const r = await this.requestor_.metadata(req);
+        const r = await this.requestor.metadata(req);
         if (r.err) {
             return r;
         }
@@ -1053,19 +1031,7 @@ export class PathOpEnvStub {
 }
 
 export class GlobalStateAccessStub {
-    private requestor_: GlobalStateAccessRequestor;
-    private target_?: ObjectId;
-    private dec_id_: ObjectId;
-
-    constructor(requestor: GlobalStateAccessRequestor, target?: ObjectId, dec_id?: ObjectId) {
-        this.requestor_ = requestor;
-        this.target_ = target;
-
-        if (dec_id) {
-            this.dec_id_ = dec_id;
-        } else {
-            this.dec_id_ = requestor.get_dec_id();
-        }
+    constructor(private requestor: GlobalStateAccessRequestor, private target?: ObjectId, private target_dec_id?: ObjectId) {
     }
 
     public async get_object_by_path(
@@ -1074,12 +1040,12 @@ export class GlobalStateAccessStub {
         const req: RootStateAccessGetObjectByPathOutputRequest = {
             common: {
                 flags: 0,
-                target: this.target_,
-                dec_id: this.dec_id_,
+                target: this.target,
+                target_dec_id: this.target_dec_id,
             },
             inner_path,
         };
-        const r = await this.requestor_.get_object_by_path(req);
+        const r = await this.requestor.get_object_by_path(req);
         if (r.err) {
             return r;
         }
@@ -1094,14 +1060,14 @@ export class GlobalStateAccessStub {
         const req: RootStateAccessListOutputRequest = {
             common: {
                 flags: 0,
-                target: this.target_,
-                dec_id: this.dec_id_,
+                target: this.target,
+                target_dec_id: this.target_dec_id,
             },
             inner_path,
             page_index,
             page_size,
         };
-        const r = await this.requestor_.list(req);
+        const r = await this.requestor.list(req);
         if (r.err) {
             return r;
         }

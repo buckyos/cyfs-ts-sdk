@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-empty-interface */
 import {
     OpEnvSetResponse,
     ObjectMapOpEnvType,
@@ -13,8 +14,9 @@ import {
     BuckyError,
     BuckyErrorCode,
     ObjectMapSimpleContentType,
+    AccessPermissions,
 } from "../../cyfs-base";
-import { JsonCodec, JsonCodecHelper } from "../base/codec";
+import { JsonCodec } from "../base/codec";
 import { NONGetObjectOutputResponse } from "../non/output_request";
 
 import JSBI from "jsbi";
@@ -22,6 +24,9 @@ import JSBI from "jsbi";
 export interface RootStateOutputRequestCommon {
     // 来源DEC
     dec_id?: ObjectId;
+
+    // 目标DEC，如果为None，默认等价于dec_id
+    target_dec_id?: ObjectId,
 
     target?: ObjectId,
 
@@ -36,6 +41,7 @@ export class RootStateOutputRequestCommonJsonCodec extends JsonCodec<RootStateOu
     encode_object(param: RootStateOutputRequestCommon): any {
         return {
             dec_id: param.dec_id ? param.dec_id.to_base_58() : undefined,
+            target_dec_id: param.target_dec_id ? param.target_dec_id.to_base_58() : undefined,
             target: param.target ? param.target.to_base_58() : undefined,
             flags: param.flags,
         };
@@ -43,6 +49,7 @@ export class RootStateOutputRequestCommonJsonCodec extends JsonCodec<RootStateOu
 
     decode_object(o: any): BuckyResult<RootStateOutputRequestCommon> {
         let dec_id;
+        let target_dec_id;
         let target;
         {
             if (o.dec_id) {
@@ -51,6 +58,13 @@ export class RootStateOutputRequestCommonJsonCodec extends JsonCodec<RootStateOu
                     return r;
                 }
                 dec_id = r.unwrap();
+            }
+            if (o.target_dec_id) {
+                const r = ObjectId.from_base_58(o.target_dec_id);
+                if (r.err) {
+                    return r;
+                }
+                target_dec_id = r.unwrap();
             }
             if (o.target) {
                 const r = ObjectId.from_base_58(o.target);
@@ -63,6 +77,7 @@ export class RootStateOutputRequestCommonJsonCodec extends JsonCodec<RootStateOu
 
         return Ok({
             dec_id,
+            target_dec_id,
             target,
             flags: o.flags,
         });
@@ -136,10 +151,42 @@ export class RootStateGetCurrentRootOutputResponseJsonCodec extends JsonCodec<Ro
 }
 
 // create_op_env
+export interface RootStateOpEnvAccess {
+    path: string,
+    access: AccessPermissions,
+}
+
+
 export interface RootStateCreateOpEnvOutputRequest {
     common: RootStateOutputRequestCommon;
 
     op_env_type: ObjectMapOpEnvType;
+
+    access?: RootStateOpEnvAccess,
+}
+
+export class RootStateOpEnvAccessJsonCodec extends JsonCodec<RootStateOpEnvAccess> {
+    constructor() {
+        super();
+    }
+
+    encode_object(param: RootStateOpEnvAccess): any {
+        return {
+            path: param.path,
+            access: param.access.value
+        }
+    }
+
+    decode_object(o: any): BuckyResult<RootStateOpEnvAccess> {
+        let access = AccessPermissions.from_u8(o.access);
+        if (access.err) {
+            return access;
+        }
+        return Ok({
+            path: o.path,
+            access: access.unwrap()
+        })
+    }
 }
 
 export class RootStateCreateOpEnvOutputRequestJsonCodec extends JsonCodec<RootStateCreateOpEnvOutputRequest> {
@@ -147,12 +194,18 @@ export class RootStateCreateOpEnvOutputRequestJsonCodec extends JsonCodec<RootSt
         super();
     }
     encode_object(param: RootStateCreateOpEnvOutputRequest): any {
-        return {
+        let ret: any = {
             common: new RootStateOutputRequestCommonJsonCodec().encode_object(
                 param.common
             ),
             op_env_type: param.op_env_type,
         };
+
+        if (param.access) {
+            ret.access = new RootStateOpEnvAccessJsonCodec().encode_object(param.access);
+        }
+
+        return ret;
     }
 
     decode_object(o: any): BuckyResult<RootStateCreateOpEnvOutputRequest> {
@@ -162,7 +215,17 @@ export class RootStateCreateOpEnvOutputRequestJsonCodec extends JsonCodec<RootSt
         if (common.err) {
             return common;
         }
-        return Ok({ common: common.unwrap(), op_env_type: o.op_env_type });
+        let access;
+        if (o.access) {
+            let access_r = new RootStateOpEnvAccessJsonCodec().decode_object(o.access);
+            if (access_r.err) {
+                return access_r;
+            }
+
+            access = access_r.unwrap()
+        }
+        
+        return Ok({ common: common.unwrap(), op_env_type: o.op_env_type, access});
     }
 }
 
@@ -187,6 +250,9 @@ export interface OpEnvOutputRequestCommon {
     // 来源DEC
     dec_id?: ObjectId;
 
+    // 目标DEC，如果为None，默认等价于dec_id
+    target_dec_id?: ObjectId,
+
     flags: number;
 
     target?: ObjectId,
@@ -202,6 +268,7 @@ export class OpEnvOutputRequestCommonJsonCodec extends JsonCodec<OpEnvOutputRequ
     encode_object(param: OpEnvOutputRequestCommon): any {
         return {
             dec_id: param.dec_id ? param.dec_id.to_base_58() : undefined,
+            target_dec_id: param.target_dec_id ? param.target_dec_id.to_base_58() : undefined,
             target: param.target ? param.target.to_base_58() : undefined,
             flags: param.flags,
             sid: param.sid,
@@ -210,6 +277,7 @@ export class OpEnvOutputRequestCommonJsonCodec extends JsonCodec<OpEnvOutputRequ
 
     decode_object(o: any): BuckyResult<OpEnvOutputRequestCommon> {
         let dec_id;
+        let target_dec_id;
         let target;
         if (o.dec_id) {
             const result = ObjectId.from_base_58(o.dec_id);
@@ -217,6 +285,13 @@ export class OpEnvOutputRequestCommonJsonCodec extends JsonCodec<OpEnvOutputRequ
                 return result;
             }
             dec_id = result.unwrap();
+        }
+        if (o.target_dec_id) {
+            const result = ObjectId.from_base_58(o.target_dec_id);
+            if (result.err) {
+                return result;
+            }
+            target_dec_id = result.unwrap();
         }
         if (o.target) {
             const result = ObjectId.from_base_58(o.target);
@@ -226,7 +301,7 @@ export class OpEnvOutputRequestCommonJsonCodec extends JsonCodec<OpEnvOutputRequ
             target = result.unwrap();
         }
 
-        return Ok({ dec_id, target, flags: o.flags, sid: JSBI.BigInt(o.sid) });
+        return Ok({ dec_id, target_dec_id, target, flags: o.flags, sid: JSBI.BigInt(o.sid) });
     }
 }
 

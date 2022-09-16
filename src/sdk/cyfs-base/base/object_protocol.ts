@@ -9,6 +9,7 @@ export const CYFS_NON_ACTION = "cyfs-non-action";
 export const CYFS_NDN_ACTION = "cyfs-ndn-action";
 
 export const CYFS_DEC_ID = "cyfs-dec-id";
+export const CYFS_TARGET_DEC_ID = "cyfs-target-dec-id";
 // select请求的filter内部的dec-id，和请求本身的dec-id区分
 export const CYFS_FILTER_DEC_ID = "cyfs-filter-dec-id";
 

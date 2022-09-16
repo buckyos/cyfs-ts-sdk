@@ -1,4 +1,4 @@
-import { BuckyError, BuckyErrorCode, BuckyResult, Err, Ok } from "../../cyfs-base";
+import { BuckyError, BuckyErrorCode, BuckyResult, Err, Ok } from "..";
 
 import BitSet from 'bitset'
 
@@ -84,8 +84,7 @@ export class AccessGroup {
     static OthersZone = new AccessGroup(9);
 
     static OwnerDec = new AccessGroup(12);
-    static SystemDec = new AccessGroup(15);
-    static OthersDec = new AccessGroup(18);
+    static OthersDec = new AccessGroup(15);
     private constructor(private value: number){}
 
     range(): {start: number, end: number} {
@@ -103,7 +102,6 @@ export const ACCESS_GROUP_LIST: AccessGroup[] = [
     AccessGroup.FriendZone, 
     AccessGroup.OthersZone, 
     AccessGroup.OwnerDec, 
-    AccessGroup.SystemDec, 
     AccessGroup.OthersDec,
 ];
 
@@ -156,22 +154,86 @@ export class AccessString {
     }
 
     static dec_default(): AccessString {
-        return AccessString.make([{
-            group: AccessGroup.CurrentDevice,
-            permissions: AccessPermissions.Full,
-        }, {
-            group: AccessGroup.CurrentZone,
-            permissions: AccessPermissions.Full,
-        }, {
-            group: AccessGroup.FriendZone,
-            permissions: AccessPermissions.Full,
-        }, {
-            group: AccessGroup.OwnerDec,
-            permissions: AccessPermissions.Full,
-        }, {
-            group: AccessGroup.SystemDec,
-            permissions: AccessPermissions.Full,
-        }])
+        return AccessString.make([
+            {
+                group: AccessGroup.CurrentDevice,
+                permissions: AccessPermissions.Full,
+            },
+            {
+                group: AccessGroup.CurrentZone,
+                permissions: AccessPermissions.Full,
+            },
+            {
+                group: AccessGroup.FriendZone,
+                permissions: AccessPermissions.Full,
+            },
+            {
+                group: AccessGroup.OwnerDec,
+                permissions: AccessPermissions.Full,
+            },
+            {
+                group: AccessGroup.OthersDec,
+                permissions: AccessPermissions.Full,
+            },
+        ])
+    }
+
+    static full_except_write(): AccessString {
+        return AccessString.make([
+            {
+                group: AccessGroup.CurrentDevice,
+                permissions: AccessPermissions.Full,
+            },
+            {
+                group: AccessGroup.CurrentZone,
+                permissions: AccessPermissions.Full,
+            },
+            {
+                group: AccessGroup.FriendZone,
+                permissions: AccessPermissions.Full,
+            },
+            {
+                group: AccessGroup.OthersZone,
+                permissions: AccessPermissions.ReadAndCall,
+            },
+            {
+                group: AccessGroup.OwnerDec,
+                permissions: AccessPermissions.Full,
+            },
+            {
+                group: AccessGroup.OthersDec,
+                permissions: AccessPermissions.ReadAndCall,
+            },
+        ])
+    }
+
+    static full(): AccessString {
+        return AccessString.make([
+            {
+                group: AccessGroup.CurrentDevice,
+                permissions: AccessPermissions.Full,
+            },
+            {
+                group: AccessGroup.CurrentZone,
+                permissions: AccessPermissions.Full,
+            },
+            {
+                group: AccessGroup.FriendZone,
+                permissions: AccessPermissions.Full,
+            },
+            {
+                group: AccessGroup.OthersZone,
+                permissions: AccessPermissions.Full,
+            },
+            {
+                group: AccessGroup.OwnerDec,
+                permissions: AccessPermissions.Full,
+            },
+            {
+                group: AccessGroup.OthersDec,
+                permissions: AccessPermissions.Full,
+            },
+        ])
     }
 
     to_string(): string {

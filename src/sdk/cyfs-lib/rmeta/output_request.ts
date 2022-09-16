@@ -5,8 +5,12 @@ export interface MetaOutputRequestCommon {
     // 来源DEC
     dec_id?: ObjectId,
 
+    // 目标DEC
+    target_dec_id?: ObjectId,
+
     // 用以默认行为
     target?: ObjectId,
+    
 
     flags: number,
 }
