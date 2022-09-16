@@ -24,6 +24,7 @@ import {
     OpEnvGetCurrentRootOutputRequest,
     OpEnvResetOutputRequest,
     OpEnvListOutputRequest,
+    RootStateOpEnvAccess,
 } from "./output_request";
 import { NONGetObjectOutputResponse } from '../non/output_request';
 import {
@@ -97,6 +98,10 @@ export class GlobalStateStub {
     }
 
     public async create_path_op_env(): Promise<BuckyResult<PathOpEnvStub>> {
+        return this.create_path_op_env_with_access()
+    }
+
+    public async create_path_op_env_with_access(access?: RootStateOpEnvAccess): Promise<BuckyResult<PathOpEnvStub>> {
         const req: RootStateCreateOpEnvOutputRequest = {
             common: {
                 flags: 0,
@@ -104,6 +109,7 @@ export class GlobalStateStub {
                 target_dec_id: this.target_dec_id,
             },
             op_env_type: ObjectMapOpEnvType.Path,
+            access
         };
         const r = await this.requestor.create_op_env(req);
         if (r.err) {
@@ -116,6 +122,10 @@ export class GlobalStateStub {
     }
 
     public async create_single_op_env(): Promise<BuckyResult<SingleOpEnvStub>> {
+        return this.create_single_op_env_with_access()
+    }
+
+    public async create_single_op_env_with_access(access?: RootStateOpEnvAccess): Promise<BuckyResult<SingleOpEnvStub>> {
         const req: RootStateCreateOpEnvOutputRequest = {
             common: {
                 flags: 0,
@@ -123,6 +133,7 @@ export class GlobalStateStub {
                 target_dec_id: this.target_dec_id,
             },
             op_env_type: ObjectMapOpEnvType.Single,
+            access
         };
         const r = await this.requestor.create_op_env(req);
         if (r.err) {
