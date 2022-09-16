@@ -121,12 +121,7 @@ export function get_meta_miner_host(target: MetaMinerTarget): string {
     if (target === MetaMinerTarget.Dev) {
         return "http://154.31.50.111:1423";
     } else if (target === MetaMinerTarget.Test) {
-        const urls = [
-            "http://106.75.156.225:1523",
-            "http://106.75.152.253:1523",
-            "http://106.75.136.42:1523",
-        ];
-        return urls[Math.floor(Math.random() * urls.length)];
+        return "http://112.74.105.75:1423";
     } else {
         return "";
     }
@@ -136,7 +131,7 @@ export function get_meta_spv_host(target: MetaMinerTarget): string {
     if (target === MetaMinerTarget.Dev) {
         return "http://154.31.50.111:3516";
     } else if (target === MetaMinerTarget.Test) {
-        return "http://106.75.152.253:1563";
+        return "http://112.74.105.75:3516";
     } else {
         return "";
     }
