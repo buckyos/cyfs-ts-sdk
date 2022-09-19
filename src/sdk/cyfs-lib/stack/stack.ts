@@ -274,7 +274,7 @@ export class SharedCyfsStack {
         return new SharedCyfsStack(param);
     }
 
-    public async wait_online(timeoutInMicroSeconds: Option<JSBI>): Promise<BuckyResult<null>> {
+    public async wait_online(timeoutInMicroSeconds?: JSBI): Promise<BuckyResult<null>> {
         console.info(`stack will online: dec=${this.dec_id}`);
         const begin = bucky_time_now();
         for (; ;) {
@@ -283,10 +283,10 @@ export class SharedCyfsStack {
                 break;
             }
 
-            if (timeoutInMicroSeconds.is_some()) {
+            if (timeoutInMicroSeconds) {
                 const now = bucky_time_now();
-                if (JSBI.GE(JSBI.subtract(now, begin), timeoutInMicroSeconds.unwrap())) {
-                    console.error(`stack online timeout! dur=${timeoutInMicroSeconds.unwrap()}μs`,);
+                if (JSBI.GE(JSBI.subtract(now, begin), timeoutInMicroSeconds)) {
+                    console.error(`stack online timeout! dur=${timeoutInMicroSeconds}μs`,);
                     return Err(new BuckyError(BuckyErrorCode.Timeout, `stack online timeout`));
                 }
             }

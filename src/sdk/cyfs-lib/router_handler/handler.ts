@@ -65,8 +65,8 @@ export class RouterHandlerEventRoutineT<REQ, RESP> implements RouterHandlerAnyRo
 
 
 export class RouterHandlerManager {
-    // http: Option<RouterHandlerHttpHandlerManager> = None;
-    ws: Option<RouterHandlerWSHandlerManager> = None;
+    // http?: RouterHandlerHttpHandlerManager;
+    ws?: RouterHandlerWSHandlerManager;
 
     constructor(event_type: CyfsStackEventType, ws_url?: string, private dec_id?: ObjectId) {
         switch (event_type) {
@@ -77,7 +77,7 @@ export class RouterHandlerManager {
                 console.assert(ws_url);
                 const ws = new RouterHandlerWSHandlerManager(ws_url!, dec_id);
                 ws.start();
-                this.ws = Some(ws);
+                this.ws = ws;
                 break;
             default:
                 console.warn('unknown event type', event_type);
@@ -273,16 +273,16 @@ export class RouterHandlerManager {
         default_action: RouterHandlerAction,
         routine?: EventListenerAsyncRoutineT<RouterHandlerRequest<REQ, RESP>, RouterHandlerResponse<REQ, RESP>>
     ): Promise<BuckyResult<void>> {
-        if (this.ws.is_some()) {
-            return this.ws.unwrap().add_handler(chain, id, index, category, req_codec, resp_codec, filter, req_path, default_action, routine);
+        if (this.ws) {
+            return this.ws.add_handler(chain, id, index, category, req_codec, resp_codec, filter, req_path, default_action, routine);
         } else {
             throw new Error('router handler require ws');
         }
     }
 
     async remove_handler(chain: RouterHandlerChain, category: RouterHandlerCategory, id: string): Promise<BuckyResult<boolean>> {
-        if (this.ws.is_some()) {
-            return await this.ws.unwrap().remove_handler(chain, category, id);
+        if (this.ws) {
+            return await this.ws.remove_handler(chain, category, id);
         } else {
             throw new Error('remove_handler require ws');
         }

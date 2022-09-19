@@ -74,7 +74,7 @@ export class DecAppDescContentDecoder extends ProtobufDescContentDecoder<DecAppD
 }
 
 export class DecAppBodyContent extends ProtobufBodyContent {
-    constructor(public source: BuckyHashMap<BuckyString, ObjectId>, public icon: Option<BuckyString>, public desc: Option<BuckyString>, public source_desc: BuckyHashMap<BuckyString, BuckyString>, public tags: BuckyHashMap<BuckyString, BuckyString>) {
+    constructor(public source: BuckyHashMap<BuckyString, ObjectId>, public icon: string| undefined, public desc: string|undefined, public source_desc: BuckyHashMap<BuckyString, BuckyString>, public tags: BuckyHashMap<BuckyString, BuckyString>) {
         super();
     }
 
@@ -101,12 +101,12 @@ export class DecAppBodyContent extends ProtobufBodyContent {
             target.addTags(item)
         }
 
-        if (this.icon.is_some()) {
-            target.setIcon(this.icon.unwrap().value())
+        if (this.icon) {
+            target.setIcon(this.icon)
         }
 
-        if (this.desc.is_some()) {
-            target.setDesc(this.desc.unwrap().value())
+        if (this.desc) {
+            target.setDesc(this.desc)
         }
 
         return Ok(target);
@@ -135,13 +135,13 @@ export class DecAppBodyContentDecoder extends ProtobufBodyContentDecoder<DecAppB
             source_desc.set(new BuckyString(item.getKey()), new BuckyString(item.getValue()));
         }
 
-        let icon: Option<BuckyString> = None;
+        let icon;
         if (value.hasIcon()) {
-            icon = Some(new BuckyString(value.getIcon()));
+            icon = value.getIcon();
         }
-        let desc: Option<BuckyString> = None;
+        let desc;
         if (value.hasDesc()) {
-            desc = Some(new BuckyString(value.getDesc()));
+            desc = value.getDesc();
         }
 
         const result = new DecAppBodyContent(source, icon, desc, source_desc, tags);
@@ -189,7 +189,7 @@ export class DecAppIdDecoder extends NamedObjectIdDecoder<DecAppDescContent, Dec
 export class DecApp extends NamedObject<DecAppDescContent, DecAppBodyContent>{
     static create(owner: ObjectId, id: string): DecApp {
         const desc_content = new DecAppDescContent(id);
-        const body_content = new DecAppBodyContent(new BuckyHashMap<BuckyString, ObjectId>(), None, None, new BuckyHashMap<BuckyString, BuckyString>(), new BuckyHashMap<BuckyString, BuckyString>());
+        const body_content = new DecAppBodyContent(new BuckyHashMap<BuckyString, ObjectId>(), undefined, undefined, new BuckyHashMap<BuckyString, BuckyString>(), new BuckyHashMap<BuckyString, BuckyString>());
         const builder = new DecAppBuilder(desc_content, body_content);
 
         return builder.owner(owner).no_create_time().build(DecApp);
@@ -199,40 +199,24 @@ export class DecApp extends NamedObject<DecAppDescContent, DecAppBodyContent>{
         return this.desc().content().id;
     }
 
-    set_icon(icon: string|undefined) {
+    set_icon(icon?: string): void {
         const body = this.body_expect();
-        if (icon) {
-            body.content().icon = Some(new BuckyString(icon));
-        } else {
-            body.content().icon = None;
-        }
+        body.content().icon = icon;
         body.increase_update_time(bucky_time_now());
     }
 
     icon(): string | undefined {
-        if (this.body_expect().content().icon.is_some()) {
-            return this.body_expect().content().icon.unwrap().value();
-        } else {
-            return undefined;
-        }
+        return this.body_expect().content().icon
     }
 
-    set_app_desc(desc: string|undefined) {
+    set_app_desc(desc?: string): void {
         const body = this.body_expect();
-        if (desc) {
-            body.content().desc = Some(new BuckyString(desc));
-        } else {
-            body.content().desc = None;
-        }
+        body.content().desc = desc
         body.increase_update_time(bucky_time_now());
     }
 
     app_desc(): string | undefined {
-        if (this.body_expect().content().desc.is_some()) {
-            return this.body_expect().content().desc.unwrap().value();
-        } else {
-            return undefined;
-        }
+        return this.body_expect().content().desc
     }
 
     find_source_desc(version: string): BuckyResult<string> {
@@ -253,16 +237,16 @@ export class DecApp extends NamedObject<DecAppDescContent, DecAppBodyContent>{
         }
     }
 
-    remove_source(version: string) {
+    remove_source(version: string): void {
         this.body_expect().content().source.delete(new BuckyString(version));
         this.body_expect().content().source_desc.delete(new BuckyString(version));
         this.body_expect().increase_update_time(bucky_time_now());
     }
 
-    set_source(version: string, source: ObjectId, desc: Option<string>) {
+    set_source(version: string, source: ObjectId, desc?: string): void {
         this.body_expect().content().source.set(new BuckyString(version), source);
-        if (desc.is_some()) {
-            this.body_expect().content().source_desc.set(new BuckyString(version), new BuckyString(desc.unwrap()));
+        if (desc) {
+            this.body_expect().content().source_desc.set(new BuckyString(version), new BuckyString(desc));
         }
         this.body_expect().increase_update_time(bucky_time_now());
     }

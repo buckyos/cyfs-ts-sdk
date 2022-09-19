@@ -1,7 +1,7 @@
 import { HttpRequest } from "../base/http_request";
 import { BaseRequestor, RequestorHelper } from "../base/base_requestor";
 import { UtilGetDeviceRequest, UtilGetDeviceResponse, UtilGetDeviceStaticInfoRequest, UtilGetDeviceStaticInfoResponse, UtilGetNetworkAccessInfoRequest, UtilGetNetworkAccessInfoResponse, UtilGetNOCInfoRequest, UtilGetNOCInfoResponse, UtilGetOODStatusRequest, UtilGetOODStatusResponse, UtilGetSystemInfoRequest, UtilGetSystemInfoResponse, UtilGetVersionInfoRequest, UtilGetVersionInfoResponse, UtilGetZoneRequest, UtilGetZoneResponse, UtilRequestCommon, UtilResolveOODRequest, UtilResolveOODResponse } from "./request";
-import { BuckyResult, CYFS_DEC_ID, CYFS_FLAGS, CYFS_OOD_DEVICE_ID, CYFS_TARGET, CYFS_ZONE_ID, DeviceDecoder, DeviceId, ObjectId, Err, Ok } from "../../cyfs-base";
+import { BuckyResult, CYFS_DEC_ID, CYFS_FLAGS, CYFS_OOD_DEVICE_ID, CYFS_TARGET, CYFS_ZONE_ID, DeviceDecoder, DeviceId, ObjectId, Err, Ok, CYFS_REQ_PATH, CYFS_OBJECT_ID, CYFS_OWNER_ID } from "../../cyfs-base";
 import { ZoneDecoder, ZoneId } from "../../cyfs-core";
 import { UtilBuildDirFromObjectMapOutputRequest, UtilBuildDirFromObjectMapOutputResponse, UtilGetDeviceStaticInfoOutputResponseJsonCodec, UtilGetNetworkAccessInfoOutputResponseJsonCodec, UtilGetOODStatusOutputResponseJsonCodec, UtilGetZoneOutputResponse, UtilResolveOODOutputResponseJsonCodec, UtilBuildDirFromObjectMapOutputRequestCodec, UtilBuildDirFromObjectMapOutputResponseJsonCodec } from "./output_request";
 
@@ -10,26 +10,6 @@ export class UtilRequestor {
 
     constructor(private requestor: BaseRequestor, private dec_id?: ObjectId) {
         this.service_url = `http://${requestor.remote_addr()}/util/`;
-    }
-
-    // url支持下面的格式，其中device_id是可选
-    // {host:port}/util/{util_path}/[req_path/]object_id[/inner_path]
-    format_url(
-        util_path: string,
-        req_path?: string,
-        object_id?: ObjectId
-    ): string {
-        const parts = [];
-        parts.push(util_path);
-        if (req_path) {
-            parts.push(req_path.replace(/^\/+|\/+$/g, ""));
-        }
-        if (object_id) {
-            parts.push(object_id.to_base_58());
-        }
-
-        const p = parts.join("/");
-        return this.service_url + p;
     }
 
     encode_common_headers(
@@ -42,6 +22,10 @@ export class UtilRequestor {
             http_req.insert_header(CYFS_DEC_ID, this.dec_id.to_string());
         }
 
+        if (com_req.req_path) {
+            http_req.insert_header(CYFS_REQ_PATH, com_req.req_path);
+        }
+
         if (com_req.target) {
             http_req.insert_header(CYFS_TARGET, com_req.target.to_string());
         }
@@ -50,7 +34,7 @@ export class UtilRequestor {
     }
 
     encode_get_device_request(req: UtilGetDeviceRequest): HttpRequest {
-        const url = this.format_url("device", req.common.req_path);
+        const url = this.service_url + "device";
         const http_req = new HttpRequest('Get', url);
         this.encode_common_headers(req.common, http_req);
         return http_req;
@@ -89,9 +73,12 @@ export class UtilRequestor {
     }
 
     encode_get_zone_request(req: UtilGetZoneRequest): HttpRequest {
-        const url = this.format_url("zone", req.common.req_path, req.object_id);
+        const url = this.service_url + "zone";
         const http_req = new HttpRequest("Post", url);
         this.encode_common_headers(req.common, http_req);
+        if (req.object_id) {
+            http_req.insert_header(CYFS_OBJECT_ID, req.object_id.to_base_58())
+        }
 
         if (req.object_raw) {
             http_req.set_body(req.object_raw);
@@ -151,24 +138,17 @@ export class UtilRequestor {
         }
     }
 
-    // url支持下面的格式，其中owner_id是可选
-    // {host:port}/[req_path/]object_id?owner={owner_id}
-    format_resolve_url(req_path: string | undefined, owner_id: ObjectId | undefined, object_id: ObjectId): string {
-        let url = this.format_url("resolve_ood", req_path, object_id);
-
-        if (owner_id) {
-            url += `?owner=${owner_id}`
-        }
-
-        return url;
-    }
 
     encode_resolve_ood_request(req: UtilResolveOODRequest): HttpRequest {
-        const url = this.format_resolve_url(req.common.req_path, req.owner_id, req.object_id);
+        const url = this.service_url + "resolve_ood";
 
         // 目前没有body
         const http_req = new HttpRequest("Get", url);
         this.encode_common_headers(req.common, http_req);
+        http_req.insert_header(CYFS_OBJECT_ID, req.object_id.to_base_58())
+        if (req.owner_id) {
+            http_req.insert_header(CYFS_OWNER_ID, req.owner_id.to_base_58());
+        }
 
         return http_req;
     }
@@ -199,7 +179,7 @@ export class UtilRequestor {
     }
 
     encode_get_ood_status_request(req: UtilGetOODStatusRequest): HttpRequest {
-        const url = this.format_url("ood_status", req.common.req_path);
+        const url = this.service_url + "ood_status";
         const http_req = new HttpRequest("Get", url);
         this.encode_common_headers(req.common, http_req);
 
@@ -232,7 +212,7 @@ export class UtilRequestor {
     }
 
     encode_get_noc_info_request(req: UtilGetNOCInfoRequest): HttpRequest {
-        const url = this.format_url("noc_info", req.common.req_path);
+        const url = this.service_url + "noc_info";
         const http_req = new HttpRequest("Get", url);
         this.encode_common_headers(req.common, http_req);
 
@@ -260,7 +240,7 @@ export class UtilRequestor {
     }
 
     encode_get_network_access_info_request(req: UtilGetNetworkAccessInfoRequest): HttpRequest {
-        const url = this.format_url("network_access_info", req.common.req_path);
+        const url = this.service_url + "network_access_info";
         const http_req = new HttpRequest("Get", url);
         this.encode_common_headers(req.common, http_req);
 
@@ -293,7 +273,7 @@ export class UtilRequestor {
     }
 
     encode_get_device_static_info_request(req: UtilGetDeviceStaticInfoRequest): HttpRequest {
-        const url = this.format_url("device_static_info", req.common.req_path);
+        const url = this.service_url + "device_static_info";
         const http_req = new HttpRequest("Get", url);
         this.encode_common_headers(req.common, http_req);
 
@@ -326,7 +306,7 @@ export class UtilRequestor {
     }
 
     encode_get_system_info_request(req: UtilGetSystemInfoRequest): HttpRequest {
-        const url = this.format_url("system_info", req.common.req_path);
+        const url = this.service_url + "system_info"
         const http_req = new HttpRequest("Get", url);
         this.encode_common_headers(req.common, http_req);
 
@@ -354,7 +334,7 @@ export class UtilRequestor {
     }
 
     encode_get_version_info_request(req: UtilGetVersionInfoRequest): HttpRequest {
-        const url = this.format_url("version_info", req.common.req_path);
+        const url = this.service_url + "version_info";
         const http_req = new HttpRequest("Get", url);
         this.encode_common_headers(req.common, http_req);
 
@@ -382,7 +362,7 @@ export class UtilRequestor {
     }
 
     encode_build_dir_from_object_map_request(req: UtilBuildDirFromObjectMapOutputRequest): HttpRequest {
-        const url = this.format_url("build_dir_from_object_map", req.common.req_path);
+        const url = this.service_url + "build_dir_from_object_map";
         const http_req = new HttpRequest("Post", url);
         http_req.set_json_body(new UtilBuildDirFromObjectMapOutputRequestCodec().encode_object(req));
 

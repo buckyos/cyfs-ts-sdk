@@ -43,7 +43,7 @@ export class RouterEventRoutineT<REQ, RESP> implements RouterEventAnyRoutine {
 }
 
 export class RouterEventManager {
-    // http: Option<RouterEventHttpHandlerManager> = None;
+    // http?: RouterEventHttpHandlerManager;
     ws?: RouterWSEventManager;
 
     constructor(event_type: CyfsStackEventType, ws_url?: string, private dec_id?: ObjectId) {

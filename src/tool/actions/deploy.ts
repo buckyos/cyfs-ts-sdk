@@ -100,14 +100,14 @@ function update_app_version(options: DeployOptions, ctx: CyfsToolContext) {
 
     // 向 app 对象添加 version 和 fid ：
     const app = ctx.get_app_obj();
-    let source_desc: Option<string> = None;
+    let source_desc;
     if (options.desc) {
         let desc = options.desc;
         if (fs.existsSync(desc)) {
             desc = fs.readFileSync(desc, {encoding: 'utf-8'});
         }
 
-        source_desc = Some(desc);
+        source_desc = desc;
     }
     app.set_source(ctx.app.version, ObjectId.from_base_58(fid).unwrap(), source_desc);
 

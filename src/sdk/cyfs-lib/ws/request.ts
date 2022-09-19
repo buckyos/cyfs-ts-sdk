@@ -143,26 +143,26 @@ export class WebSocketRequestContainer {
 export class WebSocketRequestManager {
     is_monitor = true;
     sid = 0;
-    session: Option<WebSocketSession> = None;
+    session?: WebSocketSession;
     reqs: WebSocketRequestContainer = new WebSocketRequestContainer();
     constructor(
         public handler: WebSocketRequestHandler) {
     }
 
-    is_session_valid() {
-        return this.session.is_some();
+    is_session_valid(): boolean {
+        return !!this.session;
     }
 
-    bind_session(session: WebSocketSession) {
-        console.assert(this.session.is_none(), `bind_session ${this.session}`);
-        this.session = Some(session);
+    bind_session(session: WebSocketSession): void {
+        console.assert(!this.session, `bind_session ${this.session}`);
+        this.session = session;
         this.monitor();
     }
 
-    unbind_session() {
+    unbind_session(): void {
         this.stop_monitor();
         this.reqs.clear();
-        this.session = None;
+        this.session = undefined;
     }
 
     static async on_msg(requestor: WebSocketRequestManager, packet: WSPacket): Promise<BuckyResult<void>> {
@@ -170,7 +170,7 @@ export class WebSocketRequestManager {
         const cmd = packet.header.cmd;
         if (cmd > 0) {
             const seq = packet.header.seq;
-            console.debug(`recv ws cmd packet: sid=${requestor.session.unwrap().sid}, seq=${seq}`);
+            console.debug(`recv ws cmd packet: sid=${requestor.session!.sid}, seq=${seq}`);
 
             const ret = await requestor.handler.on_request(requestor, cmd, packet.content);
             if (ret.err) {
@@ -271,7 +271,7 @@ export class WebSocketRequestManager {
     }
 
     async post_to_session(buf: Uint8Array): Promise<BuckyResult<void>> {
-        return this.session.unwrap().post_msg(buf);
+        return this.session!.post_msg(buf);
     }
 
     post_req_without_resp(cmd: number, msg: string): BuckyResult<void> {
@@ -284,6 +284,6 @@ export class WebSocketRequestManager {
     post_buffer_req_without_resp(cmd: number, msg: Uint8Array): BuckyResult<void> {
         const packet = WSPacket.new_from_buffer(0, cmd, msg);
         const buf = packet.encode();
-        return this.session.unwrap().post_msg(buf);
+        return this.session!.post_msg(buf);
     }
 }

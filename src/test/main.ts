@@ -123,7 +123,7 @@ async function main() {
     //const stack = cyfs.SharedCyfsStack.open_runtime(test_dec_id);
     const stack = cyfs.SharedCyfsStack.open(param);
     await sleep(1000 * 2);
-    await stack.wait_online(Some(JSBI.BigInt(1000 * 1000 * 5)));
+    await stack.wait_online(JSBI.BigInt(1000 * 1000 * 5));
     (await stack.online()).unwrap();
 
     await test_object_map(stack);

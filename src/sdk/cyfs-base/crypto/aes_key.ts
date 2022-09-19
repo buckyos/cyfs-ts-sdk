@@ -96,13 +96,13 @@ export class AesKey implements RawEncode {
         return new AesKey(buf);
     }
 
-    static mix_hash(salt: Option<JSBI>): KeyMixHash {
+    static mix_hash(salt?: JSBI): KeyMixHash {
         //const hash = sha256.create();
         const hash = md.sha256.create()
-        if(salt.is_some()){
+        if(salt){
             const buf = new Uint8Array(4);
             const view = buf.offsetView(0);
-            DataViewJSBIHelper.setBigUint64(view, 0, salt.unwrap());
+            DataViewJSBIHelper.setBigUint64(view, 0, salt);
             // view.setBigUint64(0, salt.unwrap());
             hash.update(util.binary.raw.encode(new Uint8Array(view.buffer)));
         }

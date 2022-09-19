@@ -123,7 +123,7 @@ async function add_file(stack: cyfs.SharedCyfsStack, local_path: string) {
 
 export async function test_file() {
     const stack = cyfs.SharedCyfsStack.open_runtime();
-    (await stack.wait_online(cyfs.Some(JSBI.BigInt(60 * 1000 * 1000)))).unwrap();
+    (await stack.wait_online(JSBI.BigInt(60 * 1000 * 1000))).unwrap();
 
     console.info("device_id=", stack.local_device_id(), stack.local_device_id().toString());
     const owner = stack.local_device().desc().owner()!.unwrap();

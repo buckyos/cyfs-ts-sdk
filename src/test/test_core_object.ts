@@ -178,7 +178,7 @@ async function _putObj(
 async function test_app_cmd() {
   const sharedStatck: cyfs.SharedCyfsStack =
     cyfs.SharedCyfsStack.open_runtime();
-  await sharedStatck.wait_online(cyfs.None);
+  await sharedStatck.wait_online();
   const router: cyfs.NONRequestor = sharedStatck.non_service();
   const owner = cyfs.ObjectId.from_base_58(
     "5r4MYfF8FpNABnYjNyPh3Egmx68CTUaZxnreJJBkiboU"
@@ -383,7 +383,7 @@ async function test_app_cmd() {
 
 async function test_app_list_ex() {
   const sharedStatck = cyfs.SharedCyfsStack.open_runtime();
-  await sharedStatck.wait_online(cyfs.None);
+  await sharedStatck.wait_online();
   const router: cyfs.NONRequestor = sharedStatck.non_service();
 
   const owner = cyfs.ObjectId.from_base_58(

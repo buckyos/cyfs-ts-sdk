@@ -130,7 +130,7 @@ export class RouterWSHandlerHandlerManagerImpl {
     // 均使用full_id作为索引
     handlers: { [name: string]: RouterHandlerItem } = {};
     unregister_handlers: { [name: string]: RouterHandlerUnregisterItem } = {};
-    session: Option<WebSocketSession> = None;
+    session?: WebSocketSession;
 
     private static gen_full_id(chain: RouterHandlerChain, category: RouterHandlerCategory, id: string): string {
         console.assert(chain != null && chain.length > 0);
@@ -156,8 +156,8 @@ export class RouterWSHandlerHandlerManagerImpl {
         }
 
         this.handlers[full_id] = handler_item;
-        if (this.session.is_some()) {
-            const session = this.session.unwrap();
+        if (this.session) {
+            const session = this.session;
             await handler_item.register(session.requestor!);
         }
 
@@ -166,8 +166,8 @@ export class RouterWSHandlerHandlerManagerImpl {
 
     static async remove_handler(manager: RouterWSHandlerHandlerManagerImpl, chain: RouterHandlerChain, category: RouterHandlerCategory, id: string, dec_id?: ObjectId): Promise<BuckyResult<boolean>> {
         const unregister_item = manager.remove_handler_op(chain, category, id, dec_id);
-        if (manager.session.is_some()) {
-            return unregister_item.unregister(manager.session.unwrap().requestor!);
+        if (manager.session) {
+            return unregister_item.unregister(manager.session.requestor!);
         } else {
             const msg = `remove ws router handler but not connect: chain=${chain}, category=${category}, id=${id}`;
             console.warn(msg);
@@ -226,8 +226,8 @@ export class RouterWSHandlerHandlerManagerImpl {
     static async on_session_begin(manager: RouterWSHandlerHandlerManagerImpl,
         session: WebSocketSession) {
         console.log(`ws router handler session begin: sid=${session.sid}`);
-        console.assert(manager.session.is_none());
-        manager.session = Some(session);
+        console.assert(!manager.session);
+        manager.session = session;
 
         await this.unregister_all(manager, session);
         await this.register_all(manager, session);
@@ -265,8 +265,8 @@ export class RouterWSHandlerHandlerManagerImpl {
     static async on_session_end(manager: RouterWSHandlerHandlerManagerImpl,
         session: WebSocketSession) {
         console.log(`ws handler session end: sid=${session.sid}`);
-        console.assert(manager.session.is_some());
-        manager.session = None;
+        console.assert(!!manager.session);
+        manager.session = undefined;
     }
 }
 
@@ -313,8 +313,8 @@ export class RouterHandlerWSHandlerManager {
         this.client.start();
     }
 
-    get_dec_id(): Option<ObjectId> {
-        return this.dec_id ? Some(this.dec_id) : None;
+    get_dec_id(): ObjectId|undefined {
+        return this.dec_id;
     }
 
     async add_handler<REQ, RESP>(

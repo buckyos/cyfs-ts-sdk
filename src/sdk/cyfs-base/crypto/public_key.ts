@@ -640,7 +640,7 @@ export class RSAPublicKey extends PublicKeyBase implements PublicKeyMatcher {
     }
 
     static from_buffer(code: number, buffer: Uint8Array): RSAPublicKey {
-        let key = pki.publicKeyFromAsn1(asn1.fromDer(util.binary.raw.encode(buffer), {parseAllBytes: false}));
+        let key = pki.publicKeyFromAsn1(asn1.fromDer(util.binary.raw.encode(buffer), false));
         return new RSAPublicKey(code, key as pki.rsa.PublicKey);
     }
 

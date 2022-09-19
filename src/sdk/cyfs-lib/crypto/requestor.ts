@@ -5,6 +5,7 @@ import {
     CYFS_DEC_ID,
     CYFS_FLAGS,
     CYFS_OBJECT_ID,
+    CYFS_REQ_PATH,
     CYFS_SIGN_FLAGS,
     CYFS_SIGN_OBJ,
     CYFS_SIGN_OBJ_ID,
@@ -29,24 +30,15 @@ export class CryptoRequestor {
         this.service_url = `http://${addr}/crypto/`;
     }
 
-    // {host:port}/crypto/verify|sign/[req_path/]object_id
-    format_url(sign: boolean, req_path: string|undefined, object_id: &ObjectId): string {
-        const parts = [];
-        parts.push(sign ? "sign" : "verify");
-        if (req_path) {
-            parts.push(req_path.replace(/^\/+|\/+$/g, ""));
-        }
-        parts.push(object_id.to_base_58());
-        
-        const p = parts.join("/");
-        return this.service_url + p;
-    }
-
     encode_common_headers(com_req: CryptoOutputRequestCommon, http_req: HttpRequest): void {
         if (com_req.dec_id) {
             http_req.insert_header(CYFS_DEC_ID, com_req.dec_id.to_string());
         } else if (this.dec_id) {
             http_req.insert_header(CYFS_DEC_ID, this.dec_id.to_string()); 
+        }
+
+        if (com_req.req_path) {
+            http_req.insert_header(CYFS_REQ_PATH, com_req.req_path);
         }
 
         if (com_req.target) {
@@ -57,7 +49,7 @@ export class CryptoRequestor {
     }
 
     encode_verify_object_request(req: CryptoVerifyObjectOutputRequest): HttpRequest {
-        const url = this.format_url(false, req.common.req_path, req.object.object_id);
+        const url = this.service_url + "verify"
 
         const http_req = new HttpRequest("Post", url);
         this.encode_common_headers(req.common, http_req);
@@ -127,7 +119,7 @@ export class CryptoRequestor {
     }
 
     encode_sign_object_request(req: CryptoSignObjectRequest): HttpRequest {
-        const url = this.format_url(true, req.common.req_path, req.object.object_id);
+        const url = this.service_url + "sign"
         const http_req = new HttpRequest('POST', url);
         this.encode_common_headers(req.common, http_req);
         http_req.insert_header(CYFS_OBJECT_ID, req.object.object_id.to_string());

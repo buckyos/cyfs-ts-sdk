@@ -72,10 +72,10 @@ export class TransContextDescContentDecoder extends ProtobufDescContentDecoder<T
 }
 
 export class TransContextBodyContent extends ProtobufBodyContent {
-    private readonly ref_id: Option<ObjectId>;
+    private readonly ref_id?: ObjectId;
     private readonly device_list: DeviceId[];
 
-    constructor(ref_id: Option<ObjectId>, device_list: DeviceId[]) {
+    constructor(ref_id: ObjectId|undefined, device_list: DeviceId[]) {
         super();
         this.ref_id = ref_id;
         this.device_list = device_list;
@@ -83,8 +83,8 @@ export class TransContextBodyContent extends ProtobufBodyContent {
 
     try_to_proto(): BuckyResult<protos.TransContextBodyContent> {
         const target = new protos.TransContextBodyContent()
-        if(this.ref_id.is_some()) {
-            target.setRefId(ProtobufCodecHelper.encode_buf(this.ref_id.unwrap()).unwrap())
+        if(this.ref_id) {
+            target.setRefId(ProtobufCodecHelper.encode_buf(this.ref_id).unwrap())
         }
 
         
@@ -101,9 +101,9 @@ export class TransContextBodyContentDecoder extends ProtobufBodyContentDecoder<T
     }
 
     try_from_proto(value: protos.TransContextBodyContent): BuckyResult<TransContextBodyContent> {
-        let ref_id: Option<ObjectId> = None;
+        let ref_id;
         if (value.hasRefId()) {
-            ref_id = Some(ProtobufCodecHelper.decode_buf(value.getRefId_asU8(), new ObjectIdDecoder()).unwrap());
+            ref_id = ProtobufCodecHelper.decode_buf(value.getRefId_asU8(), new ObjectIdDecoder()).unwrap();
         }
         const device_list = ProtobufCodecHelper.decode_buf_list(ProtobufCodecHelper.ensure_not_null(value.getDeviceListList_asU8()).unwrap(), new DeviceIdDecoder()).unwrap();
         return Ok(new TransContextBodyContent(ref_id, device_list));
