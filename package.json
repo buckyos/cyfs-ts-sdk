@@ -43,7 +43,7 @@
   "devDependencies": {
     "@ethersproject/bignumber": "^5.2.0",
     "@ethersproject/bytes": "^5.2.0",
-    "@ethersproject/hash": "^5.2.0",
+    "@ethersproject/hash": "=5.6",
     "@ethersproject/properties": "^5.2.0",
     "@ethersproject/strings": "^5.2.0",
     "@types/bs58": "^4.0.1",
