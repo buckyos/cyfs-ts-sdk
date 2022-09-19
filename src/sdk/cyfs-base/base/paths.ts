@@ -12,3 +12,8 @@ export const CYFS_APP_LOCAL_STATUS_PATH = "/app/${DecAppId}/local_status";
 
 // Known zones in local-cache
 export const CYFS_KNOWN_ZONES_PATH = "/data/known-zones";
+
+// Virtual path for handler and api 
+export const CYFS_API_VIRTUAL_PATH = "/.cyfs/api";
+export const CYFS_HANDLER_VIRTUAL_PATH = "/.cyfs/api/handler";
+export const CYFS_CRYPTO_VIRTUAL_PATH = "/.cyfs/api/crypto";

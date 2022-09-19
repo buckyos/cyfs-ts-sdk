@@ -1,5 +1,5 @@
 import JSBI from "jsbi";
-import { Attributes, BuckyResult, ObjectId, Ok } from "../../cyfs-base";
+import { AccessString, Attributes, BuckyResult, ObjectId, Ok } from "../../cyfs-base";
 import { JsonCodec, JsonCodecHelper } from "../base/codec";
 import { SelectFilter, SelectFilterJsonCodec, SelectOption, SelectOptionJsonCodec, SelectResponseObjectInfo, SelectResponseObjectInfoJsonCodec } from "../base/select_request";
 import { NONAPILevel, NONObjectInfo, NONObjectInfoJsonCodec, NONPutObjectResult } from "./def";
@@ -69,6 +69,8 @@ export interface NONPutObjectOutputRequest {
     common: NONOutputRequestCommon,
 
     object: NONObjectInfo,
+
+    access?: AccessString,
 }
 
 export class NONPutObjectOutputRequestJsonCodec extends JsonCodec<NONPutObjectOutputRequest> {

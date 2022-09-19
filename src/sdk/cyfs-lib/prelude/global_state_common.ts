@@ -143,7 +143,7 @@ export class RequestGlobalStatePath {
 
         let real_req_path;
         if (index < segs.length) {
-            real_req_path = "/" + segs.slice(index).join("/")
+            real_req_path = "/" + segs.slice(index).join("/") + "/"
         }
 
         let self = new RequestGlobalStatePath(dec_id, real_req_path);

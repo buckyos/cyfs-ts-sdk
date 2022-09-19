@@ -1,6 +1,5 @@
-import { RouterHandlerCategory } from "../category";
+import { RouterHandlerCategory, RouterHandlerAction, RouterHandlerChain } from "../def";
 import { BuckyError, BuckyErrorCode, BuckyResult, Err, None, Ok, Option, Some, EventListenerAsyncRoutineT, ObjectId } from "../../../cyfs-base";
-import { RouterHandlerAction } from "../action";
 import { WebSocketRequestHandler, WebSocketRequestManager } from "../../ws/request";
 import {
     RouterAddHandlerParam,
@@ -16,7 +15,6 @@ import { WebSocketClient } from "../../ws/client";
 import { RouterHandlerAnyRoutine, RouterHandlerEventRoutineT } from "../handler";
 import { RouterHandlerRequest, RouterHandlerResponse } from '../request';
 import { JsonCodec } from '../../base/codec';
-import { RouterHandlerChain } from '../chain';
 import { ROUTER_WS_HANDLER_CMD_ADD, ROUTER_WS_HANDLER_CMD_EVENT, ROUTER_WS_HANDLER_CMD_REMOVE } from '../../base/protocol';
 
 
@@ -26,30 +24,27 @@ class RouterHandlerItem {
         public category: RouterHandlerCategory,
         public index: number,
         public id: string,
-        public dec_id: Option<ObjectId>,
-        private filter: string,
+        public dec_id: ObjectId | undefined,
+        private filter: string|undefined,
+        private req_path: string|undefined,
         private default_action: RouterHandlerAction,
-        private routine: Option<RouterHandlerAnyRoutine>,
+        private routine?: RouterHandlerAnyRoutine,
     ) {
     }
 
-    set_routine(routine: Option<RouterHandlerAnyRoutine>) {
+    set_routine(routine?: RouterHandlerAnyRoutine) {
         this.routine = routine;
     }
 
-    get_dec_id(): ObjectId | undefined {
-        return this.dec_id.is_some()? this.dec_id.unwrap() : undefined;
-    }
-
     async emit(param: string): Promise<BuckyResult<string>> {
-        if (this.routine.is_none()) {
+        if (!this.routine) {
             console.error(`emit on_pre_put_to_noc event but routine is none! chain=${this.chain}, category=${this.category}, id=${this.id}`);
             return Ok(this.default_action);
         }
 
         let ret;
         try {
-            ret = await this.routine.unwrap().emit(param);
+            ret = await this.routine.emit(param);
         } catch (error) {
             const msg = `emit handler routine error! chain=${this.chain}, category=${this.category}, id=${this.id}, param=${param}, err=${error.toString()}`;
             console.error(msg);
@@ -61,22 +56,23 @@ class RouterHandlerItem {
     }
 
     async register(requestor: WebSocketRequestManager) {
-        console.log(`will add ws router handler: chain=${this.chain}, category=${this.category}, id=${this.id}, index=${this.index}, sid=${requestor.sid}, routine=${this.routine.is_some()}`);
+        console.log(`will add ws router handler: chain=${this.chain}, category=${this.category}, id=${this.id}, index=${this.index}, sid=${requestor.sid}, routine=${!!this.routine}`);
         const param: RouterAddHandlerParam = {
             filter: this.filter,
+            req_path: this.req_path,
             index: this.index,
             default_action: this.default_action,
         };
 
-        if (this.routine.is_some()) {
+        if (this.routine) {
             param.routine = requestor.sid.toString();
         }
 
         const req: RouterWSAddHandlerParam = {
             chain: this.chain,
             category: this.category,
-            id: this.id.toString(),
-            dec_id: this.get_dec_id(),
+            id: this.id,
+            dec_id: this.dec_id,
             param,
         }
 
@@ -97,12 +93,8 @@ class RouterHandlerItem {
 }
 
 export class RouterHandlerUnregisterItem {
-    constructor(private chain: RouterHandlerChain, private category: RouterHandlerCategory, public id: string, public dec_id: Option<ObjectId>) {
+    constructor(private chain: RouterHandlerChain, private category: RouterHandlerCategory, public id: string, public dec_id?: ObjectId) {
 
-    }
-
-    get_dec_id(): ObjectId | undefined {
-        return this.dec_id.is_some()? this.dec_id.unwrap() : undefined;
     }
 
     async unregister(requestor: WebSocketRequestManager): Promise<BuckyResult<boolean>> {
@@ -112,7 +104,7 @@ export class RouterHandlerUnregisterItem {
             chain: this.chain,
             category: this.category,
             id: this.id,
-            dec_id: this.get_dec_id(),
+            dec_id: this.dec_id,
         };
 
         const msg = JSON.stringify(req);
@@ -172,7 +164,7 @@ export class RouterWSHandlerHandlerManagerImpl {
         return Ok(void (0));
     }
 
-    static async remove_handler(manager: RouterWSHandlerHandlerManagerImpl, chain: RouterHandlerChain, category: RouterHandlerCategory, id: string, dec_id: Option<ObjectId>): Promise<BuckyResult<boolean>> {
+    static async remove_handler(manager: RouterWSHandlerHandlerManagerImpl, chain: RouterHandlerChain, category: RouterHandlerCategory, id: string, dec_id?: ObjectId): Promise<BuckyResult<boolean>> {
         const unregister_item = manager.remove_handler_op(chain, category, id, dec_id);
         if (manager.session.is_some()) {
             return unregister_item.unregister(manager.session.unwrap().requestor!);
@@ -184,7 +176,7 @@ export class RouterWSHandlerHandlerManagerImpl {
         }
     }
 
-    remove_handler_op(chain: RouterHandlerChain, category: RouterHandlerCategory, id: string, dec_id: Option<ObjectId>): RouterHandlerUnregisterItem {
+    remove_handler_op(chain: RouterHandlerChain, category: RouterHandlerCategory, id: string, dec_id?: ObjectId): RouterHandlerUnregisterItem {
         const full_id = RouterWSHandlerHandlerManagerImpl.gen_full_id(chain, category, id);
 
         const ret = this.handlers[full_id];
@@ -332,30 +324,31 @@ export class RouterHandlerWSHandlerManager {
         category: RouterHandlerCategory,
         req_codec: JsonCodec<REQ>,
         resp_codec: JsonCodec<RESP>,
-        filter: string,
+        filter: string|undefined,
+        req_path: string|undefined,
         default_action: RouterHandlerAction,
-        routine: Option<EventListenerAsyncRoutineT<RouterHandlerRequest<REQ, RESP>, RouterHandlerResponse<REQ, RESP>>>): Promise<BuckyResult<void>> {
+        routine?: EventListenerAsyncRoutineT<RouterHandlerRequest<REQ, RESP>, RouterHandlerResponse<REQ, RESP>>): Promise<BuckyResult<void>> {
         const handler_item = new RouterHandlerItem(
             chain,
             category,
             index,
             id,
-            this.get_dec_id(),
+            this.dec_id,
             filter,
-            default_action,
-            None,
+            req_path,
+            default_action
         );
 
-        if (routine.is_some()) {
+        if (routine) {
             const t = new RouterHandlerEventRoutineT(req_codec,
-                resp_codec, routine.unwrap());
-            handler_item.set_routine(Some(t));
+                resp_codec, routine);
+            handler_item.set_routine(t);
         }
 
         return this.manager.add_handler(handler_item);
     }
 
     async remove_handler(chain: RouterHandlerChain, category: RouterHandlerCategory, id: string): Promise<BuckyResult<boolean>> {
-        return RouterWSHandlerHandlerManagerImpl.remove_handler(this.manager, chain, category, id, this.get_dec_id());
+        return RouterWSHandlerHandlerManagerImpl.remove_handler(this.manager, chain, category, id, this.dec_id);
     }
 }

@@ -4,7 +4,7 @@ import { BuckyResultJsonCodec, JsonCodec } from '../base/codec';
 import { CryptoSignObjectInputRequest, CryptoSignObjectInputResponse, CryptoVerifyObjectInputRequest, CryptoVerifyObjectInputResponse } from '../crypto/input_request';
 import { NDNDeleteDataInputRequest, NDNDeleteDataInputResponse, NDNGetDataInputRequest, NDNGetDataInputResponse, NDNPutDataInputRequest, NDNPutDataInputResponse } from '../ndn/input_request';
 import { NONDeleteObjectInputRequest, NONDeleteObjectInputResponse, NONGetObjectInputRequest, NONGetObjectInputResponse, NONPostObjectInputRequest, NONPostObjectInputResponse, NONPutObjectInputRequest, NONPutObjectInputResponse, NONSelectObjectInputRequest, NONSelectObjectInputResponse } from '../non/input_request';
-import { RouterHandlerAction } from './action';
+import { RouterHandlerAction } from './def';
 
 export interface RouterHandlerRequest<REQ, RESP> {
     request: REQ,

@@ -15,9 +15,19 @@ export interface GlobalStatePathLinkItem {
     target: string,
 }
 
+export enum DeviceZoneCategory {
+    CurrentDevice = "current-device",
+    CurrentZone = "current-zone",
+    FriendZone = "friend-zone",
+    OtherZone = "other-zone",
+}
+
 export interface GlobalStatePathSpecifiedGroup {
     // device/device's owner(as zone id), None for any zone
     zone?: ObjectId,
+
+    // Choose one between zone and zone_category
+    zone_category?: DeviceZoneCategory,
 
     // specified dec, None for any dec
     dec?: ObjectId,
@@ -53,12 +63,13 @@ export class GlobalStatePathGroupAccess {
 
     static from_obj(obj: any): GlobalStatePathGroupAccess {
         if (obj.Default) {
-            return GlobalStatePathGroupAccess.Default(obj.default)
+            return GlobalStatePathGroupAccess.Default(obj.Default)
         } else if (obj.Specified) {
             return GlobalStatePathGroupAccess.Specified({
-                zone: obj.specified.zone?ObjectId.from_base_58(obj.specified.zone).unwrap():undefined,
-                dec: obj.specified.dec?ObjectId.from_base_58(obj.specified.dec).unwrap():undefined,
-                access: obj.access
+                zone: obj.Specified.zone?ObjectId.from_base_58(obj.specified.zone).unwrap():undefined,
+                dec: obj.Specified.dec?ObjectId.from_base_58(obj.specified.dec).unwrap():undefined,
+                zone_category: obj.Specified.zone_category?obj.Specified.zone_category:undefined,
+                access: obj.Specified.access
             })
         } else {
             throw new Error(`decode GlobalStatePathGroupAccess from ${JSON.stringify(obj)} failed`)
@@ -91,9 +102,10 @@ export class GlobalStatePathAccessItem {
         return new GlobalStatePathAccessItem(GlobalStatePathAccessItem.fix_path(path), GlobalStatePathGroupAccess.Default(access))
     }
 
-    public static new_group(path: string, zone: ObjectId|undefined, dec: ObjectId|undefined, access: number): GlobalStatePathAccessItem {
+    public static new_group(path: string, zone: ObjectId|undefined, zone_category: DeviceZoneCategory|undefined, dec: ObjectId|undefined, access: number): GlobalStatePathAccessItem {
         return new GlobalStatePathAccessItem(GlobalStatePathAccessItem.fix_path(path), GlobalStatePathGroupAccess.Specified({
             zone,
+            zone_category,
             dec,
             access
         }))

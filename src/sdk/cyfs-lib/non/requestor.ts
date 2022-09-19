@@ -1,5 +1,5 @@
 import JSBI from "jsbi";
-import { BuckyResult, CYFS_API_LEVEL, CYFS_DEC_ID, CYFS_FLAGS, CYFS_NON_ACTION, CYFS_OBJECT_EXPIRES_TIME, CYFS_OBJECT_ID, CYFS_OBJECT_UPDATE_TIME, CYFS_RESULT, CYFS_TARGET, Err, ObjectId, Ok, Option, None, Some, Attributes, CYFS_ATTRIBUTES } from "../../cyfs-base"
+import { BuckyResult, CYFS_API_LEVEL, CYFS_DEC_ID, CYFS_FLAGS, CYFS_NON_ACTION, CYFS_OBJECT_EXPIRES_TIME, CYFS_OBJECT_ID, CYFS_OBJECT_UPDATE_TIME, CYFS_RESULT, CYFS_TARGET, Err, ObjectId, Ok, Option, None, Some, Attributes, CYFS_ATTRIBUTES, CYFS_ACCESS, CYFS_REQ_PATH, CYFS_INNER_PATH } from "../../cyfs-base"
 import { BaseRequestor, RequestorHelper } from "../base/base_requestor";
 import { HttpRequest } from "../base/http_request";
 import { CYFS_REQUEST_FLAG_DELETE_WITH_QUERY } from "../base/request";
@@ -95,27 +95,6 @@ export class NONRequestor {
         this.service_url = `http://${requestor.remote_addr()}/non/`;
     }
 
-    // url支持下面的格式，其中device_id是可选
-    // {host:port}/non/[req_path/]object_id[/inner_path]
-    format_url(
-        req_path: string | undefined,
-        object_id: ObjectId,
-        inner_path?: string,
-    ): string {
-        const parts = [];
-        if (req_path) {
-            parts.push(req_path.replace(/^\/+|\/+$/g, ""));
-        }
-
-        parts.push(object_id.to_base_58());
-        if (inner_path) {
-            parts.push(inner_path.replace(/^\/+|\/+$/g, ""));
-        }
-
-        const p = parts.join("/");
-        return this.service_url + p;
-    }
-
     encode_common_headers(
         action: NONAction,
         com_req: NONOutputRequestCommon,
@@ -130,6 +109,10 @@ export class NONRequestor {
         http_req.insert_header(CYFS_NON_ACTION, action);
 
         http_req.insert_header(CYFS_API_LEVEL, com_req.level);
+
+        if (com_req.req_path) {
+            http_req.insert_header(CYFS_REQ_PATH, com_req.req_path);
+        }
 
         if (com_req.target) {
             http_req.insert_header(CYFS_TARGET, com_req.target.to_string());
@@ -147,10 +130,12 @@ export class NONRequestor {
             }
         }
 
-        const url = this.format_url(req.common.req_path, req.object.object_id);
-
-        const http_req = new HttpRequest('Put', url);
+        const http_req = new HttpRequest('Put', this.service_url);
         this.encode_common_headers(NONAction.PutObject, req.common, http_req);
+
+        if (req.access) {
+            http_req.insert_header(CYFS_ACCESS, req.access.value.toString())
+        }
 
         return http_req;
     }
@@ -204,13 +189,7 @@ export class NONRequestor {
     }
 
     encode_get_object_request(req: NONGetObjectOutputRequest): HttpRequest {
-        const url = this.format_url(
-            req.common.req_path,
-            req.object_id,
-            req.inner_path,
-        );
-
-        const http_req = new HttpRequest('Get', url);
+        const http_req = new HttpRequest('Get', this.service_url);
         this.encode_common_headers(NONAction.GetObject, req.common, http_req);
 
         return http_req
@@ -238,9 +217,7 @@ export class NONRequestor {
     }
 
     encode_post_object_request(req: NONPostObjectOutputRequest): HttpRequest {
-        const url = this.format_url(req.common.req_path, req.object.object_id);
-
-        const http_req = new HttpRequest("Post", url);
+        const http_req = new HttpRequest("Post", this.service_url);
         this.encode_common_headers(NONAction.PostObject, req.common, http_req);
 
         return http_req;
@@ -339,10 +316,12 @@ export class NONRequestor {
     }
 
     encode_delete_object_request(req: NONDeleteObjectOutputRequest): HttpRequest {
-        const url = this.format_url(req.common.req_path, req.object_id, req.inner_path);
-
-        const http_req = new HttpRequest("Delete", url);
+        const http_req = new HttpRequest("Delete", this.service_url);
         this.encode_common_headers(NONAction.DeleteObject, req.common, http_req);
+
+        if (req.inner_path) {
+            http_req.insert_header(CYFS_INNER_PATH, req.inner_path);
+        }
 
         return http_req;
     }

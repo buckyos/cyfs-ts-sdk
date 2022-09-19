@@ -1,8 +1,7 @@
 import { None, Option, Some, BuckyResult, Ok, EventListenerAsyncRoutineT, ObjectId } from "../../cyfs-base";
 import { RouterHandlerWSHandlerManager } from "./ws/handler";
 import { CyfsStackEventType } from "../stack/stack";
-import { RouterHandlerAction } from "./action";
-import { RouterHandlerCategory } from "./category";
+import { RouterHandlerCategory, RouterHandlerAction, RouterHandlerChain } from "./def";
 import {
     RouterHandlerAclRoutine,
     RouterHandlerDeleteDataRoutine,
@@ -23,7 +22,6 @@ import {
 import { JsonCodec } from '../base/codec';
 import { NONDeleteObjectInputRequestJsonCodec, NONDeleteObjectInputResponseJsonCodec, NONGetObjectInputRequestJsonCodec, NONGetObjectInputResponseJsonCodec, NONPostObjectInputRequestJsonCodec, NONPostObjectInputResponseJsonCodec, NONPutObjectInputRequestJsonCodec, NONPutObjectInputResponseJsonCodec } from '../non/input_request';
 import { NONSelectObjectOutputRequestJsonCodec, NONSelectObjectOutputResponseJsonCodec } from '../non/output_request';
-import { RouterHandlerChain } from './chain';
 import { CryptoSignObjectInputRequestJsonCodec, CryptoVerifyObjectInputRequestJsonCodec } from "../crypto/input_request";
 import { CryptoSignObjectOutputResponseJsonCodec, CryptoVerifyObjectOutputResponseJsonCodec } from "../crypto/output_request";
 import { AclHandlerRequestJsonCodec, AclHandlerResponseJsonCodec } from "../acl/request";
@@ -91,165 +89,176 @@ export class RouterHandlerManager {
         chain: RouterHandlerChain,
         id: string,
         index: number,
-        filter: string,
+        filter: string|undefined,
+        req_path: string|undefined,
         default_action: RouterHandlerAction,
-        routine: Option<RouterHandlerPutObjectRoutine>
+        routine?: RouterHandlerPutObjectRoutine
     ): Promise<BuckyResult<void>> {
         const req_codec = new NONPutObjectInputRequestJsonCodec();
         const resp_codec = new NONPutObjectInputResponseJsonCodec();
 
         return this.add_handler(chain, id, index, RouterHandlerCategory.PutObject, req_codec, resp_codec,
-            filter, default_action, routine);
+            filter, req_path, default_action, routine);
     }
 
     add_get_object_handler(
         chain: RouterHandlerChain,
         id: string,
         index: number,
-        filter: string,
+        filter: string|undefined,
+        req_path: string|undefined,
         default_action: RouterHandlerAction,
-        routine: Option<RouterHandlerGetObjectRoutine>
+        routine?: RouterHandlerGetObjectRoutine
     ): Promise<BuckyResult<void>> {
         const req_codec = new NONGetObjectInputRequestJsonCodec();
         const resp_codec = new NONGetObjectInputResponseJsonCodec();
 
         return this.add_handler(chain, id, index, RouterHandlerCategory.GetObject, req_codec, resp_codec,
-            filter, default_action, routine);
+            filter, req_path, default_action, routine);
     }
 
     add_post_object_handler(
         chain: RouterHandlerChain,
         id: string,
         index: number,
-        filter: string,
+        filter: string|undefined,
+        req_path: string|undefined,
         default_action: RouterHandlerAction,
-        routine: Option<RouterHandlerPostObjectRoutine>
+        routine?: RouterHandlerPostObjectRoutine
     ): Promise<BuckyResult<void>> {
         const req_codec = new NONPostObjectInputRequestJsonCodec();
         const resp_codec = new NONPostObjectInputResponseJsonCodec();
 
         return this.add_handler(chain, id, index, RouterHandlerCategory.PostObject, req_codec, resp_codec,
-            filter, default_action, routine);
+            filter, req_path, default_action, routine);
     }
 
     add_select_object_handler(
         chain: RouterHandlerChain,
         id: string,
         index: number,
-        filter: string,
+        filter: string|undefined,
+        req_path: string|undefined,
         default_action: RouterHandlerAction,
-        routine: Option<RouterHandlerSelectObjectRoutine>
+        routine?: RouterHandlerSelectObjectRoutine
     ): Promise<BuckyResult<void>> {
         const req_codec = new NONSelectObjectOutputRequestJsonCodec();
         const resp_codec = new NONSelectObjectOutputResponseJsonCodec();
 
         return this.add_handler(chain, id, index, RouterHandlerCategory.SelectObject, req_codec, resp_codec,
-            filter, default_action, routine);
+            filter, req_path, default_action, routine);
     }
 
     add_delete_object_handler(
         chain: RouterHandlerChain,
         id: string,
         index: number,
-        filter: string,
+        filter: string|undefined,
+        req_path: string|undefined,
         default_action: RouterHandlerAction,
-        routine: Option<RouterHandlerDeleteObjectRoutine>
+        routine?: RouterHandlerDeleteObjectRoutine
     ): Promise<BuckyResult<void>> {
         const req_codec = new NONDeleteObjectInputRequestJsonCodec();
         const resp_codec = new NONDeleteObjectInputResponseJsonCodec();
 
         return this.add_handler(chain, id, index, RouterHandlerCategory.DeleteObject, req_codec, resp_codec,
-            filter, default_action, routine);
+            filter, req_path, default_action, routine);
     }
 
     add_put_data_handler(
         chain: RouterHandlerChain,
         id: string,
         index: number,
-        filter: string,
+        filter: string|undefined,
+        req_path: string|undefined,
         default_action: RouterHandlerAction,
-        routine: Option<RouterHandlerPutDataRoutine>
+        routine?: RouterHandlerPutDataRoutine
     ): Promise<BuckyResult<void>> {
         const req_codec = new NDNPutDataInputRequestJsonCodec();
         const resp_codec = new NDNPutDataInputResponseJsonCodec();
 
         return this.add_handler(chain, id, index, RouterHandlerCategory.PutData, req_codec, resp_codec,
-            filter, default_action, routine);
+            filter, req_path, default_action, routine);
     }
 
     add_get_data_handler(
         chain: RouterHandlerChain,
         id: string,
         index: number,
-        filter: string,
+        filter: string|undefined,
+        req_path: string|undefined,
         default_action: RouterHandlerAction,
-        routine: Option<RouterHandlerGetDataRoutine>
+        routine?: RouterHandlerGetDataRoutine
     ): Promise<BuckyResult<void>> {
         const req_codec = new NDNGetDataInputRequestJsonCodec();
         const resp_codec = new NDNGetDataInputResponseJsonCodec();
 
         return this.add_handler(chain, id, index, RouterHandlerCategory.GetData, req_codec, resp_codec,
-            filter, default_action, routine);
+            filter, req_path, default_action, routine);
     }
 
     add_delete_data_handler(
         chain: RouterHandlerChain,
         id: string,
         index: number,
-        filter: string,
+        filter: string|undefined,
+        req_path: string|undefined,
         default_action: RouterHandlerAction,
-        routine: Option<RouterHandlerDeleteDataRoutine>
+        routine?: RouterHandlerDeleteDataRoutine
     ): Promise<BuckyResult<void>> {
         const req_codec = new NDNDeleteDataInputRequestJsonCodec();
         const resp_codec = new NDNDeleteDataInputResponseJsonCodec();
 
         return this.add_handler(chain, id, index, RouterHandlerCategory.DeleteData, req_codec, resp_codec,
-            filter, default_action, routine);
+            filter, req_path, default_action, routine);
     }
 
     add_sign_object_handler(
         chain: RouterHandlerChain,
         id: string,
         index: number,
-        filter: string,
+        filter: string|undefined,
+        req_path: string|undefined,
         default_action: RouterHandlerAction,
-        routine: Option<RouterHandlerSignObjectRoutine>
+        routine?: RouterHandlerSignObjectRoutine
     ): Promise<BuckyResult<void>> {
         const req_codec = new CryptoSignObjectInputRequestJsonCodec();
         const resp_codec = new CryptoSignObjectOutputResponseJsonCodec();
 
         return this.add_handler(chain, id, index, RouterHandlerCategory.SignObject, req_codec, resp_codec,
-            filter, default_action, routine);
+            filter, req_path, default_action, routine);
     }
 
     add_verify_object_handler(
         chain: RouterHandlerChain,
         id: string,
         index: number,
-        filter: string,
+        filter: string|undefined,
+        req_path: string|undefined,
         default_action: RouterHandlerAction,
-        routine: Option<RouterHandlerVerifyObjectRoutine>
+        routine?: RouterHandlerVerifyObjectRoutine
     ): Promise<BuckyResult<void>> {
         const req_codec = new CryptoVerifyObjectInputRequestJsonCodec();
         const resp_codec = new CryptoVerifyObjectOutputResponseJsonCodec();
 
         return this.add_handler(chain, id, index, RouterHandlerCategory.VerifyObject, req_codec, resp_codec,
-            filter, default_action, routine);
+            filter, req_path, default_action, routine);
     }
 
     add_acl_handler(
         chain: RouterHandlerChain,
         id: string,
         index: number,
-        filter: string,
+        filter: string|undefined,
+        req_path: string|undefined,
         default_action: RouterHandlerAction,
-        routine: Option<RouterHandlerAclRoutine>
+        routine?: RouterHandlerAclRoutine
     ): Promise<BuckyResult<void>> {
         const req_codec = new AclHandlerRequestJsonCodec();
         const resp_codec = new AclHandlerResponseJsonCodec();
 
         return this.add_handler(chain, id, index, RouterHandlerCategory.Acl, req_codec, resp_codec,
-            filter, default_action, routine);
+            filter, req_path, default_action, routine);
     }
 
     add_handler<REQ, RESP>(
@@ -259,12 +268,13 @@ export class RouterHandlerManager {
         category: RouterHandlerCategory,
         req_codec: JsonCodec<REQ>,
         resp_codec: JsonCodec<RESP>,
-        filter: string,
+        filter: string|undefined,
+        req_path: string|undefined,
         default_action: RouterHandlerAction,
-        routine: Option<EventListenerAsyncRoutineT<RouterHandlerRequest<REQ, RESP>, RouterHandlerResponse<REQ, RESP>>>
+        routine?: EventListenerAsyncRoutineT<RouterHandlerRequest<REQ, RESP>, RouterHandlerResponse<REQ, RESP>>
     ): Promise<BuckyResult<void>> {
         if (this.ws.is_some()) {
-            return this.ws.unwrap().add_handler(chain, id, index, category, req_codec, resp_codec, filter, default_action, routine);
+            return this.ws.unwrap().add_handler(chain, id, index, category, req_codec, resp_codec, filter, req_path, default_action, routine);
         } else {
             throw new Error('router handler require ws');
         }

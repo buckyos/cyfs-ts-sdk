@@ -4,8 +4,10 @@ import { JsonCodec } from "../base/codec";
 export enum NDNAction {
     PutData = "put-data",
     GetData = "get-data",
-
     DeleteData = "delete-data",
+
+    PutSharedData = "put-shared-data",
+    GetSharedData = "get-shared-data",
 
     QueryFile = "query-file",
 }

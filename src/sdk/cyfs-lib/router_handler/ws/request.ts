@@ -1,12 +1,10 @@
 import { BuckyResult, ObjectId, Ok } from '../../../cyfs-base';
 import { JsonCodec, JsonCodecHelper } from '../../base/codec';
-import { RouterHandlerAction } from "../action";
-import { RouterHandlerCategory } from "../category";
-import { RouterHandlerChain } from '../chain';
-
+import { RouterHandlerAction, RouterHandlerCategory, RouterHandlerChain } from "../def";
 
 export interface RouterAddHandlerParam {
-    filter: string;
+    filter?: string;
+    req_path?: string;
     index: number,
     default_action: RouterHandlerAction;
     routine?: string;

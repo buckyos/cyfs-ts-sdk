@@ -13,6 +13,7 @@ export const CYFS_TARGET_DEC_ID = "cyfs-target-dec-id";
 // select请求的filter内部的dec-id，和请求本身的dec-id区分
 export const CYFS_FILTER_DEC_ID = "cyfs-filter-dec-id";
 
+export const CYFS_REQ_PATH = "cyfs-req-path";
 export const CYFS_INNER_PATH = "cyfs-inner-path";
 
 export const CYFS_OWNER_ID = "cyfs-owner-id";
@@ -45,6 +46,7 @@ export const CYFS_REFERER_OBJECT = "cyfs-referer-object";
 export const CYFS_FILTER_FLAGS = "cyfs-filter-flags";
 export const CYFS_REVISION = "cyfs-revision";
 export const CYFS_ROOT = "cyfs-root";
+export const CYFS_ACCESS = "cyfs-access";
 
 export const CYFS_TIMEOUT = "cyfs-timeout";
 
