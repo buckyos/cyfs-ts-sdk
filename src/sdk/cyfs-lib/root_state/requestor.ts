@@ -1161,7 +1161,7 @@ export class GlobalStateAccessRequestor {
 
     private gen_url(inner_path: string): string {
         const str = inner_path.startsWith('/') ? inner_path.substring(1) : inner_path;
-        return this.service_url_.concat(str) + "?mode=object";
+        return this.service_url_.concat(str);
     }
 
     private encode_common_headers(
