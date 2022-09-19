@@ -3,9 +3,8 @@ import { BuckyResult, CYFS_API_LEVEL, CYFS_DEC_ID, CYFS_FLAGS, CYFS_NON_ACTION, 
 import { BaseRequestor, RequestorHelper } from "../base/base_requestor";
 import { HttpRequest } from "../base/http_request";
 import { CYFS_REQUEST_FLAG_DELETE_WITH_QUERY } from "../base/request";
-import { SelectFilter, SelectFilterUrlCodec, SelectOptionCodec, SelectResponse } from "../base/select_request";
 import { NONAction, NONObjectInfo, NONPutObjectResult } from "./def";
-import { NONDeleteObjectOutputRequest, NONDeleteObjectOutputResponse, NONGetObjectOutputRequest, NONGetObjectOutputResponse, NONOutputRequestCommon, NONPostObjectOutputRequest, NONPostObjectOutputResponse, NONPutObjectOutputRequest, NONPutObjectOutputResponse, NONSelectObjectOutputRequest, NONSelectObjectOutputResponse } from "./output_request";
+import { NONDeleteObjectOutputRequest, NONDeleteObjectOutputResponse, NONGetObjectOutputRequest, NONGetObjectOutputResponse, NONOutputRequestCommon, NONPostObjectOutputRequest, NONPostObjectOutputResponse, NONPutObjectOutputRequest, NONPutObjectOutputResponse} from "./output_request";
 
 export class NONRequestorHelper {
     static async decode_object_info(req: Response): Promise<BuckyResult<NONObjectInfo>> {
@@ -262,55 +261,6 @@ export class NONRequestor {
         } else {
             const e = await RequestorHelper.error_from_resp(resp);
             console.warn(`post object to non service error! object=${req.object.object_id},`, e);
-            return Err(e);
-        }
-    }
-
-    format_select_url(req_path: string | undefined, filter: SelectFilter): string {
-        let url = this.service_url;
-        if (req_path) {
-            url = url + req_path.replace(/^\/+|\/+$/g, "");
-        }
-
-        // filter以url params形式编码
-        url = SelectFilterUrlCodec.encode(url, filter);
-
-        return url;
-    }
-
-    encode_select_request(req: NONSelectObjectOutputRequest): HttpRequest {
-        const url = this.format_select_url(req.common.req_path, req.filter);
-        const http_req = new HttpRequest("Get", url);
-        this.encode_common_headers(NONAction.SelectObject, req.common, http_req);
-
-
-        SelectOptionCodec.encode(http_req, req.opt);
-
-        return http_req
-    }
-
-    async select_object(
-        req: NONSelectObjectOutputRequest,
-    ): Promise<BuckyResult<NONSelectObjectOutputResponse>> {
-        const http_req = this.encode_select_request(req);
-
-        const r = await this.requestor.request(http_req);
-        if (r.err) {
-            return r;
-        }
-        const resp = r.unwrap();
-
-        if (resp.status === 200) {
-            const r = await SelectResponse.from_response(resp);
-            if (r.err) {
-                return r;
-            }
-            return Ok({
-                objects: r.unwrap().objects,
-            })
-        } else {
-            const e = await RequestorHelper.error_from_resp(resp);
-            console.error("select object from non service failed:", e);
             return Err(e);
         }
     }

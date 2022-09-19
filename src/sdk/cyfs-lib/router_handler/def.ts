@@ -14,7 +14,6 @@ export enum RouterHandlerCategory {
 
     PostObject = 'post_object',
 
-    SelectObject = 'select_object',
     DeleteObject = 'delete_object',
 
     GetData = "get_data",

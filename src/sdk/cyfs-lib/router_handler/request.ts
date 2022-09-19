@@ -3,7 +3,7 @@ import { AclHandlerRequest, AclHandlerResponse } from '../acl/request';
 import { BuckyResultJsonCodec, JsonCodec } from '../base/codec';
 import { CryptoSignObjectInputRequest, CryptoSignObjectInputResponse, CryptoVerifyObjectInputRequest, CryptoVerifyObjectInputResponse } from '../crypto/input_request';
 import { NDNDeleteDataInputRequest, NDNDeleteDataInputResponse, NDNGetDataInputRequest, NDNGetDataInputResponse, NDNPutDataInputRequest, NDNPutDataInputResponse } from '../ndn/input_request';
-import { NONDeleteObjectInputRequest, NONDeleteObjectInputResponse, NONGetObjectInputRequest, NONGetObjectInputResponse, NONPostObjectInputRequest, NONPostObjectInputResponse, NONPutObjectInputRequest, NONPutObjectInputResponse, NONSelectObjectInputRequest, NONSelectObjectInputResponse } from '../non/input_request';
+import { NONDeleteObjectInputRequest, NONDeleteObjectInputResponse, NONGetObjectInputRequest, NONGetObjectInputResponse, NONPostObjectInputRequest, NONPostObjectInputResponse, NONPutObjectInputRequest, NONPutObjectInputResponse} from '../non/input_request';
 import { RouterHandlerAction } from './def';
 
 export interface RouterHandlerRequest<REQ, RESP> {
@@ -21,7 +21,6 @@ export interface RouterHandlerResponse<REQ, RESP> {
 export type RouterHandlerPutObjectRequest = RouterHandlerRequest<NONPutObjectInputRequest, NONPutObjectInputResponse>;
 export type RouterHandlerGetObjectRequest = RouterHandlerRequest<NONGetObjectInputRequest, NONGetObjectInputResponse>;
 export type RouterHandlerPostObjectRequest = RouterHandlerRequest<NONPostObjectInputRequest, NONPostObjectInputResponse>;
-export type RouterHandlerSelectObjectRequest = RouterHandlerRequest<NONSelectObjectInputRequest, NONSelectObjectInputResponse>;
 export type RouterHandlerDeleteObjectRequest = RouterHandlerRequest<NONDeleteObjectInputRequest, NONDeleteObjectInputResponse>;
 
 export type RouterHandlerPutDataRequest =
@@ -44,8 +43,6 @@ export type RouterHandlerGetObjectResult =
     RouterHandlerResponse<NONGetObjectInputRequest, NONGetObjectInputResponse>;
 export type RouterHandlerPostObjectResult =
     RouterHandlerResponse<NONPostObjectInputRequest, NONPostObjectInputResponse>;
-export type RouterHandlerSelectObjectResult =
-    RouterHandlerResponse<NONSelectObjectInputRequest, NONSelectObjectInputResponse>;
 export type RouterHandlerDeleteObjectResult =
     RouterHandlerResponse<NONDeleteObjectInputRequest, NONDeleteObjectInputResponse>;
 
@@ -67,7 +64,6 @@ export type RouterHandlerAclResult =
 export type RouterHandlerPutObjectRoutine = EventListenerAsyncRoutineT<RouterHandlerPutObjectRequest, RouterHandlerPutObjectResult>;
 export type RouterHandlerGetObjectRoutine = EventListenerAsyncRoutineT<RouterHandlerGetObjectRequest, RouterHandlerGetObjectResult>;
 export type RouterHandlerPostObjectRoutine = EventListenerAsyncRoutineT<RouterHandlerPostObjectRequest, RouterHandlerPostObjectResult>;
-export type RouterHandlerSelectObjectRoutine = EventListenerAsyncRoutineT<RouterHandlerSelectObjectRequest, RouterHandlerSelectObjectResult>;
 export type RouterHandlerDeleteObjectRoutine = EventListenerAsyncRoutineT<RouterHandlerDeleteObjectRequest, RouterHandlerDeleteObjectResult>;
 
 export type RouterHandlerPutDataRoutine = EventListenerAsyncRoutineT<RouterHandlerPutDataRequest, RouterHandlerPutDataResult>;
@@ -192,7 +188,6 @@ export class RouterHandlerResponseJsonCodec<REQ, RESP> extends JsonCodec<RouterH
 export type RouterHandlerPutObjectRequestJsonCodec = RouterHandlerRequestJsonCodec<NONPutObjectInputRequest, NONPutObjectInputResponse>;
 export type RouterHandlerGetObjectRequestJsonCodec = RouterHandlerRequestJsonCodec<NONGetObjectInputRequest, NONGetObjectInputResponse>;
 export type RouterHandlerPostObjectRequestJsonCodec = RouterHandlerRequestJsonCodec<NONPostObjectInputRequest, NONPostObjectInputResponse>;
-export type RouterHandlerSelectObjectRequestJsonCodec = RouterHandlerRequestJsonCodec<NONSelectObjectInputRequest, NONSelectObjectInputResponse>;
 export type RouterHandlerDeleteObjectRequestJsonCodec = RouterHandlerRequestJsonCodec<NONDeleteObjectInputRequest, NONDeleteObjectInputResponse>;
 
 export type RouterHandlerSignObjectRequestJsonCodec = RouterHandlerRequestJsonCodec<CryptoSignObjectInputRequest, CryptoSignObjectInputResponse>;

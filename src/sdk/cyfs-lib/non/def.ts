@@ -1,5 +1,5 @@
 import JSBI from "jsbi";
-import { AnyNamedObject, AnyNamedObjectDecoder, BuckyError, BuckyErrorCode, BuckyResult, Err, NamedObject, ObjectId, Ok, Option } from "../../cyfs-base";
+import { AnyNamedObject, AnyNamedObjectDecoder, BuckyError, BuckyErrorCode, BuckyResult, Err, ObjectId, Ok, Option } from "../../cyfs-base";
 import { JsonCodec, JsonCodecHelper } from "../base/codec";
 
 export enum NONDataType {
@@ -15,7 +15,6 @@ export enum NONAction {
     PutObject = "put-object",
     GetObject = "get-object",
     PostObject = "post-object",
-    SelectObject = "select-object",
     DeleteObject = "delete-object",
 }
 

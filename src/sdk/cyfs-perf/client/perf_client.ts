@@ -7,16 +7,13 @@ import {
     js_time_to_bucky_time,
     ObjectId,
     Ok,
-    PeopleId,
     Some
 } from "../../cyfs-base";
 
 import JSBI from "jsbi";
-import {NONAPILevel, NONObjectInfo, SelectOption, SharedCyfsStack} from "../../cyfs-lib";
-import {CoreObjectType, DecApp, DecAppId} from "../../cyfs-core";
+import {NONAPILevel, NONObjectInfo, SharedCyfsStack} from "../../cyfs-lib";
+import {CoreObjectType, DecAppId} from "../../cyfs-core";
 import {
-    DEC_ID,
-    PERF_DEC_ID_STR,
     PerfAccumulation,
     PerfAction,
     PerfIsolateEntity,
@@ -29,7 +26,7 @@ import {
 import {Perf, PerfDecoder} from "../base/perf";
 // import {sha256} from "js-sha256";
 import {md, util} from 'node-forge'
-import {isolates_exists, perf_acc, perf_action, perf_begin, perf_end, perf_record} from './stat';
+import {perf_acc, perf_action, perf_begin, perf_end, perf_record} from './stat';
 import {
     namespaces_perf_accumulation,
     namespaces_perf_action,
@@ -307,7 +304,7 @@ export class PerfClient {
         this.last_perf_time = now;
 
         console.log(`perf_reporter owner: ${this.owner}, device_id: ${this.device_id}`);
-
+        /*
         const option = new SelectOption();
         option.page_size = 32;
         option.page_index = 0;
@@ -389,7 +386,7 @@ export class PerfClient {
                 }
 
             }
-        }
+        }*/
 
        return Ok(null)
     }

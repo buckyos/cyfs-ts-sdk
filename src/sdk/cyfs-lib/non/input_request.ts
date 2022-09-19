@@ -2,7 +2,6 @@ import JSBI from "jsbi";
 import { BuckyResult, DeviceId, ObjectId, Ok } from "../../cyfs-base";
 import { JsonCodec, JsonCodecHelper } from "../base/codec";
 import { RequestProtocol } from "../base/protocol";
-import { SelectFilter, SelectFilterJsonCodec, SelectOption, SelectOptionJsonCodec, SelectResponseObjectInfo, SelectResponseObjectInfoJsonCodec } from "../base/select_request";
 import { NONAPILevel, NONObjectInfo, NONObjectInfoJsonCodec, NONPutObjectResult } from "./def";
 
 export interface NONInputRequestCommon {
@@ -346,97 +345,6 @@ export class NONPostObjectInputResponseJsonCodec extends JsonCodec<NONPostObject
 
         return Ok({
             object,
-        })
-    }
-}
-
-export interface NONSelectObjectInputRequest {
-    common: NONInputRequestCommon,
-
-    filter: SelectFilter,
-    opt?: SelectOption,
-}
-
-export class NONSelectObjectInputRequestJsonCodec extends JsonCodec<NONSelectObjectInputRequest> {
-    constructor() {super();}
-    encode_object(param: NONSelectObjectInputRequest): any {
-        let opt;
-        if (param.opt) {
-            opt = new SelectOptionJsonCodec().encode_object(param.opt);
-        }
-        return {
-            common: new NONInputRequestCommonJsonCodec().encode_object(param.common),
-            filter: new SelectFilterJsonCodec().encode_object(param.filter),
-            opt
-        };
-    }
-    decode_object(o: any): BuckyResult<NONSelectObjectInputRequest> {
-        let common;
-        {
-            const r = new NONInputRequestCommonJsonCodec().decode_object(o.common);
-            if (r.err) {
-                return r;
-            }
-            common = r.unwrap();
-        }
-
-        let filter;
-        {
-            const r = new SelectFilterJsonCodec().decode_object(o.filter);
-            if (r.err) {
-                return r;
-            }
-            filter = r.unwrap();
-        }
-
-        let opt;
-        {
-            if (o.opt) {
-                const r = new SelectOptionJsonCodec().decode_object(o.opt);
-                if (r.err) {
-                    return r;
-                }
-                opt = r.unwrap();
-            }
-        }
-
-        return Ok({
-            common,
-            filter,
-            opt
-        })
-    }
-}
-
-export interface NONSelectObjectInputResponse {
-    objects: SelectResponseObjectInfo[],
-}
-
-export class NONSelectObjectInputResponseJsonCodec extends JsonCodec<NONSelectObjectInputResponse> {
-    constructor() {super();}
-    encode_object(param: NONSelectObjectInputResponse): any {
-        const objects = [];
-        for (const object of param.objects) {
-            objects.push(new SelectResponseObjectInfoJsonCodec().encode_object(object))
-        }
-        return {
-            objects,
-        };
-    }
-    decode_object(o: any): BuckyResult<NONSelectObjectInputResponse> {
-        const objects = [];
-        {
-            for (const object of o.objects) {
-                const r = new SelectResponseObjectInfoJsonCodec().decode_object(object);
-                if (r.err) {
-                    return r;
-                }
-                objects.push(r.unwrap());
-            }
-        }
-
-        return Ok({
-            objects
         })
     }
 }

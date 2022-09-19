@@ -1,4 +1,4 @@
-import { None, Option, Some, BuckyResult, Ok, EventListenerAsyncRoutineT, ObjectId } from "../../cyfs-base";
+import { BuckyResult, Ok, EventListenerAsyncRoutineT, ObjectId } from "../../cyfs-base";
 import { RouterHandlerWSHandlerManager } from "./ws/handler";
 import { CyfsStackEventType } from "../stack/stack";
 import { RouterHandlerCategory, RouterHandlerAction, RouterHandlerChain } from "./def";
@@ -15,13 +15,11 @@ import {
     RouterHandlerRequestJsonCodec,
     RouterHandlerResponse,
     RouterHandlerResponseJsonCodec,
-    RouterHandlerSelectObjectRoutine,
     RouterHandlerSignObjectRoutine,
     RouterHandlerVerifyObjectRoutine
 } from './request';
 import { JsonCodec } from '../base/codec';
 import { NONDeleteObjectInputRequestJsonCodec, NONDeleteObjectInputResponseJsonCodec, NONGetObjectInputRequestJsonCodec, NONGetObjectInputResponseJsonCodec, NONPostObjectInputRequestJsonCodec, NONPostObjectInputResponseJsonCodec, NONPutObjectInputRequestJsonCodec, NONPutObjectInputResponseJsonCodec } from '../non/input_request';
-import { NONSelectObjectOutputRequestJsonCodec, NONSelectObjectOutputResponseJsonCodec } from '../non/output_request';
 import { CryptoSignObjectInputRequestJsonCodec, CryptoVerifyObjectInputRequestJsonCodec } from "../crypto/input_request";
 import { CryptoSignObjectOutputResponseJsonCodec, CryptoVerifyObjectOutputResponseJsonCodec } from "../crypto/output_request";
 import { AclHandlerRequestJsonCodec, AclHandlerResponseJsonCodec } from "../acl/request";
@@ -130,22 +128,6 @@ export class RouterHandlerManager {
         const resp_codec = new NONPostObjectInputResponseJsonCodec();
 
         return this.add_handler(chain, id, index, RouterHandlerCategory.PostObject, req_codec, resp_codec,
-            filter, req_path, default_action, routine);
-    }
-
-    add_select_object_handler(
-        chain: RouterHandlerChain,
-        id: string,
-        index: number,
-        filter: string|undefined,
-        req_path: string|undefined,
-        default_action: RouterHandlerAction,
-        routine?: RouterHandlerSelectObjectRoutine
-    ): Promise<BuckyResult<void>> {
-        const req_codec = new NONSelectObjectOutputRequestJsonCodec();
-        const resp_codec = new NONSelectObjectOutputResponseJsonCodec();
-
-        return this.add_handler(chain, id, index, RouterHandlerCategory.SelectObject, req_codec, resp_codec,
             filter, req_path, default_action, routine);
     }
 

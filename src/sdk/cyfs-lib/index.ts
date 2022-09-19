@@ -1,7 +1,6 @@
 export * from './base/base_requestor';
 export * from './base/http_request';
 export * from './base/protocol';
-export * from './base/select_request';
 export * from './base/codec';
 export * from './base/request';
 export * from './events/def';
