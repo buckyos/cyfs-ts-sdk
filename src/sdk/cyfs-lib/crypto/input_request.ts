@@ -1,6 +1,6 @@
 import { JsonCodec, VerifyObjectTypeJsonCodec } from "..";
-import { BuckyResult, DeviceId, ObjectId, Ok } from "../../cyfs-base";
-import { RequestProtocol } from "../base/protocol";
+import { BuckyResult, ObjectId, Ok } from "../../cyfs-base";
+import { RequestSourceInfo, SourceHelper } from "../access/source";
 import { NONObjectInfo, NONObjectInfoJsonCodec } from "../non/def";
 import { CryptoSignObjectOutputResponse, CryptoVerifyObjectOutputResponse, VerifyObjectType, VerifySignType } from "./output_request";
 
@@ -8,13 +8,7 @@ export interface CryptoInputRequestCommon {
     // 请求路径，可为空
     req_path?: string;
 
-    // 来源DEC
-    dec_id?: ObjectId;
-
-    // 来源设备和协议
-    source: DeviceId;
-    protocol: RequestProtocol;
-
+    source: RequestSourceInfo,
     // 用以默认行为
     target?: ObjectId;
 
@@ -25,9 +19,7 @@ export class CryptoInputRequestCommonJsonCodec extends JsonCodec<CryptoInputRequ
     encode_object(param: CryptoInputRequestCommon): any {
         return {
             req_path: param.req_path,
-            dec_id: param.dec_id?.toString(),
-            source: param.source.toString(),
-            protocol: param.protocol,
+            source: SourceHelper.source_to_obj(param.source),
             target: param.target?.toString(),
             flags: param.flags
         }
@@ -42,14 +34,7 @@ export class CryptoInputRequestCommonJsonCodec extends JsonCodec<CryptoInputRequ
             dec_id = r.unwrap();
         }
 
-        let source;
-        {
-            const r = DeviceId.from_base_58(o.source);
-            if (r.err) {
-                return r;
-            }
-            source = r.unwrap();
-        }
+        const source = SourceHelper.obj_to_source(o.source);
 
         let target;
         if (o.target) {
@@ -63,9 +48,7 @@ export class CryptoInputRequestCommonJsonCodec extends JsonCodec<CryptoInputRequ
 
         return Ok({
             req_path: o.req_path,
-            dec_id,
             source,
-            protocol: o.protocol as RequestProtocol,
             target,
             flags: o.flags
         })

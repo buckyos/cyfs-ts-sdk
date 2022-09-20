@@ -5,26 +5,6 @@ export const NON_STACK_WS_URL = "ws://127.0.0.1:1319";
 export const RUNTIME_NON_STACK_HTTP_URL = "http://127.0.0.1:1322";
 export const RUNTIME_NON_STACK_WS_URL = "ws://127.0.0.1:1323";
 
-export enum RequestProtocol {
-    Native = "native",
-    Meta = "meta",
-    Sync = "sync",
-    HttpBdt = "http-bdt",
-    HttpLocal = "http-local",
-    HttpLocalAuth = "http-local-auth",
-    DatagramBdt = "datagram-bdt",
-    // bdt层的chunk数据传输
-    DataBdt = "data-bdt",
-}
-
-export enum ObjectProtocol {
-    Local = "local",
-    Meta = "meta",
-    HttpBdt = "http_bdt",
-    Http = "http",
-    DatagramBdt = "datagram_bdt",
-}
-
 ////// ws的cmd定义
 // CMD=0表示是response，大于0表示request
 

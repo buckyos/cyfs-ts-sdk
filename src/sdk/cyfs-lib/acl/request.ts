@@ -1,6 +1,6 @@
 import { JsonCodec } from "..";
 import { BuckyResult, DeviceId, Ok } from "../../cyfs-base";
-import { RequestProtocol } from "../base/protocol";
+import { RequestProtocol } from "../access/source";
 import { NDNDataRefererObject, NDNDataRefererObjectJsonCodec } from "../ndn/def";
 import { NONSlimObjectInfo, NONSlimObjectInfoJsonCodec } from "../non/def";
 import { AclAccess, AclAction } from "./def";
@@ -16,7 +16,7 @@ export interface AclHandlerRequest {
     device_id: DeviceId,
 
     // 操作对象
-    object: NONSlimObjectInfo,
+    object?: NONSlimObjectInfo,
     inner_path?: string,
 
     // 所属dec
@@ -35,7 +35,7 @@ export class AclHandlerRequestJsonCodec extends JsonCodec<AclHandlerRequest> {
             protocol: param.protocol,
             action: param.action,
             device_id: param.device_id.to_base_58(),
-            object: new NONSlimObjectInfoJsonCodec().encode_object(param.object),
+            object: param.object?new NONSlimObjectInfoJsonCodec().encode_object(param.object):undefined,
             inner_path: param.inner_path,
             dec_id: param.dec_id,
             req_path: param.req_path,
@@ -55,11 +55,15 @@ export class AclHandlerRequestJsonCodec extends JsonCodec<AclHandlerRequest> {
         if (device_id.err) {
             return device_id;
         }
-
-        const object = new NONSlimObjectInfoJsonCodec().decode_object(o.object);
-        if (object.err) {
-            return object;
+        let object;
+        if (o.object) {
+            const r = new NONSlimObjectInfoJsonCodec().decode_object(o.object);
+            if (r.err) {
+                return r;
+            }
+            object = r.unwrap()
         }
+        
         
         let referer_object;
         if (o.referer_object) {
@@ -80,7 +84,7 @@ export class AclHandlerRequestJsonCodec extends JsonCodec<AclHandlerRequest> {
 
             device_id: device_id.unwrap(),
 
-            object: object.unwrap(),
+            object,
             inner_path: o.inner_path,
 
             dec_id: o.dec_id,

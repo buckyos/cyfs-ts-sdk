@@ -1,17 +1,12 @@
-import { DeviceId, ObjectId } from "../../cyfs-base"
-import { RequestProtocol } from "../base/protocol";
+import { ObjectId } from "../../cyfs-base"
+import { RequestSourceInfo } from "../access/source";
 import { UtilGetDeviceOutputResponse, UtilGetDeviceStaticInfoOutputResponse, UtilGetNetworkAccessInfoOutputResponse, UtilGetNOCInfoOutputResponse, UtilGetOODStatusOutputResponse, UtilGetSystemInfoOutputResponse, UtilGetVersionInfoOutputResponse, UtilGetZoneOutputResponse, UtilResolveOODOutputResponse } from "./output_request";
 
 export interface UtilInputRequestCommon {
     // 请求路径，可为空
     req_path?: string;
 
-    // 来源DEC
-    dec_id?: ObjectId;
-
-    // 来源设备和协议
-    source: DeviceId;
-    protocol: RequestProtocol;
+    source: RequestSourceInfo,
 
     // 用以默认行为
     target?: ObjectId;

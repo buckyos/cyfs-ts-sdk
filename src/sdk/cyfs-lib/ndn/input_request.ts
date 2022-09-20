@@ -1,7 +1,7 @@
 import JSBI from 'jsbi'
-import { BuckyResult, Ok, ObjectId, DeviceId, Attributes, HashValue, ChunkId, BuckyError, BuckyErrorCode, Err, FileId } from "../../cyfs-base"
+import { BuckyResult, Ok, ObjectId, Attributes, HashValue, ChunkId, BuckyError, BuckyErrorCode, Err, FileId } from "../../cyfs-base"
+import { RequestSourceInfo, SourceHelper } from '../access/source'
 import { JsonCodec, JsonCodecHelper } from "../base/codec"
-import { RequestProtocol } from "../base/protocol"
 import { FileDirRef } from '../trans/request'
 import { NDNAPILevel, NDNDataRefererObject, NDNDataRefererObjectJsonCodec, NDNPutDataResult } from "./def"
 
@@ -9,12 +9,7 @@ export interface NDNInputRequestCommon {
     // 请求路径，可为空
     req_path?: string,
 
-    // 来源DEC
-    dec_id?: ObjectId,
-
-    // 来源设备和协议
-    source: DeviceId,
-    protocol: RequestProtocol,
+    source: RequestSourceInfo,
 
     // api级别
     level: NDNAPILevel,
@@ -37,10 +32,7 @@ export class NDNInputRequestCommonJsonCodec extends JsonCodec<NDNInputRequestCom
         const o: any = {
             req_path: param.req_path,
 
-            dec_id: param.dec_id,
-
-            source: param.source,
-            protocol: param.protocol,
+            source: SourceHelper.source_to_obj(param.source),
 
             level: param.level,
 
@@ -78,14 +70,7 @@ export class NDNInputRequestCommonJsonCodec extends JsonCodec<NDNInputRequestCom
             }
         }
 
-        let source;
-        {
-            const r = DeviceId.from_base_58(o.source);
-            if (r.err) {
-                return r;
-            }
-            source = r.unwrap();
-        }
+        const source = SourceHelper.obj_to_source(o.source);
 
         let target;
         {
@@ -122,9 +107,7 @@ export class NDNInputRequestCommonJsonCodec extends JsonCodec<NDNInputRequestCom
 
         return Ok({
             req_path: o.req_path,
-            dec_id,
             source,
-            protocol: o.protocol as RequestProtocol,
             level: o.level as NDNAPILevel,
             referer_object,
             target,

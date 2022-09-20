@@ -1,19 +1,15 @@
 import JSBI from "jsbi";
-import { BuckyResult, DeviceId, ObjectId, Ok } from "../../cyfs-base";
+import { BuckyResult, ObjectId, Ok } from "../../cyfs-base";
+import { RequestSourceInfo, SourceHelper } from "../access/source";
 import { JsonCodec, JsonCodecHelper } from "../base/codec";
-import { RequestProtocol } from "../base/protocol";
 import { NONAPILevel, NONObjectInfo, NONObjectInfoJsonCodec, NONPutObjectResult } from "./def";
 
 export interface NONInputRequestCommon {
     // 请求路径，可为空
     req_path?: string,
 
-    // 来源DEC
-    dec_id?: ObjectId,
-
-    // 来源设备和协议
-    source: DeviceId,
-    protocol: RequestProtocol,
+    // the request source info in bundle
+    source: RequestSourceInfo,
 
     // api级别
     level: NONAPILevel,
@@ -40,14 +36,7 @@ export class NONInputRequestCommonJsonCodec extends JsonCodec<NONInputRequestCom
             
         }
 
-        let source;
-        {
-            const r = DeviceId.from_base_58(o.source);
-            if (r.err) {
-                return r;
-            }
-            source = r.unwrap();
-        }
+        const source = SourceHelper.obj_to_source(o.source);
 
         let target;
         {
@@ -64,12 +53,7 @@ export class NONInputRequestCommonJsonCodec extends JsonCodec<NONInputRequestCom
         return Ok( {
             req_path: o.req_path,
 
-            // 来源DEC
-            dec_id,
-
-            // 来源设备和协议
             source,
-            protocol: o.protocol as RequestProtocol,
 
             // api级别
             level: o.level as NONAPILevel,

@@ -24,6 +24,7 @@ export enum RouterHandlerCategory {
     VerifyObject = "verify_object",
 
     Acl = "acl",
+    Interest = "interest"
 }
 
 export enum RouterHandlerChain {
@@ -42,4 +43,6 @@ export enum RouterHandlerChain {
     Handler = "handler",
 
     Acl = "acl",
+
+    NDN = "ndn"
 }
