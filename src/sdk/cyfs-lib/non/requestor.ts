@@ -110,7 +110,7 @@ export class NONRequestor {
         http_req.insert_header(CYFS_API_LEVEL, com_req.level);
 
         if (com_req.req_path) {
-            http_req.insert_header(CYFS_REQ_PATH, com_req.req_path);
+            http_req.insert_header(CYFS_REQ_PATH, encodeURI(com_req.req_path));
         }
 
         if (com_req.target) {

@@ -1,4 +1,5 @@
 import { ObjectId } from "../../cyfs-base";
+import { DeviceZoneCategory } from "../access/source";
 
 export enum MetaAction {
     GlobalStateAddAccess = "global-state-add-access",
@@ -13,13 +14,6 @@ export enum MetaAction {
 export interface GlobalStatePathLinkItem {
     source: string,
     target: string,
-}
-
-export enum DeviceZoneCategory {
-    CurrentDevice = "current-device",
-    CurrentZone = "current-zone",
-    FriendZone = "friend-zone",
-    OtherZone = "other-zone",
 }
 
 export interface GlobalStatePathSpecifiedGroup {
