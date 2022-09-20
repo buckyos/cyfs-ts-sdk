@@ -3,7 +3,7 @@ const path = require("path");
 const child_process = require('child_process');
 const semver = require('semver')
 
-let channel = process.env.cyfs_sdk_channel || "nightly";
+let channel = process.argv[3] || "nightly";
 
 let type = process.argv[2];
 if (type !== "sdk" && type !== "tool") {
