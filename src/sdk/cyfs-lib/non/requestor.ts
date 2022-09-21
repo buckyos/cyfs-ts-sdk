@@ -191,6 +191,12 @@ export class NONRequestor {
         const http_req = new HttpRequest('Get', this.service_url);
         this.encode_common_headers(NONAction.GetObject, req.common, http_req);
 
+        http_req.insert_header(CYFS_OBJECT_ID, req.object_id.to_base_58());
+
+        if (req.inner_path) {
+            http_req.insert_header(CYFS_INNER_PATH, encodeURI(req.inner_path));
+        }
+
         return http_req
     }
 
@@ -269,8 +275,10 @@ export class NONRequestor {
         const http_req = new HttpRequest("Delete", this.service_url);
         this.encode_common_headers(NONAction.DeleteObject, req.common, http_req);
 
+        http_req.insert_header(CYFS_OBJECT_ID, req.object_id.to_base_58());
+
         if (req.inner_path) {
-            http_req.insert_header(CYFS_INNER_PATH, req.inner_path);
+            http_req.insert_header(CYFS_INNER_PATH, encodeURI(req.inner_path));
         }
 
         return http_req;

@@ -176,6 +176,10 @@ export class SharedCyfsStackParam {
             ws_url
         ));
     }
+
+    clone(): SharedCyfsStackParam {
+        return new SharedCyfsStackParam(this.service_url, this.event_type, this.dec_id, this.ws_url, this.requestor_config);
+    }
 }
 
 export class SharedCyfsStack {
@@ -207,7 +211,10 @@ export class SharedCyfsStack {
     private m_device_id?: DeviceId;
     private m_device?: Device;
 
+    private m_param: SharedCyfsStackParam;
+
     private constructor(param: SharedCyfsStackParam) {
+        this.m_param = param;
         const ws_url = param.ws_url;
 
         console.log('create SharedCyfsStack', JSON.stringify(param));
@@ -272,6 +279,18 @@ export class SharedCyfsStack {
 
     static open(param: SharedCyfsStackParam): SharedCyfsStack {
         return new SharedCyfsStack(param);
+    }
+
+    fork_with_new_dec(dec_id?: ObjectId): SharedCyfsStack {
+        const new_param = this.m_param.clone();
+        if (dec_id) {
+            new_param.dec_id = dec_id;
+        }
+
+        const stack = new SharedCyfsStack(new_param);
+        stack.m_device = this.m_device;
+        stack.m_device_id = this.m_device_id;
+        return stack;
     }
 
     public async wait_online(timeoutInMicroSeconds?: JSBI): Promise<BuckyResult<null>> {
