@@ -306,6 +306,10 @@ export class OpEnvRequestor {
             http_req.insert_header(CYFS_TARGET, com_req.target.to_string())
         }
 
+        if (com_req.target_dec_id) {
+            http_req.insert_header(CYFS_TARGET_DEC_ID, com_req.target_dec_id.to_string())
+        }
+
         http_req.insert_header(CYFS_FLAGS, com_req.flags.toString());
         http_req.insert_header(CYFS_OP_ENV_ACTION, action);
 
