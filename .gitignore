@@ -20,6 +20,8 @@ non_sdk.js
 !auto.js
 !auto_*.js
 !dist.js
+!publish.js
+!build.js
 !webpack_helper.js
 /node_modules/
 /out/

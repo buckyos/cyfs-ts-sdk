@@ -1,5 +1,6 @@
 import { BuckyError, BuckyErrorCode, BuckyResult, Err, ObjectId, Ok } from "../../cyfs-base"
 import { get_system_dec_app } from "../../cyfs-core";
+import { RequestSourceInfo } from "../access/source";
 import { GlobalStateCategory } from "../root_state/def"
 
 export class RequestGlobalStateRoot {
@@ -7,13 +8,13 @@ export class RequestGlobalStateRoot {
     dec_root?: ObjectId;
     private constructor() {}
     static GlobalRoot(value: ObjectId): RequestGlobalStateRoot {
-        let self = new RequestGlobalStateRoot()
+        const self = new RequestGlobalStateRoot()
         self.global_root = value;
         return self;
     }
 
     static DecRoot(value: ObjectId): RequestGlobalStateRoot {
-        let self = new RequestGlobalStateRoot()
+        const self = new RequestGlobalStateRoot()
         self.dec_root = value;
         return self;
     }
@@ -57,8 +58,8 @@ export class RequestGlobalStatePath {
         return this._req_path?this._req_path:"/"
     }
 
-    dec(): ObjectId {
-        return this.dec_id?this.dec_id:get_system_dec_app().object_id
+    dec(source: RequestSourceInfo): ObjectId {
+        return this.dec_id?this.dec_id:source.dec
     }
 
     /*
@@ -69,84 +70,74 @@ export class RequestGlobalStatePath {
     */
 
     static from_str(req_path: string): BuckyResult<RequestGlobalStatePath> {
-        let segs: string[] = []
+        const segs: string[] = []
         req_path.split("/").forEach((value) => {
             if (value) {
                 segs.push(value);
             }
         });
 
-        if (segs.length === 0) {
-            let msg = `invalid request path! ${req_path}`;
-            console.error(msg);
-            return Err(new BuckyError(BuckyErrorCode.InvalidParam, msg));
-        }
-
         let index = 0;
-        let seg = segs[index];
         let global_state_category;
-        if (seg === "root-state" || seg == "local-cache") {
-            index += 1;
-            global_state_category = seg as GlobalStateCategory;
+        if (index < segs.length) {
+            const seg = segs[index];
+            if (seg === "root-state" || seg == "local-cache") {
+                index += 1;
+                global_state_category = seg as GlobalStateCategory;
+            }
         }
 
-        if (index >= segs.length) {
-            let msg = `invalid request path! ${req_path}`;
-            console.error(msg);
-            return Err(new BuckyError(BuckyErrorCode.InvalidParam, msg));
-        }
-
-        seg = segs[index];
         let global_state_root;
-        if (seg === "current") {
-            index += 1;
-        } else if (seg.startsWith("root:")) {
-            index += 1;
-            let id = seg.substring(5);
-            let root = ObjectId.from_base_58(id);
-            if (root.err) {
-                let msg = `invalid req_path's root id: ${seg}, ${root.val}`;
-                console.error(msg);
-                return Err(new BuckyError(BuckyErrorCode.InvalidFormat, msg));
+
+        if (index < segs.length) {
+            const seg = segs[index];
+            if (seg === "current") {
+                index += 1;
+            } else if (seg.startsWith("root:")) {
+                index += 1;
+                const id = seg.substring(5);
+                const root = ObjectId.from_base_58(id);
+                if (root.err) {
+                    const msg = `invalid req_path's root id: ${seg}, ${root.val}`;
+                    console.error(msg);
+                    return Err(new BuckyError(BuckyErrorCode.InvalidFormat, msg));
+                }
+                global_state_root = RequestGlobalStateRoot.GlobalRoot(root.unwrap())
+            } else if (seg.startsWith("dec-root:")) {
+                index += 1;
+                const id = seg.substring(9);
+                const root = ObjectId.from_base_58(id);
+                if (root.err) {
+                    const msg = `invalid req_path's dec root id: ${seg}, ${root.val}`;
+                    console.error(msg);
+                    return Err(new BuckyError(BuckyErrorCode.InvalidFormat, msg));
+                }
+                global_state_root = RequestGlobalStateRoot.DecRoot(root.unwrap())
             }
-            global_state_root = RequestGlobalStateRoot.GlobalRoot(root.unwrap())
-        } else if (seg.startsWith("dec-root:")) {
-            index += 1;
-            let id = seg.substring(9);
-            let root = ObjectId.from_base_58(id);
-            if (root.err) {
-                let msg = `invalid req_path's dec root id: ${seg}, ${root.val}`;
-                console.error(msg);
-                return Err(new BuckyError(BuckyErrorCode.InvalidFormat, msg));
-            }
-            global_state_root = RequestGlobalStateRoot.DecRoot(root.unwrap())
         }
 
-        if (index >= segs.length) {
-            let msg = `invalid request path param! param=${req_path}`;
-            console.error(msg);
-            return Err(new BuckyError(BuckyErrorCode.InvalidParam, msg));
-        }
-
-        seg = segs[index];
         let dec_id;
-        if (seg !== "system") {
-            let r = ObjectId.from_base_58(seg);
-            if (r.err) {
-                let msg = `invalid req_path's dec root id: ${seg}, ${r.val}`;
-                console.error(msg);
-                return Err(new BuckyError(BuckyErrorCode.InvalidFormat, msg));
+
+        if (index < segs.length) {
+            const seg = segs[index];
+            if (seg.length >= 43 && seg.length <= 45) {
+                const r = ObjectId.from_base_58(seg);
+                if (r.err) {
+                    console.warn(`try decode req_path's dec root id: ${seg} fail: ${r.val}, use no dec_id`);
+                } else {
+                    index += 1;
+                    dec_id = r.unwrap();
+                }
             }
-            dec_id = r.unwrap();
         }
-        index += 1;
+
 
         let real_req_path;
         if (index < segs.length) {
             real_req_path = "/" + segs.slice(index).join("/") + "/"
         }
 
-        let self = new RequestGlobalStatePath(dec_id, real_req_path);
+        const self = new RequestGlobalStatePath(dec_id, real_req_path);
         self.global_state_category = global_state_category;
         self.global_state_root = global_state_root;
         return Ok(self)
@@ -157,7 +148,7 @@ export class RequestGlobalStatePath {
     }
 
     toString(): string {
-        let segs: string[] = [];
+        const segs: string[] = [];
         if (this.global_state_category) {
             segs.push(this.global_state_category)
         }
@@ -165,10 +156,8 @@ export class RequestGlobalStatePath {
             segs.push(this.global_state_root.toString())
         }
 
-        if (this.dec_id && !this.dec_id.eq(get_system_dec_app().object_id)) {
+        if (this.dec_id) {
             segs.push(this.dec_id.to_base_58())
-        } else {
-            segs.push("system")
         }
         
         if (this._req_path) {
