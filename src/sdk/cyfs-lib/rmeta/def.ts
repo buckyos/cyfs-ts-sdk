@@ -1,4 +1,4 @@
-import { ObjectId } from "../../cyfs-base";
+import { AccessString, ObjectId } from "../../cyfs-base";
 import { DeviceZoneCategory } from "../access/source";
 
 export enum MetaAction {
@@ -79,7 +79,7 @@ export class GlobalStatePathAccessItem {
     access: GlobalStatePathGroupAccess;
 
     private static fix_path(path: string): string {
-        let new_path = path.trim();
+        const new_path = path.trim();
         if (new_path.endsWith("/")) {
             return new_path
         } else {
@@ -92,8 +92,8 @@ export class GlobalStatePathAccessItem {
         this.access = access;
     }
 
-    public static new(path: string, access: number): GlobalStatePathAccessItem {
-        return new GlobalStatePathAccessItem(GlobalStatePathAccessItem.fix_path(path), GlobalStatePathGroupAccess.Default(access))
+    public static new(path: string, access: AccessString): GlobalStatePathAccessItem {
+        return new GlobalStatePathAccessItem(GlobalStatePathAccessItem.fix_path(path), GlobalStatePathGroupAccess.Default(access.value))
     }
 
     public static new_group(path: string, zone: ObjectId|undefined, zone_category: DeviceZoneCategory|undefined, dec: ObjectId|undefined, access: number): GlobalStatePathAccessItem {
