@@ -42,6 +42,7 @@ export const CYFS_SIGN_RET = "cyfs-sign-ret";
 
 export const CYFS_FLAGS = "cyfs-flags";
 export const CYFS_TARGET = "cyfs-target";
+export const CYFS_SOURCE = "cyfs-source";
 export const CYFS_REFERER_OBJECT = "cyfs-referer-object";
 export const CYFS_FILTER_FLAGS = "cyfs-filter-flags";
 export const CYFS_REVISION = "cyfs-revision";

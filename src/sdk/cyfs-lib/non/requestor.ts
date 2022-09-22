@@ -1,5 +1,5 @@
 import JSBI from "jsbi";
-import { BuckyResult, CYFS_API_LEVEL, CYFS_DEC_ID, CYFS_FLAGS, CYFS_NON_ACTION, CYFS_OBJECT_EXPIRES_TIME, CYFS_OBJECT_ID, CYFS_OBJECT_UPDATE_TIME, CYFS_RESULT, CYFS_TARGET, Err, ObjectId, Ok, Option, None, Some, Attributes, CYFS_ATTRIBUTES, CYFS_ACCESS, CYFS_REQ_PATH, CYFS_INNER_PATH } from "../../cyfs-base"
+import { BuckyResult, CYFS_API_LEVEL, CYFS_DEC_ID, CYFS_FLAGS, CYFS_NON_ACTION, CYFS_OBJECT_EXPIRES_TIME, CYFS_OBJECT_ID, CYFS_OBJECT_UPDATE_TIME, CYFS_RESULT, CYFS_TARGET, Err, ObjectId, Ok, Option, None, Some, Attributes, CYFS_ATTRIBUTES, CYFS_ACCESS, CYFS_REQ_PATH, CYFS_INNER_PATH, CYFS_SOURCE } from "../../cyfs-base"
 import { BaseRequestor, RequestorHelper } from "../base/base_requestor";
 import { HttpRequest } from "../base/http_request";
 import { CYFS_REQUEST_FLAG_DELETE_WITH_QUERY } from "../base/request";
@@ -115,6 +115,10 @@ export class NONRequestor {
 
         if (com_req.target) {
             http_req.insert_header(CYFS_TARGET, com_req.target.to_string());
+        }
+
+        if (com_req.source) {
+            http_req.insert_header(CYFS_SOURCE, com_req.source.to_string());
         }
 
         http_req.insert_header(CYFS_FLAGS, com_req.flags.toString());

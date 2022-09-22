@@ -28,6 +28,7 @@ export interface RootStateOutputRequestCommon {
     // 目标DEC，如果为None，默认等价于dec_id
     target_dec_id?: ObjectId,
 
+    // 目标设备
     target?: ObjectId,
 
     flags: number;
@@ -178,7 +179,7 @@ export class RootStateOpEnvAccessJsonCodec extends JsonCodec<RootStateOpEnvAcces
     }
 
     decode_object(o: any): BuckyResult<RootStateOpEnvAccess> {
-        let access = AccessPermissions.from_u8(o.access);
+        const access = AccessPermissions.from_u8(o.access);
         if (access.err) {
             return access;
         }
@@ -194,7 +195,7 @@ export class RootStateCreateOpEnvOutputRequestJsonCodec extends JsonCodec<RootSt
         super();
     }
     encode_object(param: RootStateCreateOpEnvOutputRequest): any {
-        let ret: any = {
+        const ret: any = {
             common: new RootStateOutputRequestCommonJsonCodec().encode_object(
                 param.common
             ),
@@ -217,7 +218,7 @@ export class RootStateCreateOpEnvOutputRequestJsonCodec extends JsonCodec<RootSt
         }
         let access;
         if (o.access) {
-            let access_r = new RootStateOpEnvAccessJsonCodec().decode_object(o.access);
+            const access_r = new RootStateOpEnvAccessJsonCodec().decode_object(o.access);
             if (access_r.err) {
                 return access_r;
             }
