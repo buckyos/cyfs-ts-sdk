@@ -30,8 +30,8 @@ export interface RequestSourceInfo {
     zone: DeviceZoneInfo,
     dec: ObjectId,
 
-    // is passed the acl verified
-    verified: boolean,
+    // is passed the acl verified for target-dec-id
+    verified?: ObjectId,
 }
 
 export class SourceHelper {
@@ -56,7 +56,7 @@ export class SourceHelper {
             protocol: source.protocol,
             zone: SourceHelper.zone_to_obj(source.zone),
             dec: source.dec.to_base_58(),
-            verified: source.verified
+            verified: source.verified?source.verified.to_base_58():undefined
         }
     }
 
@@ -65,7 +65,7 @@ export class SourceHelper {
             protocol: obj.protocol,
             zone: SourceHelper.obj_to_zone(obj.zone),
             dec: ObjectId.from_base_58(obj.dec).unwrap(),
-            verified: obj.verified
+            verified: obj.verified?ObjectId.from_base_58(obj.verified).unwrap():undefined
         }
     }
 }
