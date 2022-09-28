@@ -1,7 +1,7 @@
 import {HttpRequest} from "../base/http_request";
 import {BaseRequestor} from "../base/base_requestor";
 import {Err, Ok} from "ts-results";
-import {BuckyError, BuckyResult, CYFS_DEC_ID, CYFS_FLAGS, CYFS_TARGET, ObjectId} from "../../cyfs-base";
+import {BuckyError, BuckyResult, CYFS_API_LEVEL, CYFS_DEC_ID, CYFS_FLAGS, CYFS_REFERER_OBJECT, CYFS_REQ_PATH, CYFS_TARGET, ObjectId} from "../../cyfs-base";
 import {
     TransAddFileResponse,
     TransControlTaskRequest,
@@ -35,8 +35,23 @@ export class TransRequestor {
             http_req.insert_header(CYFS_DEC_ID, this.dec_id.to_string());
         }
 
+        if (com_req.req_path) {
+            http_req.insert_header(CYFS_REQ_PATH, encodeURI(com_req.req_path))
+        }
+
+        http_req.insert_header(CYFS_API_LEVEL, com_req.level);
+
         if (com_req.target) {
             http_req.insert_header(CYFS_TARGET, com_req.target.to_string());
+        }
+
+        if (com_req.referer_object.length > 0) {
+            const headers = [];
+            for (const object of com_req.referer_object) {
+                headers.push(object.toString());
+            }
+            // 根据RFC 2616，在一个header里传多个值，应该用逗号分隔。没有找到rust http-types里对header进行编码的实际代码
+            http_req.insert_header(CYFS_REFERER_OBJECT, headers.join(","))
         }
 
         http_req.insert_header(CYFS_FLAGS, com_req.flags.toString());
@@ -48,7 +63,9 @@ export class TransRequestor {
         console.log('will get context', url, req);
         const httpReq = new HttpRequest('POST', url);
         this.encode_common_headers(req.common, httpReq);
-        httpReq.set_json_body(req);
+        httpReq.set_json_body({
+            context_name: req.context_name
+        });
 
         const ret = await this.requestor.request(httpReq);
         if (ret.err) {
@@ -72,7 +89,6 @@ export class TransRequestor {
         const httpReq = new HttpRequest('POST', url);
         this.encode_common_headers(req.common, httpReq);
         httpReq.set_json_body( {
-            common: req.common,
             context: req.context.to_hex().unwrap()
         });
 
@@ -97,7 +113,17 @@ export class TransRequestor {
         console.log('will start trans task', url, req);
         const httpReq = new HttpRequest('POST', url);
         this.encode_common_headers(req.common, httpReq);
-        httpReq.set_json_body(req);
+        httpReq.set_json_body({
+            object_id: req.object_id,
+
+            // 保存到的本地目录or文件
+            local_path: req.local_path,
+
+            // 源设备(hub)列表
+            device_list: req.device_list,
+            context_id: req.context_id,
+            auto_start: req.auto_start,
+        });
 
         const ret = await this.requestor.request(httpReq);
         if (ret.err) {
@@ -161,7 +187,10 @@ export class TransRequestor {
 
         const httpReq = new HttpRequest('PUT', url);
         this.encode_common_headers(req.common, httpReq);
-        httpReq.set_json_body(req);
+        httpReq.set_json_body({
+            task_id: req.task_id,
+            action: req.action
+        });
 
         const ret = await this.requestor.request(httpReq);
         if (ret.err) {
@@ -185,7 +214,9 @@ export class TransRequestor {
 
         const httpReq = new HttpRequest('POST', url);
         this.encode_common_headers(req.common, httpReq);
-        httpReq.set_json_body(req);
+        httpReq.set_json_body({
+            task_id: req.task_id
+        });
 
         const ret = await this.requestor.request(httpReq);
         if (ret.err) {
@@ -208,7 +239,15 @@ export class TransRequestor {
 
         const httpReq = new HttpRequest('POST', url);
         this.encode_common_headers(req.common, httpReq);
-        httpReq.set_json_body(req);
+        const body: any = {
+            context_id: req.context_id,
+            task_status: req.task_status,
+        }
+        if (req.range) {
+            body.offset = req.range[0]
+            body.length = req.range[1]
+        }
+        httpReq.set_json_body(body);
 
         const ret = await this.requestor.request(httpReq);
         if (ret.err) {
@@ -232,7 +271,21 @@ export class TransRequestor {
         this.encode_common_headers(req.common, httpReq);
 
         console.info(`publish_file: ${JSON.stringify(req)}`);
-        httpReq.set_json_body(req);
+        httpReq.set_json_body({
+            // 文件所属者
+            owner: req.owner,
+
+            // 文件的本地路径
+            local_path: req.local_path,
+
+            // chunk大小
+            chunk_size: req.chunk_size,
+
+            file_id: req.file_id,
+
+            // 关联的dirs
+            dirs: req.dirs
+        });
 
         const ret = await this.requestor.request(httpReq);
         if (ret.err) {

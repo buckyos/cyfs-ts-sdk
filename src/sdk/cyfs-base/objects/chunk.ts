@@ -9,8 +9,8 @@ import { Vec } from "../base/vec";
 import { HashValue } from "../crypto/hash";
 import { Area } from "./area";
 import { PublicKey, MNPublicKey } from "../crypto/public_key";
-import bs58 from 'bs58';
 import JSBI from 'jsbi';
+import * as basex from "../base/basex";
 
 export const CHUNK_ID_LEN = 32;
 
@@ -175,26 +175,24 @@ export class ChunkId implements RawEncode {
     }
 
     to_base_58(): string {
-        return bs58.encode(this.as_slice());
+        return basex.to_base_58(this.as_slice())
+    }
+
+    to_base_36(): string {
+        return basex.to_base_36(this.as_slice());
+    }
+
+    static from_str(s: string): BuckyResult<ChunkId> {
+        return this.from_base_58(s)
     }
 
     static from_base_58(s: string): BuckyResult<ChunkId> {
-        let buf;
-        try {
-            buf = bs58.decode(s);
-        } catch (error) {
-            const msg = `convert base58 str to chunk id failed, str=${s}, ${error.message}`;
-            console.error(`${msg}`);
-            return new Err(new BuckyError(BuckyErrorCode.InvalidFormat, msg));
+        const r = basex.from_base_58(s, CHUNK_ID_LEN);
+        if (r.err) {
+            return r;
         }
 
-        if (buf.length !== CHUNK_ID_LEN) {
-            const msg = `convert base58 str to object id failed, len unmatch! str=${s}`;
-            console.error(`${msg}`);
-            return new Err(new BuckyError(BuckyErrorCode.InvalidFormat, msg));
-        }
-
-        return Ok(new ChunkId(buf));
+        return Ok(new ChunkId(r.unwrap()));
     }
 
     static default(): ChunkId {

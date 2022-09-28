@@ -5,7 +5,7 @@ import { } from "../base/buffer";
 import { HashValue } from "../crypto/hash";
 import { Area } from "./area";
 import { ObjectTypeCode, obj_type_code_raw_check } from "./object_type_info";
-import bs58 from 'bs58';
+import * as basex from "../base/basex";
 
 
 export enum ObjectCategory {
@@ -147,11 +147,13 @@ export class ObjectId implements RawEncode, Compareable<ObjectId> {
     }
 
     to_base_58(): string {
-        if (this.m_base58 == null) {
-            this.m_base58 = bs58.encode(this.as_slice());
-        }
-        return this.m_base58!;
+        return basex.to_base_58(this.as_slice());
     }
+
+    to_base_36(): string {
+        return basex.to_base_36(this.as_slice());
+    }
+    
 
     hashCode(): symbol {
         return Symbol.for(this.to_base_58());
@@ -166,26 +168,30 @@ export class ObjectId implements RawEncode, Compareable<ObjectId> {
     }
 
     static from_str(s: string): BuckyResult<ObjectId> {
-        return this.from_base_58(s);
+        const r = basex.from_base_str(s);
+        if (r.err) {
+            return r;
+        }
+
+        return Ok(new ObjectId(r.unwrap()))
     }
 
     static from_base_58(s: string): BuckyResult<ObjectId> {
-        let buf;
-        try {
-            buf = bs58.decode(s);
-        } catch (error) {
-            const msg = `convert base58 str to object id failed, str=${s}, ${error.message}`;
-            console.error(`${msg}`);
-            return new Err(new BuckyError(BuckyErrorCode.InvalidFormat, msg));
+        const r = basex.from_base_58(s);
+        if (r.err) {
+            return r;
         }
 
-        if (buf.length !== OBJECT_ID_LEN) {
-            const msg = `convert base58 str to object id failed, len unmatch! str=${s}`;
-            console.error(`${msg}`);
-            return new Err(new BuckyError(BuckyErrorCode.InvalidFormat, msg));
+        return Ok(new ObjectId(r.unwrap()))
+    }
+
+    static from_base_36(s: string): BuckyResult<ObjectId> {
+        const r = basex.from_base_36(s);
+        if (r.err) {
+            return r;
         }
 
-        return Ok(new ObjectId(new Uint8Array(buf)));
+        return Ok(new ObjectId(r.unwrap()))
     }
 
     to_hash_value(): HashValue {

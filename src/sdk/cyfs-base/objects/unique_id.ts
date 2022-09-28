@@ -1,8 +1,8 @@
 import { Err, Ok, BuckyResult, BuckyError, BuckyErrorCode } from "../base/results";
 import { RawEncode, RawDecode } from "../base/raw_encode";
 import { } from "../base/buffer";
-import bs58 from 'bs58';
 import {md, util} from 'node-forge';
+import * as basex from '../base/basex';
 
 export const UNIQUE_VALUE_LEN = 16;
 
@@ -44,7 +44,7 @@ export class UniqueId implements RawEncode {
     }
 
     static create_with_hash(buf: Uint8Array): UniqueId {
-        let sha256 = md.sha256.create();
+        const sha256 = md.sha256.create();
         sha256.update(util.binary.raw.encode(buf));
 
         return UniqueId.copy_from_slice(util.binary.raw.decode(sha256.digest().bytes()));
@@ -61,26 +61,16 @@ export class UniqueId implements RawEncode {
     }
 
     to_base_58(): string {
-        return bs58.encode(this.as_slice());
+        return basex.to_base_58(this.as_slice());
     }
 
     static from_base_58(s: string): BuckyResult<UniqueId> {
-        let buf;
-        try {
-            buf = bs58.decode(s);
-        } catch (error) {
-            const msg = `convert base58 str to unique id failed, str=${s}, ${error.message}`;
-            console.error(`${msg}`);
-            return new Err(new BuckyError(BuckyErrorCode.InvalidFormat, msg));
+        const r = basex.from_base_58(s, UNIQUE_VALUE_LEN);
+        if (r.err) {
+            return r;
         }
 
-        if (buf.length !== UNIQUE_VALUE_LEN) {
-            const msg = `convert base58 str to unique id failed, len unmatch! str=${s}`;
-            console.error(`${msg}`);
-            return new Err(new BuckyError(BuckyErrorCode.InvalidFormat, msg));
-        }
-
-        return Ok(new UniqueId(new Uint8Array(buf)));
+        return Ok(new UniqueId(r.unwrap()));
     }
 }
 

@@ -6,13 +6,11 @@ import { Vec, VecDecoder } from "../base/vec";
 import { AesKey } from "./aes_key";
 import { ObjectLink, ObjectLinkDecoder } from "../objects/object_id";
 import { base_trace } from "../base/log";
-import bs58 from 'bs58';
 import JSBI from 'jsbi';
 
 import {asn1, pki, util} from 'node-forge'
 import { HashValue } from "./hash";
-
-//const bs58 = require('../base/bs58');
+import { BASE36, BASE58 } from "../base/basex";
 
 /*************************************
  * 签名
@@ -104,7 +102,11 @@ export abstract class SignDataBase implements RawEncode {
     }
 
     to_base_58(): string {
-        return bs58.encode(this.as_slice());
+        return BASE58.encode(this.as_slice());
+    }
+
+    to_base_36(): string {
+        return BASE36.encode(this.as_slice());
     }
 }
 
@@ -421,7 +423,7 @@ export class Signature implements RawEncode {
                 buf = buf.offset(1);
 
                 // data
-                let slice = data.as_slice();
+                const slice = data.as_slice();
                 buf.set(slice);
                 buf = buf.offset(slice.length);
             },
@@ -431,7 +433,7 @@ export class Signature implements RawEncode {
                 buf = buf.offset(1);
 
                 // data
-                let slice = data.as_slice();
+                const slice = data.as_slice();
                 buf.set(slice);
                 buf = buf.offset(slice.length);
             }
@@ -445,17 +447,17 @@ export class SignatureDecoder implements RawDecode<Signature>{
     raw_decode(buf: Uint8Array): BuckyResult<[Signature, Uint8Array]> {
         // [. . . . . . ]  [. .]
         // ref_index     | real_type_code
-        let sign_source_with_ref_index = buf[0];
+        const sign_source_with_ref_index = buf[0];
         buf = buf.offset(1);
 
-        let sign_source_code = sign_source_with_ref_index << 6 >> 6;
-        let sign_key_index = sign_source_with_ref_index >> 2;
+        const sign_source_code = sign_source_with_ref_index << 6 >> 6;
+        const sign_key_index = sign_source_with_ref_index >> 2;
 
         // sign_source
         let sign_source;
         switch (sign_source_code) {
             case SIGNATURE_REF_INDEX: {
-                let ref_index = buf[0];
+                const ref_index = buf[0];
                 buf = buf.offset(1);
                 sign_source = new SignatureRefIndex(ref_index);
                 break;
@@ -499,7 +501,7 @@ export class SignatureDecoder implements RawDecode<Signature>{
         }
 
         // key_type: u8
-        let key_type = buf[0];
+        const key_type = buf[0];
         buf = buf.offset(1);
 
 
@@ -585,8 +587,8 @@ export abstract class PublicKeyBase implements RawEncode {
     abstract raw_encode(buf: Uint8Array): BuckyResult<Uint8Array>;
 
     toJSON(): string {
-        let ret = this.to_vec().unwrap();
-        return bs58.encode(ret);
+        const ret = this.to_vec().unwrap();
+        return BASE58.encode(ret);
     }
 
     to_vec(): BuckyResult<Uint8Array> {
@@ -604,7 +606,7 @@ export abstract class PublicKeyBase implements RawEncode {
     }
 
     toHex(): BuckyResult<string> {
-        let ret = this.to_vec();
+        const ret = this.to_vec();
         if (ret.err) {
             return ret;
         }
@@ -649,8 +651,8 @@ export class RSAPublicKey extends PublicKeyBase implements PublicKeyMatcher {
     }
 
     raw_encode(buf: Uint8Array): BuckyResult<Uint8Array> {
-        let len = this.raw_measure().unwrap();
-        let r = new BuckyNumber('u8', this.code).raw_encode(buf);
+        const len = this.raw_measure().unwrap();
+        const r = new BuckyNumber('u8', this.code).raw_encode(buf);
         if (r.err) {
             return r;
         }
@@ -670,17 +672,17 @@ export class RSAPublicKey extends PublicKeyBase implements PublicKeyMatcher {
     }
 
     encrypt(data: Uint8Array, output: Uint8Array): BuckyResult<number> {
-        let msg = this.public_key.encrypt(util.binary.raw.encode(data), 'RSAES-PKCS1-V1_5');
+        const msg = this.public_key.encrypt(util.binary.raw.encode(data), 'RSAES-PKCS1-V1_5');
         return Ok(util.binary.raw.decode(msg, output) as unknown as number)
     }
 
     gen_aeskey_and_encrypt(): BuckyResult<[AesKey, Uint8Array]> {
         // 先产生一个临时的aes_key
-        let key = AesKey.random();
+        const key = AesKey.random();
 
         // 使用publicKey对aes_key加密
-        let output = new Uint8Array(this.key_size());
-        let r = this.encrypt(key.as_slice(), output);
+        const output = new Uint8Array(this.key_size());
+        const r = this.encrypt(key.as_slice(), output);
         if (r.err) {
             return r
         }
@@ -689,12 +691,12 @@ export class RSAPublicKey extends PublicKeyBase implements PublicKeyMatcher {
     }
 
     verify(data: Uint8Array, sign: Signature): boolean {
-        let sign_time = new BuckyNumber('u64', sign.sign_time);
-        let final_data = new Uint8Array(data.length + sign_time.raw_measure().unwrap());
+        const sign_time = new BuckyNumber('u64', sign.sign_time);
+        const final_data = new Uint8Array(data.length + sign_time.raw_measure().unwrap());
         final_data.set(data);
         sign_time.raw_encode(final_data.offset(data.length)).unwrap();
 
-        let hash = HashValue.hash_data(final_data);
+        const hash = HashValue.hash_data(final_data);
         return this.public_key.verify(util.binary.raw.encode(hash.as_slice()), util.binary.raw.encode(sign.sign.as_slice()), 'RSASSA-PKCS1-V1_5')
     }
 
@@ -739,8 +741,8 @@ export class Secp256k1PublicKey extends PublicKeyBase implements PublicKeyMatche
     }
 
     raw_encode(buf: Uint8Array): BuckyResult<Uint8Array> {
-        let len = this.raw_measure().unwrap();
-        let r = new BuckyNumber('u8', this.code).raw_encode(buf);
+        const len = this.raw_measure().unwrap();
+        const r = new BuckyNumber('u8', this.code).raw_encode(buf);
         if (r.err) {
             return r;
         }
@@ -872,7 +874,7 @@ export class MNPublicKeyDecoder implements RawDecode<MNPublicKey>{
 
     raw_decode(buf: Uint8Array): BuckyResult<[MNPublicKey, Uint8Array]> {
         // decode threshold
-        let threshold = buf[0];
+        const threshold = buf[0];
         buf = buf.offset(1);
 
         // decode keys

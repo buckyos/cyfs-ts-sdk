@@ -2,8 +2,8 @@ import { Ok, BuckyResult, Err, BuckyError, BuckyErrorCode } from "../base/result
 import { RawEncode, RawDecode } from "../base/raw_encode";
 import { } from "../base/buffer";
 
-import bs58 from 'bs58';
 import {md, util} from 'node-forge'
+import { BASE36, BASE58 } from "../base/basex";
 
 export const HASH_VALUE_LEN = 32;
 
@@ -54,7 +54,11 @@ export class HashValue implements RawEncode {
     }
 
     to_base_58(): string {
-        return bs58.encode(this.as_slice());
+        return BASE58.encode(this.as_slice());
+    }
+
+    to_base_36(): string {
+        return BASE36.encode(this.as_slice());
     }
 
     to_hex_string(): string {

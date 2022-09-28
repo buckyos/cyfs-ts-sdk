@@ -34,7 +34,6 @@
     "@ethersproject/hash": "=5.6",
     "@ethersproject/properties": "^5.2.0",
     "@ethersproject/strings": "^5.2.0",
-    "@types/bs58": "^4.0.1",
     "@types/fs-extra": "^9.0.11",
     "@types/google-protobuf": "^3.15.6",
     "@types/inquirer": "^8.2.1",
@@ -66,9 +65,9 @@
     "webpack-shebang-plugin": "^1.1.4"
   },
   "dependencies": {
+    "base-x": "^4.0.0",
     "bip39": "^3.0.4",
     "bitset": "^5.1.1",
-    "bs58": "^4.0.1",
     "buffer": "^6.0.3",
     "colors-console": "^1.0.3",
     "commander": "^8.1.0",

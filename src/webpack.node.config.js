@@ -45,7 +45,7 @@ module.exports = {
         'fs-extra': 'commonjs2 fs-extra',
         'websocket': 'commonjs2 websocket',
         'node-fetch': 'commonjs2 node-fetch',
-        'bs58': 'commonjs2 bs58',
+        'base-x': 'commonjs2 base-x',
         'hex-to-array-buffer': 'commonjs2 hex-to-array-buffer',
         'ts-results': 'commonjs2 ts-results',
         "node-localstorage": 'commonjs2 node-localstorage',

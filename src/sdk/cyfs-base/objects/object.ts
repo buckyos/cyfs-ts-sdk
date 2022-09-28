@@ -1426,6 +1426,10 @@ export class NamedObjectId<
         return this.object_id.to_base_58();
     }
 
+    to_base_36(): string {
+        return this.object_id.to_base_36();
+    }
+
     raw_measure(ctx?: any): BuckyResult<number> {
         return this.object_id.raw_measure();
     }

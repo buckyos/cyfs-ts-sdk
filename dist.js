@@ -88,7 +88,7 @@ const tool_only_deps = [
 ]
 
 const sdk_only_deps = [
-    "bs58",
+    "base-x",
     "google-protobuf",
     "hex-to-array-buffer",
     "node-localstorage",
