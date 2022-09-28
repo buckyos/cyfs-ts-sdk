@@ -11,7 +11,6 @@ export interface MetaOutputRequestCommon {
     // 用以默认行为
     target?: ObjectId,
     
-
     flags: number,
 }
 

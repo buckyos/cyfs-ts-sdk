@@ -1,4 +1,4 @@
-import { AccessString, ObjectId } from "../../cyfs-base";
+import { AccessPermission, AccessString, ObjectId } from "../../cyfs-base";
 import { DeviceZoneCategory } from "../access/source";
 
 export enum MetaAction {
@@ -26,21 +26,22 @@ export interface GlobalStatePathSpecifiedGroup {
     // specified dec, None for any dec
     dec?: ObjectId,
 
+    // single group permission, treat as u8, init with AccessPermissions or AccessPermission
     access: number,
 }
 
 export class GlobalStatePathGroupAccess {
-    default?: number;
+    default?: number;   // full permission, treat as u32, init with AccessString
     specified?: GlobalStatePathSpecifiedGroup;
     private constructor() {}
     static Specified(group: GlobalStatePathSpecifiedGroup): GlobalStatePathGroupAccess {
-        let self = new GlobalStatePathGroupAccess();
+        const self = new GlobalStatePathGroupAccess();
         self.specified = group;
         return self;
     }
 
     static Default(access: number): GlobalStatePathGroupAccess {
-        let self = new GlobalStatePathGroupAccess();
+        const self = new GlobalStatePathGroupAccess();
         self.default = access;
         return self;
     }
