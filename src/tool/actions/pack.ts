@@ -99,12 +99,12 @@ function pack_targets(config: CyfsToolConfig, ctx: CyfsToolContext) {
     }
 }
 
-function pack_service(config: CyfsToolConfig, ctx: CyfsToolContext) {
+function pack_service(config: CyfsToolConfig, ctx: CyfsToolContext): boolean {
     console.log("begin pack service");
     // 如果没配置service.pack, 认为用户没有service
     if (ctx.app!.service.pack.length === 0) {
         console.log("no node service folder, skip.")
-        return;
+        return false;
     }
     
     copy_dependent_config(ctx);
@@ -112,14 +112,15 @@ function pack_service(config: CyfsToolConfig, ctx: CyfsToolContext) {
     copy_pack_files(ctx);
     copy_service_config(ctx);
     pack_targets(config, ctx);
+    return true;
 }
 
-function pack_web(config: CyfsToolConfig, ctx: CyfsToolContext) {
+function pack_web(config: CyfsToolConfig, ctx: CyfsToolContext): boolean {
     console.log("begin pack web folder");
     // 如果没有配置ctx.web.folder, 就不build
     if (ctx.app!.web.folder === undefined || ctx.app!.web.folder === "") {
         console.log("no web folder in config, skip");
-        return;
+        return false;
     }
     // 在web folder下生成一个web_config.json文件，当前就只是存储entry首页的信息
     // 直接把web文件夹拷贝到${dist}/web
@@ -129,6 +130,7 @@ function pack_web(config: CyfsToolConfig, ctx: CyfsToolContext) {
         web_config.entry = ctx.app!.web.entry
     }
     fs.writeJSONSync(path.join(ctx.get_app_dist_path(), "web", "web_config.json"), web_config);
+    return true;
 }
 
 export function makeCommand(config: CyfsToolConfig) {
@@ -147,9 +149,10 @@ export function makeCommand(config: CyfsToolConfig) {
         });
 }
 
-export function pack(config: CyfsToolConfig, ctx: CyfsToolContext) {
+export function pack(config: CyfsToolConfig, ctx: CyfsToolContext): boolean {
     fs.emptyDirSync(ctx.app!.dist)
 
-    pack_web(config, ctx);
-    pack_service(config, ctx);
+    const web = pack_web(config, ctx);
+    const service = pack_service(config, ctx);
+    return web || service;
 }

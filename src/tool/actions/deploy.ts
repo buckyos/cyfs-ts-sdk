@@ -1,14 +1,10 @@
 import {
     ObjectId,
     SharedCyfsStack,
-    None,
-    AppExtInfoDecoder,
     AnyNamedObjectDecoder,
     AnyNamedObject,
     NONAPILevel, NONObjectInfo,
     create_meta_client,
-    Some,
-    Option,
 } from '../../sdk';
 
 import { check_channel, create_stack, CyfsToolConfig, exec, get_owner_path, load_desc_and_sec, stop_runtime, upload_app_objs } from "../lib/util";
@@ -213,7 +209,11 @@ async function deploy_dec_app(options:DeployOptions, config: CyfsToolConfig, ctx
         return;
     }
     check_config(ctx)
-    pack(config, ctx);
+    const is_pack = pack(config, ctx);
+    if (!is_pack) {
+        console.warn(`service and web are not packed! check project config file. not deploy this version`);
+        return;
+    }
     upload_dec_app(config, ctx);
     update_app_obj(ctx);
     update_app_version(options, ctx);

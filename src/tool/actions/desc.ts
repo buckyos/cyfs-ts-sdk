@@ -21,22 +21,11 @@ export function makeCommand(config: CyfsToolConfig) {
         })
 }
 
-function get_network(): cyfs.CyfsChainNetwork {
-    switch (cyfs.get_channel()) {
-        case cyfs.CyfsChannel.Nightly:
-            return cyfs.CyfsChainNetwork.Test
-        case cyfs.CyfsChannel.Beta:
-            return cyfs.CyfsChainNetwork.Test
-        case cyfs.CyfsChannel.Stable:
-            return cyfs.CyfsChainNetwork.Main
-    }
-}
-
 function create_people(mnemonic: string): [cyfs.People, cyfs.PrivateKey] {
     let gen = cyfs.CyfsSeedKeyBip.from_mnemonic(mnemonic).unwrap();
 
     let bip_path = cyfs.CyfsChainBipPath.new_people(
-        get_network(),
+        cyfs.get_current_network(),
         0);
     let pk = gen.sub_key(bip_path).unwrap();
 
