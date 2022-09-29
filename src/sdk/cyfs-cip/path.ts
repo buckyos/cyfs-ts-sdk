@@ -1,4 +1,4 @@
-import { ObjectTypeCode } from "../cyfs-base";
+import { CyfsChannel, get_channel, ObjectTypeCode } from "../cyfs-base";
 
 const HARDENED_OFFSET = 0x80000000;
 export const CYFS_BIP = 809;
@@ -6,11 +6,23 @@ export const CYFS_BIP = 809;
 export enum CyfsChainNetwork {
     Main = 0,
     Test = 1,
+    Beta = 2
 }
 
 export enum CyfsChainObjectType {
     Device,
     People,
+}
+
+export function get_current_network(): CyfsChainNetwork {
+    switch (get_channel()) {
+        case CyfsChannel.Nightly:
+            return CyfsChainNetwork.Test
+        case CyfsChannel.Beta:
+            return CyfsChainNetwork.Beta
+        case CyfsChannel.Stable:
+            return CyfsChainNetwork.Main
+    }
 }
 
 export class CyfsChainBipPath {

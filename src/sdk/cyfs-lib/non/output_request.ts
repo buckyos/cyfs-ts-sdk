@@ -7,9 +7,6 @@ export interface NONOutputRequestCommon {
     // 请求路径，可为空
     req_path?: string,
 
-    // 来源Device，默认为空表示当前协议栈的device-id，在zone内转发请求时候会使用此字段
-    source?: DeviceId,
-
     // 来源DEC
     dec_id?: ObjectId,
 
