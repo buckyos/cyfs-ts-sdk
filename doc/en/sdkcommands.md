@@ -1,12 +1,21 @@
 ## Create identity files for experience development
-Create the identity files corresponding to the people, ood, runtime needed for experience development, so that you can activate OOD and Runtime without using the wallet.
+Crea## Create identity file or activate CYFS stack
+You can create the identity file for the desired people, ood, runtime, and activate OOD and Runtime without using the wallet, or you can activate the local OOD or runtime.
 
-**_Note_**: The pople created with this command cannot be imported back into the wallet, if you want to switch back to the official wallet management afterwards, you need to reactivate it and all data will be lost!
+After creating or activating a stack with this command, the generated helper will be printed on the console. Use this helper to restore the identity in the Cyber Chat to continue managing the identity and activated devices with the Cyber Chat
 
-```cyfs desc -s <save_path>``
--s, --save specify the path where the identity file is saved, if you don't specify this parameter, it will be saved in the default path `%USERHOME%/.cyfs_profile`
+```cyfs desc [-m <mnemonic>] [-s <save_path>] [-a] [--only-ood] [--only-runtime]```
+- With -m <mnemonic>, you can enter a pre-existing mnemonic. Words are separated by spaces and the entire mnemonic string is enclosed in double quotes. The same mnemonic will generate the same people identity
+-a, enter activation mode. No identity file is generated, only the local OOD or runtime is activated, which requires the OOD or runtime process to be started.
+-s, --save Enter generate mode when the -a argument is not specified. Generate the identity file locally. This parameter specifies the path where the identity file is saved. If this parameter is not specified, it will be saved in the default path `%USERHOME%/.cyfs_profile`
+--only-ood 
+  > - in activation mode, activates only the local OOD, not if ood is already activated, or if `-m` is entered for a helper corresponding to a person who already has ood bound
+  > - In generation mode, only people and ood identities are generated. If thepeople identity already exists in the chain, no identity is generated
+--only-runtime 
+  > - In activate mode, activate only local runtime. recommended to be used with the `-m` argument. Activating runtime without `-m` will report an error. If the runtime is already activated, it will not be activated again
+  > - In spawn mode, only the runtime identity is generated. Recommended to be used with the `-m` argument. Without `-m` the generated runtime identity is meaningless
 
-After running this command, the correct identity files for people, ood, and runtime are automatically generated and the people and ood are automatically uploaded. The identity file is stored in the specified save path with the following name
+Running the command in generate mode automatically generates the correct people, ood, and runtime identity files, and automatically uploads the people and ood. The identity file is stored in the specified save path with the following name
 - people: people.desc, people.sec
 - ood: ood.desc, ood.sec, copy these two files to ood's /cyfs/etc/desc directory and rename them to device.desc, device.sec to activate ood
 - runtime: runtime.desc, runtime.sec. Copy these two files to the %APPDATA%/cyfs/etc/desc directory of runtime and rename them to device.desc, device.sec to activate Runtime

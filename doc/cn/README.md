@@ -4,12 +4,12 @@
 
 ### 安装SDK
 > - nightly通道 `npm i --save cyfs-sdk-nightly`
-> - beta通道 敬请期待
+> - beta通道 `npm i --save cyfs-sdk`
 > - stable通道 敬请期待
 
 ### 安装CYFS TOOL
 > - nightly通道 `npm i -g cyfs-tool-nightly`
-> - beta通道 敬请期待
+> - beta通道 `npm i -g cyfs-tool`
 > - stable通道 敬请期待
 
 CYFS TOOL的部分命令需要本机安装CYFS浏览器，或本机是OOD才可使用
@@ -28,4 +28,6 @@ CYFS TOOL切换通道安装时，需要在安装命令后加`--force`
 
 ## DecApp开发相关
 
-### [Demo中check_cmd逻辑解说](DecApp/check_cmd%E8%A7%A3%E8%AF%B4.md)
+### [Demo中check_cmd逻辑](DecApp/check_cmd%E8%A7%A3%E8%AF%B4.md)
+
+### [App的ACL配置文件](DecApp/ACL%E9%85%8D%E7%BD%AE%E6%96%87%E4%BB%B6.md)

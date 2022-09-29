@@ -1,12 +1,20 @@
-## 创建体验开发用的身份文件
-创建体验开发需要的people, ood, runtime对应的身份文件，可以不使用钱包即可激活OOD和Runtime
+## 创建身份文件或激活CYFS协议栈
+可以创建需要的people, ood, runtime对应的身份文件，不使用钱包即可激活OOD和Runtime。也可以激活本机的OOD或runtime
 
-**_注意_**：用此命令创建的people无法导入回钱包，如果之后想切换回正式的钱包管理，需要重新激活并会丢失所有数据！
+用此命令创建或激活协议栈后，会在控制台打印生成的助记词。使用此助记词在超送中恢复身份，即可继续用超送管理身份和已激活的设备
 
-```cyfs desc -s <save_path>```
-- -s, --save 指定身份文件保存的路径，不指定该参数，会保存在默认路径`%USERHOME%/.cyfs_profile`
+```cyfs desc [-m <mnemonic>] [-s <save_path>] [-a] [--only-ood] [--only-runtime]```
+- -m <mnemonic>，可以输入一个已存在的助记词。词之间用空格分隔，并用双引号包括整个助记词串。同样的助记词会生成同样的people身份
+- -a，进入激活模式。不生成身份文件，只激活本地的OOD或runtime。需要OOD或runtime进程已经启动。
+- -s, --save 当不指定-a参数时，进入生成模式。在本地生成身份文件。该参数指定身份文件保存的路径，不指定该参数，会保存在默认路径`%USERHOME%/.cyfs_profile`
+- --only-ood 
+  > - 在激活模式下，只激活本地的OOD。如果ood已被激活，或者`-m`输入的助记词对应的people已经绑定了ood，则不激活
+  > - 在生成模式下，只生成people和ood身份。如果people身份已在链上存在，则不生成身份信息
+- --only-runtime 
+  > - 在激活模式下，只激活本地的runtime。推荐和`-m`参数一起使用。不加`-m`激活runtime会报错。如果runtime已被激活，则不会再次激活
+  > - 在生成模式下，只生成runtime身份。推荐和`-m`参数一起使用。不加`-m`生成的runtime身份无意义
 
-运行该命令后，会自动生成正确的people, ood, runtime身份文件，并且自动将people和ood上链。身份文件以如下的名字存储在指定的保存路径中
+使用生成模式运行该命令后，会自动生成正确的people, ood, runtime身份文件，并且自动将people和ood上链。身份文件以如下的名字存储在指定的保存路径中
 - people: people.desc, people.sec
 - ood: ood.desc, ood.sec，将这两个文件复制到ood的/cyfs/etc/desc目录下，并改名为device.desc, device.sec，即可激活OOD
 - runtime: runtime.desc, runtime.sec.将这两个文件复制到runtime的%APPDATA%/cyfs/etc/desc目录下，并改名为device.desc, device.sec，即可激活Runtime
