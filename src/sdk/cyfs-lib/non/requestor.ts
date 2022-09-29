@@ -117,10 +117,6 @@ export class NONRequestor {
             http_req.insert_header(CYFS_TARGET, com_req.target.to_string());
         }
 
-        if (com_req.source) {
-            http_req.insert_header(CYFS_SOURCE, com_req.source.to_string());
-        }
-
         http_req.insert_header(CYFS_FLAGS, com_req.flags.toString());
     }
 
