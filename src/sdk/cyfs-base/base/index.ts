@@ -23,3 +23,4 @@ export * from './world_area';
 export * from './path_util';
 export * from './event';
 export * from './access_string';
+export * from './paths';
