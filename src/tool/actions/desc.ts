@@ -22,14 +22,14 @@ export function makeCommand(config: CyfsToolConfig) {
 }
 
 function create_people(mnemonic: string): [cyfs.People, cyfs.PrivateKey] {
-    let gen = cyfs.CyfsSeedKeyBip.from_mnemonic(mnemonic).unwrap();
+    const gen = cyfs.CyfsSeedKeyBip.from_mnemonic(mnemonic).unwrap();
 
-    let bip_path = cyfs.CyfsChainBipPath.new_people(
+    const bip_path = cyfs.CyfsChainBipPath.new_people(
         cyfs.get_current_network(),
         0);
-    let pk = gen.sub_key(bip_path).unwrap();
+    const pk = gen.sub_key(bip_path).unwrap();
 
-    let people = cyfs.People.create(cyfs.None, [], pk.public(), cyfs.Some(cyfs.Area.from_str("00:00:0000:00").unwrap()), undefined, undefined, (build) => {
+    const people = cyfs.People.create(cyfs.None, [], pk.public(), cyfs.Some(cyfs.Area.from_str("00:00:0000:00").unwrap()), undefined, undefined, (build) => {
         build.no_create_time()
     });
 
@@ -40,7 +40,7 @@ function create_people(mnemonic: string): [cyfs.People, cyfs.PrivateKey] {
 function _hashCode(strValue: string): number {
     let hash = 0;
     for (let i = 0; i < strValue.length; i++) {
-        let chr = strValue.charCodeAt(i);
+        const chr = strValue.charCodeAt(i);
         hash = ((hash << 5) - hash) + chr;
         hash |= 0; // Convert to 32bit integer
     }
@@ -56,8 +56,8 @@ function _calcIndex(uniqueStr: string): number {
     // 示例用了cyfs sdk依赖的node-forge库进行计算
     const md5 = cyfs.forge.md.md5.create();
     md5.update(uniqueStr, 'utf8')
-    let result = cyfs.forge.util.binary.hex.encode(md5.digest())
-    let index = _hashCode(result);
+    const result = cyfs.forge.util.binary.hex.encode(md5.digest())
+    const index = _hashCode(result);
 
     console.log(`calc init index: uniqueStr=${uniqueStr}, index=${index}`);
 
@@ -65,19 +65,19 @@ function _calcIndex(uniqueStr: string): number {
 }
 
 function create_device(owner: cyfs.ObjectId, pk: cyfs.PrivateKey, category: cyfs.DeviceCategory, unique_id: string, nick_name?: string): [cyfs.Device, cyfs.PrivateKey, number] {
-    let gen = cyfs.CyfsSeedKeyBip.from_private_key(pk.to_vec().unwrap().toHex(), owner.to_base_58());
-    let address_index = _calcIndex(unique_id)
-    let path = cyfs.CyfsChainBipPath.new_device(
+    const gen = cyfs.CyfsSeedKeyBip.from_private_key(pk.to_vec().unwrap().toHex(), owner.to_base_58());
+    const address_index = _calcIndex(unique_id)
+    const path = cyfs.CyfsChainBipPath.new_device(
         0,
-        get_network(),
+        cyfs.get_current_network(),
         address_index
     );
-    let private_key = gen.unwrap().sub_key(path).unwrap();
+    const private_key = gen.unwrap().sub_key(path).unwrap();
 
-    let unique = cyfs.UniqueId.copy_from_slice(cyfs.forge.util.binary.raw.decode(unique_id));
+    const unique = cyfs.UniqueId.copy_from_slice(cyfs.forge.util.binary.raw.decode(unique_id));
     console.info(`unique_str: ${unique_id} -> ${unique.as_slice().toHex()}`);
 
-    let device = cyfs.Device.create(
+    const device = cyfs.Device.create(
         cyfs.Some(owner),
         unique,
         [],
@@ -110,7 +110,7 @@ function check_desc_file(desc_path: string) {
 
 async function check_people_on_meta(meta_client: cyfs.MetaClient, people_id: cyfs.ObjectId): Promise<[cyfs.People | undefined, boolean]> {
     let people: cyfs.People | undefined = undefined, is_bind = false
-    let people_r = await meta_client.getDesc(people_id);
+    const people_r = await meta_client.getDesc(people_id);
     if (people_r.ok) {
         people_r.unwrap().match({
             People: (p) => {
@@ -138,11 +138,11 @@ async function run(option: any) {
 
     console.log('generateing people keypair...')
     let [people, people_pk] = create_people(mnemonic);
-    let people_id = people.calculate_id()
+    const people_id = people.calculate_id()
     console.log('generated people id:', people_id.to_base_58())
 
-    let meta_client = cyfs.create_meta_client();
-    let [meta_people, is_bind] = await check_people_on_meta(meta_client, people_id)
+    const meta_client = cyfs.create_meta_client();
+    const [meta_people, is_bind] = await check_people_on_meta(meta_client, people_id)
 
     if (meta_people) {
         people = meta_people
@@ -157,13 +157,13 @@ async function run(option: any) {
                 }
                 // 激活OOD
                 try {
-                    let info = await (await fetch('http://127.0.0.1:1320/check')).json()
+                    const info = await (await fetch('http://127.0.0.1:1320/check')).json()
                     if (!info.activation) {
                         console.log(`will bind local ood for ${people_id.to_base_58()}`)
 
-                        let unique_id = info.device_info.mac_address;
+                        const unique_id = info.device_info.mac_address;
                         console.log('generateing ood keypair...')
-                        let [ood, ood_pk, address_index] = create_device(people_id, people_pk, cyfs.DeviceCategory.OOD, unique_id);
+                        const [ood, ood_pk, address_index] = create_device(people_id, people_pk, cyfs.DeviceCategory.OOD, unique_id);
 
                         // 设置People的ood_list
                         people.body_expect().content().ood_list.push(ood.device_id());
@@ -177,7 +177,7 @@ async function run(option: any) {
                         cyfs.sign_and_push_named_object(people_pk, people, new cyfs.SignatureRefIndex(255)).unwrap();
 
                         console.log(`activate local ood...`)
-                        let response = await fetch("http://127.0.0.1:1320/bind", {
+                        const response = await fetch("http://127.0.0.1:1320/bind", {
                             method: 'POST',
                             headers: {
                                 Accept: 'application/json', 'Content-Type': 'application/json',
@@ -185,7 +185,7 @@ async function run(option: any) {
                                 owner: people.to_hex().unwrap(), desc: ood.to_hex().unwrap(), sec: ood_pk.to_vec().unwrap().toHex(), index: address_index
                             }),
                         });
-                        let ret = await response.json()
+                        const ret = await response.json()
                         if (ret.result !== 0) {
                             console.error(`bind ood failed, ret`, ret.result)
                             return;
@@ -215,20 +215,20 @@ async function run(option: any) {
         if (!option.onlyOod) {
             // 激活runtime
             try {
-                let info = await (await fetch('http://127.0.0.1:1321/check')).json()
+                const info = await (await fetch('http://127.0.0.1:1321/check')).json()
                 if (!info.activation) {
                     console.log(`will bind local runtime for ${people_id.to_base_58()}`)
 
-                    let nickName = "runtime"
-                    let unique_id = `${info.device_info.mac_address}-${nickName}`;
+                    const nickName = "runtime"
+                    const unique_id = `${info.device_info.mac_address}-${nickName}`;
                     console.log('generateing ood keypair...')
-                    let [runtime, runtime_pk, index] = create_device(people_id, people_pk, cyfs.DeviceCategory.PC, unique_id, nickName);
+                    const [runtime, runtime_pk, index] = create_device(people_id, people_pk, cyfs.DeviceCategory.PC, unique_id, nickName);
                     // People给runtime签名
                     cyfs.sign_and_push_named_object(people_pk, runtime, new cyfs.SignatureRefIndex(254)).unwrap();
 
                     // TODO: 如何调用激活接口？
                     console.log(`activate local runtime...`)
-                    let response = await fetch("http://127.0.0.1:1321/bind", {
+                    const response = await fetch("http://127.0.0.1:1321/bind", {
                         method: 'POST',
                         headers: {
                             Accept: 'application/json', 'Content-Type': 'application/json',
@@ -236,7 +236,7 @@ async function run(option: any) {
                             owner: people.to_hex().unwrap(), desc: runtime.to_hex().unwrap(), sec: runtime_pk.to_vec().unwrap().toHex(), index
                         }),
                     });
-                    let ret = await response.json()
+                    const ret = await response.json()
                     if (ret.result !== 0) {
                         console.error(`bind runtime failed, ret`, ret.result)
                         return;
@@ -261,8 +261,8 @@ async function run(option: any) {
         let people_desc_path, people_sec_path, ood_desc_path, ood_sec_path, runtime_desc_path, runtime_sec_path
         if (!option.onlyRuntime) {
             // 检查链上有没有People信息，是否已绑定
-            let meta_client = cyfs.create_meta_client();
-            let [meta_people, is_bind] = await check_people_on_meta(meta_client, people_id)
+            const meta_client = cyfs.create_meta_client();
+            const [meta_people, is_bind] = await check_people_on_meta(meta_client, people_id)
 
             if (meta_people) {
                 people = meta_people
@@ -270,8 +270,8 @@ async function run(option: any) {
 
             if (!is_bind) {
                 console.log('generateing ood keypair...')
-                let unique_id = Date.now().toString();
-                let [ood, ood_pk] = create_device(people_id, people_pk, cyfs.DeviceCategory.OOD, unique_id);
+                const unique_id = Date.now().toString();
+                const [ood, ood_pk] = create_device(people_id, people_pk, cyfs.DeviceCategory.OOD, unique_id);
 
                 // 设置People的ood_list
                 people.body_expect().content().ood_list.push(ood.device_id());
@@ -319,8 +319,8 @@ async function run(option: any) {
 
         if (!option.onlyOod) {
             console.log('generateing runtime keypair...')
-            let unique_id = Date.now().toString();
-            let [runtime, runtime_pk] = create_device(people_id, people_pk, cyfs.DeviceCategory.PC, unique_id);
+            const unique_id = Date.now().toString();
+            const [runtime, runtime_pk] = create_device(people_id, people_pk, cyfs.DeviceCategory.PC, unique_id);
 
             // People给runtime签名
             cyfs.sign_and_push_named_object(people_pk, runtime, new cyfs.SignatureRefIndex(254)).unwrap();
