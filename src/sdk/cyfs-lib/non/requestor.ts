@@ -4,7 +4,7 @@ import { BaseRequestor, RequestorHelper } from "../base/base_requestor";
 import { HttpRequest } from "../base/http_request";
 import { CYFS_REQUEST_FLAG_DELETE_WITH_QUERY } from "../base/request";
 import { NONAction, NONObjectInfo, NONPutObjectResult } from "./def";
-import { NONDeleteObjectOutputRequest, NONDeleteObjectOutputResponse, NONGetObjectOutputRequest, NONGetObjectOutputResponse, NONOutputRequestCommon, NONPostObjectOutputRequest, NONPostObjectOutputResponse, NONPutObjectOutputRequest, NONPutObjectOutputResponse} from "./output_request";
+import { NONDeleteObjectOutputRequest, NONDeleteObjectOutputResponse, NONGetObjectOutputRequest, NONGetObjectOutputResponse, NONOutputRequestCommon, NONPostObjectOutputRequest, NONPostObjectOutputResponse, NONPutObjectOutputRequest, NONPutObjectOutputResponse, NONUpdateObjectMetaOutputRequest} from "./output_request";
 
 export class NONRequestorHelper {
     static async decode_object_info(req: Response): Promise<BuckyResult<NONObjectInfo>> {
@@ -57,7 +57,9 @@ export class NONRequestorHelper {
 
     static encode_object_info(req: HttpRequest, info: NONObjectInfo): void {
         req.insert_header(CYFS_OBJECT_ID, info.object_id.to_string());
-        req.set_body(info.object_raw);
+        if (info.object_raw.length > 0) {
+            req.set_body(info.object_raw);
+        }
     }
 
     static async decode_get_object_response(
@@ -123,10 +125,13 @@ export class NONRequestor {
     encode_put_object_request(req: NONPutObjectOutputRequest): HttpRequest {
         // #[cfg(debug_assertions)]
         {
-            const r = req.object.verify();
-            if (r.err) {
-                console.error(`pub object id unmatch: id=${req.object.object_id}, object=${req.object.object_raw.toHex()}`)
+            if (!req.object.is_empty()) {
+                const r = req.object.verify();
+                if (r.err) {
+                    console.error(`pub object id unmatch: id=${req.object.object_id}, object=${req.object.object_raw.toHex()}`)
+                }
             }
+            
         }
 
         const http_req = new HttpRequest('Put', this.service_url);
@@ -317,5 +322,17 @@ export class NONRequestor {
             console.error(`delete object from non service failed: id=${req.object_id},`, e);
             return Err(e);
         }
+    }
+
+    async update_object_meta(
+        req: NONUpdateObjectMetaOutputRequest,
+    ): Promise<BuckyResult<NONPutObjectOutputResponse>> {
+        const put_req = {
+            common: req.common,
+            object: new NONObjectInfo(req.object_id, new Uint8Array()),
+            access: req.access,
+        };
+
+        return await this.put_object(put_req)
     }
 }

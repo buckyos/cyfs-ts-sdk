@@ -26,8 +26,6 @@ import {
 } from "../../cyfs-base";
 import JSBI from "jsbi";
 
-export const CYFS_SYSTEM_APP_CMD_VIRTUAL_PATH = "/.cyfs/api/system/app/cmd";
-
 export class AppCmdDescTypeInfo extends DescTypeInfo {
     obj_type(): number {
         return CoreObjectType.AppCmd;

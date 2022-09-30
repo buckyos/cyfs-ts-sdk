@@ -118,6 +118,10 @@ export class NONObjectInfo {
         }
         return this.verify()
     }
+
+    is_empty(): boolean {
+        return this.object_raw.length === 0
+    }
 }
 
 export class NONObjectInfoJsonCodec extends JsonCodec<NONObjectInfo> {

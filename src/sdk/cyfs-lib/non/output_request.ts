@@ -159,6 +159,13 @@ export class NONPutObjectOutputResponseJsonCodec extends JsonCodec<NONPutObjectO
     }
 }
 
+export interface NONUpdateObjectMetaOutputRequest {
+    common: NONOutputRequestCommon,
+
+    object_id: ObjectId,
+    access?: AccessString,
+}
+
 export interface NONGetObjectOutputRequest {
     common: NONOutputRequestCommon,
 
