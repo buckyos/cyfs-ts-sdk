@@ -15,7 +15,7 @@ export function makeCommand(config: CyfsToolConfig): Command {
         .description("upload any file or dir to ood/runtime")
         .argument("<path>", "upload path, file or dir")
         .requiredOption("-e, --endpoint <endpoint>", "cyfs endpoint, ood or runtime", "runtime")
-        .requiredOption("-t, --target <target>", "cyfs upload target, ood or runtime", "runtime")
+        .requiredOption("-t, --target <target>", "cyfs upload target, ood or runtime", "ood")
         .option("-s, --save <save_path>", "save obj to path")
         .action(async (path, options) => {
             console.log("options:", options)
