@@ -1,5 +1,5 @@
-import { ChainStatus, CoinTokenId, CreateDescTx, MetaPrice, MetaTxBody, Receipt, ReceiptDecoder, SavedMetaObject, SPVTx, TransBalanceTx, TransBalanceTxItem, Tx, TxCaller, TxId, TxIdDecoder, UpdateDescTx, ViewBalanceMethod, ViewBlockEnum, ViewDescMethod, ViewMethodEnum, ViewNameMethod, ViewNameResultItem, ViewRawMethod, ViewRequest, ViewResponse, ViewResponseDecoder } from "../cyfs-base-meta";
-import { BuckyError, BuckyErrorCode, BuckyNumber, BuckyNumberDecoder, BuckyResult, Err, ObjectId, Ok, to_hex, Option, OptionDecoder, OptionWrapper, StandardObject, PrivateKey, None, to_buf, SignatureRefIndex, get_channel, CyfsChannel } from "../cyfs-base";
+import { BidNameTx, ChainStatus, CoinTokenId, CreateDescTx, MetaPrice, MetaTxBody, Receipt, ReceiptDecoder, SavedMetaObject, SPVTx, TransBalanceTx, TransBalanceTxItem, Tx, TxCaller, TxId, TxIdDecoder, UpdateDescTx, UpdateNameTx, ViewBalanceMethod, ViewBlockEnum, ViewDescMethod, ViewMethodEnum, ViewNameMethod, ViewNameResultItem, ViewRawMethod, ViewRequest, ViewResponse, ViewResponseDecoder } from "../cyfs-base-meta";
+import { BuckyError, BuckyErrorCode, BuckyNumber, BuckyNumberDecoder, BuckyResult, Err, ObjectId, Ok, to_hex, Option, OptionDecoder, OptionWrapper, StandardObject, PrivateKey, None, to_buf, SignatureRefIndex, get_channel, CyfsChannel, NameInfo } from "../cyfs-base";
 import { HttpRequest, HttpRequestor } from "../cyfs-lib";
 import { BuckyResultDecoder } from "../cyfs-base/base/bucky_result";
 import { BuckyTuple, BuckyTupleDecoder } from "../cyfs-base/base/bucky_tuple";
@@ -817,6 +817,14 @@ export class MetaClient {
 
     async withdraw_from_file(caller: StandardObject, file_id: ObjectId, v: JSBI, coin_id: number, secret: PrivateKey): Promise<BuckyResult<TxId>> {
         return await this.put_tx(caller, secret, MetaTxBody.WithdrawToOwner(new WithdrawToOwner(CoinTokenId.Coin(coin_id), file_id, v)));
+    }
+
+    async bid_name(caller: StandardObject, owner: Option<ObjectId>, name: string, price: JSBI, rent: number,secret: PrivateKey): Promise<BuckyResult<TxId>>{
+        return await this.put_tx(caller, secret, MetaTxBody.BidName(new BidNameTx(name, owner, price, rent)));
+    }
+
+    async update_name(caller: &StandardObject, name: string, info: NameInfo, write_flag: number, secret: &PrivateKey): Promise<BuckyResult<TxId>> {
+        return await this.put_tx(caller, secret, MetaTxBody.UpdateName(new UpdateNameTx(name, info, write_flag)));
     }
 
     async create_contract(caller: StandardObject, secret: PrivateKey, value: JSBI, init_data: Uint8Array, gas_price: number, max_fee: number): Promise<BuckyResult<TxId>> {

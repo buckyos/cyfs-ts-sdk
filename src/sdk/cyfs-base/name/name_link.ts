@@ -91,6 +91,20 @@ export class NameLink implements RawEncode{
 
         return Ok(buf);
     }
+
+    toString(): string {
+        return this.match({
+            ObjectLink:(obj_link)=>{
+                return `link to obj ${obj_link}`;
+            },
+            OtherNameLink: (other_name_link)=>{
+                return `link to name ${other_name_link}`;
+            },
+            IPLink: (ip_link: IpAddr)=>{
+                return `link to ip ${ip_link}`;
+            }
+        })!
+    }
 }
 
 export class NameLinkDecoder implements RawDecode<NameLink>{
