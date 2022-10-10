@@ -39,9 +39,9 @@ export function makeCommand(config: CyfsToolConfig) {
         .option("-e, --endpoint <endpoint>", "meta endpoint")
         .addCommand(new Command("receipt")
             .argument("<txid>", "transcation id to see receipt")
-            .action(async (options) => {
+            .action(async (txid, options) => {
                 const meta_client = cyfs.create_meta_client(options.endpoint)
-                await get_receipt(meta_client, options.txid)
+                await get_receipt(meta_client, txid)
             })
         )
         .addCommand(new Command("putdesc")
@@ -52,9 +52,9 @@ export function makeCommand(config: CyfsToolConfig) {
             .requiredOption("-c, --caller <caller file path>", "desc and sec file path, exclude extension", path.join(config.user_profile_dir, 'people'))
             .option("-v, --value <balance>", "balance from caller to desc account", JSBI.BigInt, JSBI.BigInt(0))
             .option("-u, --update", "force update body time on put")
-            .action(async (options) => {
+            .action(async (price, coinid, options) => {
                 const meta_client = cyfs.create_meta_client(options.endpoint) 
-                await put_desc(meta_client, options);
+                await put_desc(meta_client, price, coinid, options);
             })
         )
         .addCommand(new Command("transfer")
@@ -64,9 +64,9 @@ export function makeCommand(config: CyfsToolConfig) {
             .requiredOption("-f, --from <from file path>", "desc and sec file path, exclude extension", path.join(config.user_profile_dir, 'people'))
             .argument("<amount>", "balance amount, Qiu")
             .argument("[coinid]", "coin id", myParseInt, 0)
-            .action(async (options) => {
+            .action(async (amount, coinid, options) => {
                 const meta_client = cyfs.create_meta_client(options.endpoint) 
-                await transfer(meta_client, options);
+                await transfer(meta_client, amount, coinid, options);
             })
         )
         .addCommand(new Command("withdraw")
@@ -75,9 +75,9 @@ export function makeCommand(config: CyfsToolConfig) {
             .argument("<balance>", "balance value to withdraw")
             .argument("[coinid]", "coin id", myParseInt, 0)
             .requiredOption("-c, --caller <caller file path>", "desc and sec file path, exclude extension", path.join(config.user_profile_dir, 'people'))
-            .action(async (options) => {
+            .action(async (account, balance, coinid, options) => {
                 const meta_client = cyfs.create_meta_client(options.endpoint) 
-                await withdraw(meta_client, options);
+                await withdraw(meta_client, account, balance, coinid, options);
             })
         )
         .addCommand(new Command("bidname")
@@ -85,35 +85,44 @@ export function makeCommand(config: CyfsToolConfig) {
             .requiredOption("-c, --caller <caller file path>", "desc and sec file path, exclude extension", path.join(config.user_profile_dir, 'people'))
             .option("-o, --owner <owner_id>", "name owner, default = caller")
             .argument("<name>", "name want to bid")
-            .argument("[bid_price]", "bid price")
-            .argument("[rent]", "name rent price")
-            .action(async (options) => {
+            .argument("[bid_price]", "bid price", "0")
+            .argument("[rent]", "name rent price", myParseInt, 0)
+            .action(async (name, bid_price, rent, options) => {
                 const meta_client = cyfs.create_meta_client(options.endpoint) 
-                await bidname(meta_client, options);
+                await bidname(meta_client, name, bid_price, rent, options);
             })
         )
         .addCommand(new Command("namelink")
             .description("link name to an obj or name")
             .requiredOption("-c, --caller <caller file path>", "desc and sec file path, exclude extension", path.join(config.user_profile_dir, 'people'))
             .argument("<name>", "name want to link")
-            .addOption(new Option("-t --type <type>", "link type").choices(["obj", "name", "ip"]).makeOptionMandatory(true))
             .argument("<obj>", "obj to link")
-            .action(async (options) => {
+            .addOption(new Option("-t --type <type>", "link type").choices(["obj", "name", "ip"]).makeOptionMandatory(true))
+            .action(async (name, obj, options) => {
                 const meta_client = cyfs.create_meta_client(options.endpoint) 
-                await namelink(meta_client, options);
+                await namelink(meta_client, name, obj, options);
             })
         )
         .addCommand(new Command("getname")
             .description("get name info")
             .argument("<name>", "name")
-            .action(async (options) => {
+            .action(async (name, options) => {
                 const meta_client = cyfs.create_meta_client(options.endpoint) 
-                await getname(meta_client, options);
+                await getname(meta_client, name);
+            })
+        )
+        .addCommand(new Command("getbalance")
+            .description("get balance for account")
+            .argument("<account>", "account id or name")
+            .argument("[coinid]", "coin id", myParseInt ,0)
+            .action(async (account, coinid, options) => {
+                const meta_client = cyfs.create_meta_client(options.endpoint) 
+                await getbalance(meta_client, account, coinid);
             })
         )
 }
 
-async function put_desc(client: cyfs.MetaClient, options: any) {
+async function put_desc(client: cyfs.MetaClient, price: number, coinid: number, options: any) {
     if (!fs.existsSync(options.caller+".sec")) {
         console.error('cannot find caller desc/sec path')
         return;
@@ -147,13 +156,13 @@ async function put_desc(client: cyfs.MetaClient, options: any) {
     }
 
     const update = (await client.getDesc(desc_id)).ok;
-    const price = options.price?cyfs.Some(options.price):cyfs.None;
-    const coinid = options.coinid?cyfs.Some(options.coinid):cyfs.None;
+    const priceo = price?cyfs.Some(price):cyfs.None;
+    const coinido = coinid?cyfs.Some(coinid):cyfs.None;
     let r;
     if (update) {
-        r = await client.update_desc(caller, send_meta_desc, price, coinid, sec);
+        r = await client.update_desc(caller, send_meta_desc, priceo, coinido, sec);
     } else {
-        r = await client.create_desc(caller, send_meta_desc, options.value, price.is_some()?price.unwrap():0, coinid.is_some()?coinid.unwrap():0, sec);
+        r = await client.create_desc(caller, send_meta_desc, options.value, priceo.is_some()?priceo.unwrap():0, coinido.is_some()?coinido.unwrap():0, sec);
     }
 
     console.log("put desc success, TxId", r.unwrap().to_base_58());
@@ -182,7 +191,7 @@ async function get_receipt(client: cyfs.MetaClient, id: string) {
     }
 }
 
-async function transfer(client: cyfs.MetaClient, options: any) {
+async function transfer(client: cyfs.MetaClient, amount: string, coinid: number, options: any) {
     if (!fs.existsSync(options.from+".sec")) {
         console.error('cannot find from desc/sec path')
         return;
@@ -196,16 +205,16 @@ async function transfer(client: cyfs.MetaClient, options: any) {
         console.error(`invalid to account ${options.to}`)
         return;
     }
-    
-    const hash = await client.trans_balance(from, to.unwrap(), cyfs.JSBI.BigInt(options.amount), options.coinid, sec);
+
+    const hash = await client.trans_balance(from, to.unwrap(), cyfs.JSBI.BigInt(amount), coinid, sec);
     if (hash.err) {
-        console.error(`trans from ${from.calculate_id()} to ${to.unwrap()} amount ${options.amount} failed, err ${hash.val}`)
+        console.error(`trans from ${from.calculate_id()} to ${to.unwrap()} amount ${amount} failed, err ${hash.val}`)
     } else {
-        console.info(`trans from ${from.calculate_id()} to ${to.unwrap()} amount ${options.amount} success, tx ${hash.unwrap().object_id}`)
+        console.info(`trans from ${from.calculate_id()} to ${to.unwrap()} amount ${amount} success, tx ${hash.unwrap().object_id}`)
     }
 }
 
-async function withdraw(client: cyfs.MetaClient, options: any) {
+async function withdraw(client: cyfs.MetaClient, account: string, balance: string, coinid: number, options: any) {
     if (!fs.existsSync(options.caller+".sec")) {
         console.error('cannot find caller desc/sec path')
         return;
@@ -214,22 +223,22 @@ async function withdraw(client: cyfs.MetaClient, options: any) {
     console.log(`use caller account file at ${options.caller}`);
     const [caller, sec] = load_desc_and_sec(options.caller);
     
-    const account = await get_objid_from_str(client, options.account);
-    if (account.err) {
+    const account_ret = await get_objid_from_str(client, account);
+    if (account_ret.err) {
         console.error(`invalid account ${options.to}`)
         return;
     }
 
-    const hash = await client.withdraw_from_file(caller, account.unwrap(), cyfs.JSBI.BigInt(options.amount), options.coinid, sec);
+    const hash = await client.withdraw_from_file(caller, account_ret.unwrap(), cyfs.JSBI.BigInt(balance), coinid, sec);
 
     if (hash.err) {
-        console.error(`withdraw from ${account.unwrap()} to ${caller.calculate_id()} amount ${options.amount} failed, err ${hash.val}`)
+        console.error(`withdraw from ${account_ret.unwrap()} to ${caller.calculate_id()} amount ${balance} failed, err ${hash.val}`)
     } else {
-        console.info(`withdraw from ${account.unwrap()} to ${caller.calculate_id()} amount ${options.amount} success, tx ${hash.unwrap().object_id}`)
+        console.info(`withdraw from ${account_ret.unwrap()} to ${caller.calculate_id()} amount ${balance} success, tx ${hash.unwrap().object_id}`)
     }
 }
 
-async function bidname(client: cyfs.MetaClient, options: any) {
+async function bidname(client: cyfs.MetaClient, name: string, bid_price: string, rent: number, options: any) {
     if (!fs.existsSync(options.caller+".sec")) {
         console.error('cannot find caller desc/sec path')
         return;
@@ -246,16 +255,16 @@ async function bidname(client: cyfs.MetaClient, options: any) {
         }
     }
 
-    const hash = await client.bid_name(caller, owner, options.name, cyfs.JSBI.BigInt(options.bid_price), options.rent, sec);
+    const hash = await client.bid_name(caller, owner, name, cyfs.JSBI.BigInt(bid_price), rent, sec);
 
     if (hash.err) {
-        console.error(`bidname ${options.name} by ${caller.calculate_id()} failed, err ${hash.val}`)
+        console.error(`bidname ${name} by ${caller.calculate_id()} failed, err ${hash.val}`)
     } else {
-        console.info(`bidname ${options.name} by ${caller.calculate_id()} success, tx ${hash.unwrap().object_id}`)
+        console.info(`bidname ${name} by ${caller.calculate_id()} success, tx ${hash.unwrap().object_id}`)
     }
 }
 
-async function namelink(client: cyfs.MetaClient, options: any) {
+async function namelink(client: cyfs.MetaClient, name: string, obj: string, options: any) {
     if (!fs.existsSync(options.caller+".sec")) {
         console.error('cannot find caller desc/sec path')
         return;
@@ -264,14 +273,14 @@ async function namelink(client: cyfs.MetaClient, options: any) {
     console.log(`use caller account file at ${options.caller}`);
     const [caller, sec] = load_desc_and_sec(options.caller);
 
-    const name_ret = await client.getName(options.name);
+    const name_ret = await client.getName(name);
     if (name_ret.err) {
-        console.error(`get name ${options.name} info from chain err ${name_ret.val}`)
+        console.error(`get name ${name} info from chain err ${name_ret.val}`)
         return;
     }
 
     if (name_ret.unwrap().is_none()) {
-        console.error(`not found name ${options.name} info from chain`)
+        console.error(`not found name ${name} info from chain`)
         return;
     }
 
@@ -279,10 +288,10 @@ async function namelink(client: cyfs.MetaClient, options: any) {
 
     switch (options.type) {
         case "name":
-            info.record.link = cyfs.NameLink.OtherNameLink(options.obj)
+            info.record.link = cyfs.NameLink.OtherNameLink(obj)
             break;
         case "obj":
-            info.record.link = cyfs.NameLink.ObjectLink(cyfs.ObjectId.from_str(options.obj).unwrap())
+            info.record.link = cyfs.NameLink.ObjectLink(cyfs.ObjectId.from_str(obj).unwrap())
             break;
         case "ip":
             console.error(`not support link name to ip`);
@@ -295,26 +304,39 @@ async function namelink(client: cyfs.MetaClient, options: any) {
     const hash = await client.update_name(caller, options.name, info, 0, sec);
 
     if (hash.err) {
-        console.error(`update name ${options.name} info failed, err ${hash.val}`)
+        console.error(`update name ${name} info failed, err ${hash.val}`)
     } else {
-        console.info(`update name ${options.name} info success, tx ${hash.unwrap().object_id}`)
+        console.info(`update name ${name} info success, tx ${hash.unwrap().object_id}`)
     }
 }
 
-
-async function getname(client: cyfs.MetaClient, options: any) {
-    const info_ret = await client.getName(options.name);
+async function getname(client: cyfs.MetaClient, name: string) {
+    const info_ret = await client.getName(name);
     if (info_ret.err) {
-        console.error(`get name ${options.name} err ${info_ret.val}`)
+        console.error(`get name ${name} err ${info_ret.val}`)
         return;
     }
 
     if (info_ret.unwrap().is_none()) {
-        console.error(`cannot find name ${options.name} on meta chain`);
+        console.error(`cannot find name ${name} on meta chain`);
         return
     }
 
     const info = info_ret.unwrap().unwrap()
 
-    console.info(`find name ${options.name}, state ${info.name_state}, owner ${info.name_info.owner.is_some()?info.name_info.owner.unwrap():"none"}, ${info.name_info.record.link}`);
+    console.info(`find name ${name}, state ${info.name_state}, owner ${info.name_info.owner.is_some()?info.name_info.owner.unwrap():"none"}, ${info.name_info.record.link}`);
+}
+
+async function getbalance(client: cyfs.MetaClient, account: string, coinid: number) {
+    const id = await get_objid_from_str(client, account);
+    if (id.err) {
+        console.error(`convert account ${account} to ObjectId err ${id.val}`)
+    }
+    const balance = await client.getBalance2(id.unwrap(), coinid);
+    if (balance.err) {
+        console.error(`get ${account} balance err ${balance.val}`)
+        return;
+    }
+
+    console.info(`account ${account} balance ${balance.unwrap()}`)
 }
