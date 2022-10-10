@@ -48,6 +48,6 @@ export class NameStateDecoder implements RawDecode<NameState> {
             [val, buf] = r.unwrap();
         }
 
-        return Ok([val as unknown as NameState, buf]);
+        return Ok([val.toNumber() as NameState, buf]);
     }
 }
