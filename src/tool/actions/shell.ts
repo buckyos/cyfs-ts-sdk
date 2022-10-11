@@ -161,7 +161,7 @@ export function makeCommand(config: CyfsToolConfig): Command {
         .requiredOption("-e, --endpoint <target>", "cyfs shell endpoint, ood or runtime", "runtime")
         .action(async (options) => {
             clog.setLevel(4) // warn level log message
-            const [stack, writable] = await create_stack(options.endpoint, config)
+            const [stack, writable] = await create_stack(options.endpoint, config, get_system_dec_app().object_id)
             await stack.online();
             await perpare_device_list(stack);
             await run(options, stack);

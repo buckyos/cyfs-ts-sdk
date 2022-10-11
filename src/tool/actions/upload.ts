@@ -1,6 +1,6 @@
 import { Command } from "commander";
 import path from "path";
-import { NDNAPILevel, NONAPILevel, ObjectId, ObjectTypeCode, SharedCyfsStack, TransTaskState, ObjectMapSimpleContentType, PathOpEnvStub } from "../../sdk";
+import { NDNAPILevel, NONAPILevel, ObjectId, ObjectTypeCode, SharedCyfsStack, TransTaskState, ObjectMapSimpleContentType, PathOpEnvStub, get_system_dec_app } from "../../sdk";
 import { create_stack, CyfsToolConfig, get_final_owner, stop_runtime } from "../lib/util";
 import * as fs from 'fs-extra';
 
@@ -8,7 +8,7 @@ import * as util from 'util';
 
 const sleep = util.promisify(setTimeout);
 
-const dec_id = ObjectId.from_base_58('9tGpLNnDpa8deXEk2NaWGccEu4yFQ2DrTZJPLYLT7gj4').unwrap()
+const dec_id = get_system_dec_app().object_id;
 
 export function makeCommand(config: CyfsToolConfig): Command {
     return new Command("upload")
@@ -154,7 +154,7 @@ async function run(upload_path: string, options:any, stack: SharedCyfsStack) {
     // 把对象存到root_state，以防以后被gc掉
     const op_env = (await stack.root_state_stub().create_path_op_env()).unwrap()
 
-    const ret = await op_env.set_with_key('/upload_map', obj_id.to_base_58(), obj_id, undefined, true)
+    const ret = await op_env.set_with_key('/upload_files', obj_id.to_base_58(), obj_id, undefined, true)
     if (ret.err) {
         console.error("insert obj to root state err", ret.val)
         return
@@ -175,14 +175,14 @@ async function run(upload_path: string, options:any, stack: SharedCyfsStack) {
         })).unwrap().device_list;
 
         // 遍历对象，上传整个对象树到ood
-        const files = await upload_obj(stack, oods[0].object_id, "/upload_map/"+obj_id.to_base_58());
+        const files = await upload_obj(stack, oods[0].object_id, "/upload_files/"+obj_id.to_base_58());
         if (files === undefined) {
             return
         }
 
         // 存到ood的root_state，防止gc
         const op_env = (await stack.root_state_stub(oods[0].object_id).create_path_op_env()).unwrap()
-        const r = await op_env.set_with_key('/upload_map', obj_id.to_base_58(), obj_id, undefined, true)
+        const r = await op_env.set_with_key('/upload_files', obj_id.to_base_58(), obj_id, undefined, true)
         if (r.err) {
             console.error("insert obj to ood root state err", r.val)
             return
