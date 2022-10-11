@@ -13,10 +13,9 @@ import { Ok, BuckyResult} from "../../cyfs-base/base/results";
 import { ObjectId } from "../../cyfs-base/objects/object_id";
 
 import { CoreObjectType } from "../core_obj_type";
-import { PeopleId, ProtobufBodyContent, ProtobufBodyContentDecoder, ProtobufDescContent, ProtobufDescContentDecoder } from "../../cyfs-base";
+import { EmptyProtobufBodyContent, EmptyProtobufBodyContentDecoder, PeopleId, ProtobufDescContent, ProtobufDescContentDecoder } from "../../cyfs-base";
 
 import { protos } from '../codec';
-import { protos as base_protos } from '../../cyfs-base';
 
 export class FriendOptionDescTypeInfo extends DescTypeInfo{
     obj_type() : number{
@@ -36,10 +35,17 @@ export class FriendOptionDescTypeInfo extends DescTypeInfo{
 const FriendOption_DESC_TYPE_INFO = new FriendOptionDescTypeInfo();
 
 export class FriendOptionDescContent extends ProtobufDescContent {
-    try_to_proto(): BuckyResult<base_protos.EmptyContent> {
-        return Ok(new base_protos.EmptyContent());
+    try_to_proto(): BuckyResult<protos.FriendOptionContent> {
+        const content = new protos.FriendOptionContent()
+        if (this.auto_confirm !== undefined) {
+            content.setAutoConfirm(this.auto_confirm?1:0)
+        }
+        if (this.msg) {
+            content.setMsg(this.msg)
+        }
+        return Ok(content);
     }
-    constructor(){
+    constructor(public auto_confirm?: boolean, public msg?: string){
         super();
     }
 
@@ -48,41 +54,25 @@ export class FriendOptionDescContent extends ProtobufDescContent {
     }
 }
 
-export class FriendOptionDescContentDecoder extends ProtobufDescContentDecoder<FriendOptionDescContent, base_protos.EmptyContent>{
+export class FriendOptionDescContentDecoder extends ProtobufDescContentDecoder<FriendOptionDescContent, protos.FriendOptionContent>{
     constructor() {
-        super(base_protos.EmptyContent.deserializeBinary)
+        super(protos.FriendOptionContent.deserializeBinary)
     }
 
-    try_from_proto(value: base_protos.EmptyContent): BuckyResult<FriendOptionDescContent> {
-        return Ok(new FriendOptionDescContent());
+    try_from_proto(value: protos.FriendOptionContent): BuckyResult<FriendOptionDescContent> {
+        let auto_confirm;
+        if (value.hasAutoConfirm()) {
+            auto_confirm = value.getAutoConfirm() === 1;
+        }
+        let msg;
+        if (value.hasMsg()) {
+            msg = value.getMsg();
+        }
+        return Ok(new FriendOptionDescContent(auto_confirm, msg));
     }
 
     type_info(): DescTypeInfo{
         return FriendOption_DESC_TYPE_INFO;
-    }
-}
-
-export class FriendOptionBodyContent extends ProtobufBodyContent {
-    constructor(public auto_confirm?: boolean, public msg?: string) {
-        super()
-    }
-    try_to_proto(): BuckyResult<protos.FriendOptionContent> {
-        const target = new protos.FriendOptionContent()
-        target.setAutoConfirm(this.auto_confirm?1:0)
-        if (this.msg) {
-            target.setMsg(this.msg)
-        }
-        
-        return Ok(target)
-    }
-}
-
-export class FriendOptionBodyContentDecoder extends ProtobufBodyContentDecoder<FriendOptionBodyContent, protos.FriendOptionContent> {
-    constructor(){
-        super(protos.FriendOptionContent.deserializeBinary)
-    }
-    try_from_proto(value: protos.FriendOptionContent): BuckyResult<FriendOptionBodyContent> {
-        return Ok(new FriendOptionBodyContent(value.getAutoConfirm()?true:false, value.getMsg()));
     }
 }
 
@@ -94,11 +84,11 @@ export  class FriendOptionDescDecoder extends NamedObjectDescDecoder<FriendOptio
     // ignore
 }
 
-export class FriendOptionBuilder extends NamedObjectBuilder<FriendOptionDescContent, FriendOptionBodyContent>{
+export class FriendOptionBuilder extends NamedObjectBuilder<FriendOptionDescContent, EmptyProtobufBodyContent>{
     // ignore
 }
 
-export class FriendOptionId extends NamedObjectId<FriendOptionDescContent, FriendOptionBodyContent>{
+export class FriendOptionId extends NamedObjectId<FriendOptionDescContent, EmptyProtobufBodyContent>{
     constructor(id: ObjectId){
         super(CoreObjectType.FriendOption, id);
     }
@@ -116,25 +106,25 @@ export class FriendOptionId extends NamedObjectId<FriendOptionDescContent, Frien
     }
 }
 
-export class FriendOptionIdDecoder extends NamedObjectIdDecoder<FriendOptionDescContent, FriendOptionBodyContent>{
+export class FriendOptionIdDecoder extends NamedObjectIdDecoder<FriendOptionDescContent, EmptyProtobufBodyContent>{
     constructor(){
         super(CoreObjectType.FriendOption);
     }
 }
 
 
-export class FriendOption extends NamedObject<FriendOptionDescContent, FriendOptionBodyContent>{
+export class FriendOption extends NamedObject<FriendOptionDescContent, EmptyProtobufBodyContent>{
     static create(owner: PeopleId, auto_confirm?: boolean, msg?: string):FriendOption{
-        const desc_content = new FriendOptionDescContent();
-        const body_content = new FriendOptionBodyContent(auto_confirm, msg);
+        const desc_content = new FriendOptionDescContent(auto_confirm, msg);
+        const body_content = new EmptyProtobufBodyContent();
         const builder = new FriendOptionBuilder(desc_content, body_content);
 
         return builder.owner(owner.object_id).no_create_time().build(FriendOption);
     }
 }
 
-export class FriendOptionDecoder extends NamedObjectDecoder<FriendOptionDescContent, FriendOptionBodyContent, FriendOption>{
+export class FriendOptionDecoder extends NamedObjectDecoder<FriendOptionDescContent, EmptyProtobufBodyContent, FriendOption>{
     constructor(){
-        super(new FriendOptionDescContentDecoder(), new FriendOptionBodyContentDecoder(), FriendOption);
+        super(new FriendOptionDescContentDecoder(), new EmptyProtobufBodyContentDecoder(), FriendOption);
     }
 }

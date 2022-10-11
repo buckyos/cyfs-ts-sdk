@@ -1,5 +1,6 @@
 export * from './common/text';
-export * from './friends/friend_list';
+export * from './friends/friend_option';
+export * from './friends/friend_property';
 export * from './storage/storage';
 export * from './zone/zone';
 export * from './app/app_list';
@@ -15,6 +16,5 @@ export * from './app/system';
 export * from './wallet/NFTList';
 export * from './friends/add_friend';
 export * from './friends/remove_friend';
-export * from './friends/friend_option';
 export * from './im/msg';
 export * from './core_obj_type';

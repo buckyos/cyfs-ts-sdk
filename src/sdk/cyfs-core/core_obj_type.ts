@@ -12,7 +12,9 @@ export enum CoreObjectType {
     Text = 41,
 
     // 通讯录
-    FriendList = 130,
+    // FriendList = 130,
+    FriendOption = 131,
+    FriendProperty = 132,
 
     // 主题订阅[150-160]
     Topic = 150,
@@ -63,7 +65,6 @@ export enum CoreObjectType {
 
     // IM通用对象
     AddFriend = 1001,
-    FriendOption = 1002,
     Msg = 1003,
     RemoveFriend = 1004,
 

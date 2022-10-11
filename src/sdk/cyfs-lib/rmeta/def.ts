@@ -1,4 +1,4 @@
-import { AccessPermission, AccessString, ObjectId } from "../../cyfs-base";
+import { AccessPermission, AccessPermissions, AccessString, ObjectId } from "../../cyfs-base";
 import { DeviceZoneCategory } from "../access/source";
 
 export enum MetaAction {
@@ -97,12 +97,12 @@ export class GlobalStatePathAccessItem {
         return new GlobalStatePathAccessItem(GlobalStatePathAccessItem.fix_path(path), GlobalStatePathGroupAccess.Default(access.value))
     }
 
-    public static new_group(path: string, zone: ObjectId|undefined, zone_category: DeviceZoneCategory|undefined, dec: ObjectId|undefined, access: number): GlobalStatePathAccessItem {
+    public static new_group(path: string, zone: ObjectId|undefined, zone_category: DeviceZoneCategory|undefined, dec: ObjectId|undefined, access: AccessPermissions): GlobalStatePathAccessItem {
         return new GlobalStatePathAccessItem(GlobalStatePathAccessItem.fix_path(path), GlobalStatePathGroupAccess.Specified({
             zone,
             zone_category,
             dec,
-            access
+            access: access.value
         }))
     }
 
