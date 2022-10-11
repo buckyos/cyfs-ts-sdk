@@ -177,7 +177,7 @@ export class ObjectId implements RawEncode, Compareable<ObjectId> {
     }
 
     static from_base_58(s: string): BuckyResult<ObjectId> {
-        const r = basex.from_base_58(s);
+        const r = basex.from_base_58(s, OBJECT_ID_LEN);
         if (r.err) {
             return r;
         }
@@ -186,7 +186,7 @@ export class ObjectId implements RawEncode, Compareable<ObjectId> {
     }
 
     static from_base_36(s: string): BuckyResult<ObjectId> {
-        const r = basex.from_base_36(s);
+        const r = basex.from_base_36(s, OBJECT_ID_LEN);
         if (r.err) {
             return r;
         }
