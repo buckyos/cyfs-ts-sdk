@@ -7,7 +7,7 @@ import { BuckyResult, get_channel, MetaClient,
     NONAPILevel, None, NONGetObjectOutputRequest, 
     NONGetObjectOutputResponse, ObjectId, Ok, PrivateKey, 
     PrivatekeyDecoder, SavedMetaObject, SharedCyfsStack, 
-    StandardObject, StandardObjectDecoder, Data, TxId, BuckyErrorCode, AnyNamedObjectDecoder, Err, BuckyError } from '../../sdk';
+    StandardObject, StandardObjectDecoder, Data, TxId, BuckyErrorCode, AnyNamedObjectDecoder, Err, BuckyError, get_system_dec_app } from '../../sdk';
 import { CyfsToolContext } from './ctx';
 import JSBI from 'jsbi';
 
@@ -387,5 +387,7 @@ export function convert_cyfs_url(cyfs_url: string, stack: SharedCyfsStack, json:
         url.searchParams.set("mode", "object");
     }
     
+    url.searchParams.set("dec_id", get_system_dec_app().object_id.toString());
+
     return [url.toString(), {CYFS_REMOTE_DEVICE: local_device_id.toString()}, uri];
 }
