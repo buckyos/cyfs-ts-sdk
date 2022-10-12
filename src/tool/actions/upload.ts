@@ -1,6 +1,6 @@
 import { Command } from "commander";
 import path from "path";
-import { NDNAPILevel, NONAPILevel, ObjectId, ObjectTypeCode, SharedCyfsStack, TransTaskState, ObjectMapSimpleContentType, PathOpEnvStub, get_system_dec_app } from "../../sdk";
+import { NDNAPILevel, NONAPILevel, ObjectId, ObjectTypeCode, SharedCyfsStack, TransTaskState, ObjectMapSimpleContentType, PathOpEnvStub, get_system_dec_app, AccessString } from "../../sdk";
 import { create_stack, CyfsToolConfig, get_final_owner, stop_runtime } from "../lib/util";
 import * as fs from 'fs-extra';
 
@@ -50,7 +50,8 @@ async function upload_obj(stack: SharedCyfsStack, target: ObjectId, path: string
                 target,
                 flags: 0
             },
-            object: obj
+            object: obj,
+            access: AccessString.full()
         });
         if (r.err) {
             console.error(`put object ${obj.object_id} to ${target} err ${r.val}`)
@@ -94,6 +95,26 @@ async function upload_obj(stack: SharedCyfsStack, target: ObjectId, path: string
     }
 
     return files;
+}
+
+async function publish_all(stack: SharedCyfsStack, id: ObjectId) {
+    (await stack.non_service().update_object_meta({
+        common: {
+            level: NONAPILevel.NOC,
+            flags: 0
+        },
+        object_id: id,
+        access: AccessString.full()
+    })).unwrap()
+
+    if (id.obj_type_code() === ObjectTypeCode.ObjectMap) {
+        const op_env = (await stack.root_state_stub().create_single_op_env()).unwrap();
+        (await op_env.load(id)).unwrap()
+        
+        for (const item of (await op_env.list()).unwrap()) {
+            await publish_all(stack, item.map!.value)
+        }
+    }
 }
 
 async function run(upload_path: string, options:any, stack: SharedCyfsStack) {
@@ -148,6 +169,9 @@ async function run(upload_path: string, options:any, stack: SharedCyfsStack) {
     }
 
     const obj_id = r.unwrap().file_id;
+
+    // 开放权限
+    await publish_all(stack, obj_id);
 
     const is_dir = obj_id.obj_type_code() === ObjectTypeCode.ObjectMap;
 
