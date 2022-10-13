@@ -26,7 +26,7 @@ export function makeCommand(config: CyfsToolConfig): Command {
 
 
 export async function dump_object(stack: SharedCyfsStack, olink: string, json: boolean): Promise<any|[Uint8Array, ObjectId]|undefined> {
-    const [new_url_str, headers] = convert_cyfs_url(olink, stack, json, false)
+    const [new_url_str, headers] = convert_cyfs_url(olink, stack, json, false, dec_id)
     // console.log(`convert cyfs url: ${olink} to non url: ${new_url_str}`);
     const response  = await fetch(new_url_str, {headers});
 

@@ -275,13 +275,19 @@ interface ObjectInfo {
 // 从一个绝对路径解出dec_id和其他部分。如果没有dec_id，返回undefined
 function extract_path(pathstr: string): [ObjectId|undefined, string] {
     const path_parts = pathstr.split(path.sep)
-    const dec_id: ObjectId = get_system_dec_app().object_id;
+    let dec_id: ObjectId|undefined = undefined;
+    if (path_parts[1].length > 0) {
+        const r = ObjectId.from_base_58(path_parts[1])
+        if (r.ok) {
+            dec_id = r.unwrap()
+        }
+    }
 
-    return [dec_id, path.sep + path_parts.slice(1).join(path.sep)]
+    return [dec_id, path.sep + path_parts.slice(2).join(path.sep)]
 }
 
-function make_r_link(target_id: ObjectId, dec_id: ObjectId, full_path: string):string {
-    return `cyfs://r/${target_id}/${dec_id}${full_path}`;
+function make_r_link(target_id: ObjectId, full_path: string):string {
+    return `cyfs://r/${target_id}${full_path}`;
 }
 
 async function get_dec_name(dec_id: string, stack: SharedCyfsStack): Promise<string | undefined> {
@@ -483,6 +489,7 @@ async function list(cur_path: string, target_id: ObjectId, stack: SharedCyfsStac
         const op = (await stack.root_state_stub().create_single_op_env()).unwrap()
         await op.load(info.root);
         list_ret = await op.list()
+        console_orig.log(`list: ${list_ret}`)
     } else {
         list_ret = await stack.root_state_access_stub(target_id, dec_id).list(sub_path, page_index, page_size);
     }
@@ -537,7 +544,7 @@ async function cd(cur_path: string, dst_path: string, target_id: ObjectId, stack
 async function cat(cur_path: string, dst_path: string, target_id: ObjectId, stack: SharedCyfsStack): Promise<void> {
     const new_path = path.resolve(cur_path, dst_path)
     // cyfs://r/5r4MYfFMPYJr5UqgAh2XcM4kdui5TZrhdssWpQ7XCp2y/95RvaS5gwV5SFnT38UXXNuujFBE3Pk8QQDrKVGdcncB4
-    const cyfs_link = make_r_link(target_id, get_system_dec_app().object_id, new_path);
+    const cyfs_link = make_r_link(target_id, new_path);
     const obj = await dump_object(stack, cyfs_link, true);
     if (obj) {
         console_orig.log(JSON.stringify(obj, undefined, 4))
@@ -550,7 +557,7 @@ async function dump(cur_path: string, dst_path: string, target_id: ObjectId, sta
     }
     const new_path = path.resolve(cur_path, dst_path)
     // cyfs://r/5r4MYfFMPYJr5UqgAh2XcM4kdui5TZrhdssWpQ7XCp2y/95RvaS5gwV5SFnT38UXXNuujFBE3Pk8QQDrKVGdcncB4
-    const cyfs_link = make_r_link(target_id, get_system_dec_app().object_id, new_path);
+    const cyfs_link = make_r_link(target_id, new_path);
     const ret = await dump_object(stack, cyfs_link, false);
     if (ret) {
         const [obj_raw, obj_id] = (ret as [Uint8Array, ObjectId]);
@@ -581,7 +588,7 @@ async function get(cur_path: string, dst_path: string, target_id: ObjectId, stac
         local_path = "./";
     }
 
-    const cyfs_link = make_r_link(target_id, get_system_dec_app().object_id, new_path);
+    const cyfs_link = make_r_link(target_id, new_path);
     console.log(`save path: ${local_path}, target: ${target_id.to_string()}, dec_id: ${dec_id}, inner_path: ${sub_path}`)
     const link_type = "r";
     await get_run(cyfs_link, {save: local_path}, stack, target_id, dec_id, sub_path, link_type);
@@ -605,7 +612,7 @@ async function rm(cur_path:string, dst_path:string, target_id: ObjectId, stack: 
     //let owner_id;
     let is_dir = false;
     if (delete_object || !recursive_delete) {
-        const cyfs_link = make_r_link(target_id, get_system_dec_app().object_id, new_path);
+        const cyfs_link = make_r_link(target_id, new_path);
         const ret = await dump_object(stack, cyfs_link, true);
         if (ret) {
             object_id = ObjectId.from_base_58(ret["desc"]["object_id"]).unwrap();

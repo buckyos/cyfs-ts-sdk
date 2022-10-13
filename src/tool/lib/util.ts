@@ -359,7 +359,7 @@ export function stop_runtime():void {
 
 // 从一个cyfs的url，转换成本地协议栈的non url
 // json和data不能同时为true，如果同时为true的情况，以json为优先
-export function convert_cyfs_url(cyfs_url: string, stack: SharedCyfsStack, json: boolean, data: boolean): [string, { [key: string]: string }, string] {
+export function convert_cyfs_url(cyfs_url: string, stack: SharedCyfsStack, json: boolean, data: boolean, dec_id: ObjectId): [string, { [key: string]: string }, string] {
     const local_device_id = stack.local_device_id().object_id
     const non_url = cyfs_url.replace("cyfs://", stack.non_service().service_url);
 

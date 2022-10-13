@@ -9,6 +9,7 @@ import * as util from 'util';
 const sleep = util.promisify(setTimeout);
 
 const dec_id = get_system_dec_app().object_id;
+//const dec_id = ObjectId.from_base_58("9tGpLNnErEbyzuMgRLcRX6An1Sn8ZyimNXBdLDTgT2ze").unwrap();
 
 export function makeCommand(config: CyfsToolConfig): Command {
     return new Command("upload")

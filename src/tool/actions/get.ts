@@ -157,7 +157,7 @@ async function download_files(stack: SharedCyfsStack, options: any, files, file_
             link = makeRLink(file_target_id, dec_id, file[0]);
         }
 
-        const [new_url_str, headers, uri] = convert_cyfs_url(link, stack, false, true);
+        const [new_url_str, headers, uri] = convert_cyfs_url(link, stack, false, true, dec_id);
         console.log(`convert cyfs url: ${link} to non url: ${new_url_str}`);
         const response  = await fetch(new_url_str, {headers});
         if (!response.ok) {
@@ -178,7 +178,7 @@ export async function run(link: string, options:any, stack: SharedCyfsStack, tar
     let obj_id, target, relative_root;
     if (link.indexOf("cyfs://") != -1) {      
         // 把cyfs链接参照runtime的proxy.rs逻辑，转换成non的标准协议，直接用http请求
-        const [new_url_str, headers, uri] = convert_cyfs_url(link, stack, true, false)
+        const [new_url_str, headers, uri] = convert_cyfs_url(link, stack, true, false, dec_id)
 
         relative_root = uri;
         const response  = await fetch(new_url_str, {headers});
