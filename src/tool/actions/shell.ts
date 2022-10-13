@@ -489,7 +489,7 @@ async function list(cur_path: string, target_id: ObjectId, stack: SharedCyfsStac
         const op = (await stack.root_state_stub().create_single_op_env()).unwrap()
         await op.load(info.root);
         list_ret = await op.list()
-        console_orig.log(`list: ${list_ret}`)
+        //console_orig.log(`list: ${list_ret}`)
     } else {
         list_ret = await stack.root_state_access_stub(target_id, dec_id).list(sub_path, page_index, page_size);
     }
