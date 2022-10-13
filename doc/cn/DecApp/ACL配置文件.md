@@ -20,7 +20,7 @@ interface SpecifiedGroup {
 }
 ```
 ### 顶层DecId
-顶层map的key，为需要申请权限的dec id，特殊key "self"，代表自己的dec id。
+顶层map的key，为需要申请权限的dec id，特殊key "self"，代表自己的dec id。特殊key "system"，代表system dec id
 
 ### 为什么要申请权限
 如果是同Zone内，同Dec之间的root-state读写，add-handler和post_object，是不需要配置任何额外的权限的。
@@ -111,7 +111,7 @@ pub enum AccessGroup {
    > 默认的AccessString权限："rwxrwxrwx---rwx"
    > 还是以上述的权限为例，表示为`[{group = "FriendZone", access = "rw-"}, {group = "OthersZone", access = "r--"}, {group = "OthersDec", access = "r--"}]`
 
-### 一个完整的acl.toml实例
+### 一个完整的acl.cfg实例
 ```toml
 [self]
 
@@ -127,6 +127,10 @@ pub enum AccessGroup {
 "/test2" = {access = "--x", zone_category = "current-zone", dec_id = "9tGpLNnDpa8deXEk2NaWGccEu4yFQ2DrTZJPLYLT7gj4"} // 开放/test2的call权限给特定的dec，并且只能是当前zone内调用
 // 开放/test1的call权限，给特定zone内所有的dec
 "/test1" = {access = "--x", zone = "5aSixgLwnWbmcDKwBtTBd7p9U4bmqwNU2C6h6SCvfMMh"}
+
+// 申请系统权限
+[system.specified]
+"/user/firends/list" = {access = "r--"} // 申请好友列表的读权限
 
 // 为自己申请DECID_A的权限
 [DECID_A.specified]

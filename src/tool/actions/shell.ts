@@ -477,7 +477,15 @@ async function object_detail(stack: SharedCyfsStack, target: ObjectId, objects: 
 async function list(cur_path: string, target_id: ObjectId, stack: SharedCyfsStack, page_index: number, page_size: number): Promise<BuckyResult<ObjectInfo[]>> {
     const [dec_id, sub_path] = extract_path(cur_path);
     const result: ObjectInfo[] = [];
-    const list_ret = await stack.root_state_access_stub(target_id, dec_id).list(sub_path, page_index, page_size);
+    let list_ret;
+    if (dec_id === undefined && sub_path === "/") {
+        const info = (await stack.root_state_stub().get_current_root()).unwrap()
+        const op = (await stack.root_state_stub().create_single_op_env()).unwrap()
+        await op.load(info.root);
+        list_ret = await op.list()
+    } else {
+        list_ret = await stack.root_state_access_stub(target_id, dec_id).list(sub_path, page_index, page_size);
+    }
     if (list_ret.err) {
         console_orig.log(`error: list ${cur_path} err ${list_ret.val}`)
         return list_ret

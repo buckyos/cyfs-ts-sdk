@@ -80,7 +80,7 @@ export class CyfsToolContext {
                     "app_dependent_config": {
                         "default": "dependent.cfg"
                     },
-                      "app_acl_config": {
+                    "app_acl_config": {
                         "default": "acl.cfg"
                     }
                 },
