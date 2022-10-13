@@ -16,6 +16,9 @@
     ],
     "app_config": {
       "default": "service_package.cfg"
+    },
+    "app_acl_config": {
+        "default": "acl.cfg"
     }
   },
   "web": {
@@ -46,7 +49,8 @@
   > > - 当指定为"node"时，会将service的打包目录，cyfs目录，package.json文件一起拷贝到`${dist}/service/${target}`目录下
   > > - 当指定为"rust"时，只将service的打包目录拷贝到`${dist}/service`下，service的编译等工作需用户事先手动执行
   > + dist_targets：指定service支持哪些平台，默认和ood支持的平台一致。如果在OOD支持，但service不支持的平台上安装该Dec App，会返回安装失败错误
-  > + app_config: 配置service的运行配置。可以通过添加[target_name]:[config_path]字段的形式，给每个平台配置不同的运行配置。默认的default表示当没有该平台对应配置时，使用的默认配置
+  > + app_config: 指定service的运行配置。可以通过添加[target_name]:[config_path]字段的形式，给每个平台配置不同的运行配置。默认的default表示当没有该平台对应配置时，使用的默认配置
+  > + app_acl_config: 指定service的acl配置文件。目前只支持所有平台使用统一的acl配置，必须填写在default字段下。
 + web: 配置Dec App Web部分的相关打包和运行配置，详情下述
   > + folder: 配置Dec App Web部分的根目录
   > + entry: 可配置Web首页的文件名，当前该配置修改无效，首页文件名必须为index.html

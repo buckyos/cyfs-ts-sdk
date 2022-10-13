@@ -91,3 +91,11 @@ Shell的详细操作指南见
 在浏览器已激活的情况下，该命令不起作用
 - --force 强行激活试用，如果浏览器已激活，现存的身份文件会被备份
 - --clean 清除试用身份。如果有已存在的身份文件，会被还原
+
+## Meta
+CYFS tool提供了一系列命令，用于与MetaChain交互
+
+`cyfs meta <subcommands>`
+
+meta系列命令的操作指南见
+[CYFS TOOL Meta命令详解](./CYFS-Tool-Meta%E5%91%BD%E4%BB%A4.md)
