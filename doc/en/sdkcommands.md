@@ -92,3 +92,11 @@ The CYFS Shell is an interactive command line that allows developers to manipula
 
 Detailed instructions for operating the shell can be found in
 [CYFS TOOL Shell command explanation](./CYFS-SHELL.md)
+
+## Meta
+The CYFS tool provides a set of commands to interact with MetaChain
+
+`cyfs meta <subcommands>`
+
+A guide to the meta series of commands can be found in
+[CYFS TOOL Meta commands detailed explanation](./CYFS-TOOL-Meta.md)

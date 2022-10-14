@@ -111,7 +111,7 @@ Currently, there are two ways to represent an AccessString in a configuration fi
    > Default AccessString permission: "rwxrwxrwx--rwx"
    > Still using the above permissions as an example, denoted as `[{group = "FriendZone", access = "rw-"}, {group = "OthersZone", access = "r--"}, {group = "OthersDec", access = "r--"}]`
 
-### A complete acl.toml example
+### A complete acl.cfg example
 ```toml
 [self]
 

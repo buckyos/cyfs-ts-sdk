@@ -485,8 +485,8 @@ async function list(cur_path: string, target_id: ObjectId, stack: SharedCyfsStac
     const result: ObjectInfo[] = [];
     let list_ret;
     if (dec_id === undefined && sub_path === "/") {
-        const info = (await stack.root_state_stub().get_current_root()).unwrap()
-        const op = (await stack.root_state_stub().create_single_op_env()).unwrap()
+        const info = (await stack.root_state_stub(target_id).get_current_root()).unwrap()
+        const op = (await stack.root_state_stub(target_id).create_single_op_env()).unwrap()
         await op.load(info.root);
         list_ret = await op.list()
         //console_orig.log(`list: ${list_ret}`)

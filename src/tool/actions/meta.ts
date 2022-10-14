@@ -301,7 +301,7 @@ async function namelink(client: cyfs.MetaClient, name: string, obj: string, opti
             return;
     }
 
-    const hash = await client.update_name(caller, options.name, info, 0, sec);
+    const hash = await client.update_name(caller, name, info, 0, sec);
 
     if (hash.err) {
         console.error(`update name ${name} info failed, err ${hash.val}`)
