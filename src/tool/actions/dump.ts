@@ -87,7 +87,7 @@ export async function run(olink_or_objectid: string, options:any, stack: SharedC
         }
 
         fs.writeFileSync(save_path, obj_raw);
-        console.origin.log(`dump obj对象为${save_path}`);
+        console.origin.log(`dump obj to${save_path}`);
     }
     
 }

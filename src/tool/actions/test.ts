@@ -14,7 +14,7 @@ export function makeCommand(config: CyfsToolConfig) {
             ctx.init();
 
             if(!ctx.cyfs_project_exist){
-                console.error("当前目录下找不到 .cyfs 目录，请进入 cyfs 项目目录下操作");
+                console.error(".cyfs directory is not found in the current directory, please go to the cyfs project directory");
                 return;
             }
 

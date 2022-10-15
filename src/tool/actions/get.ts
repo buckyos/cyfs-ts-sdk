@@ -1,10 +1,10 @@
 import { Command } from "commander";
 import path from "path";
-import { ObjectId, ObjectTypeCode, SharedCyfsStack, NDNAPILevel, TransTaskState, sleep } from "../../sdk";
+import { ObjectId, ObjectTypeCode, SharedCyfsStack} from "../../sdk";
 import * as fs from 'fs-extra';
 
 import fetch from 'node-fetch';
-import { convert_cyfs_url, create_stack, CyfsToolConfig, get_final_owner, makeOLink, makeRLink, stop_runtime } from "../lib/util";
+import { convert_cyfs_url, create_stack, CyfsToolConfig, makeOLink, makeRLink, stop_runtime } from "../lib/util";
 
 import * as dump from "./dump";
 
@@ -168,7 +168,7 @@ async function download_files(stack: SharedCyfsStack, options: any, files, file_
 
         if (options.save) {
             fs.writeFileSync(options.save, ret);
-            console.origin.log(`get obj对象为${options.save}`);
+            console.origin.log(`get obj to${options.save}`);
         }
     }
 

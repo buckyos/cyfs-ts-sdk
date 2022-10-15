@@ -57,6 +57,15 @@ export function makeCommand(config: CyfsToolConfig) {
                 await put_desc(meta_client, price, coinid, options);
             })
         )
+        .addCommand(new Command("getdesc")
+            .description("get desc from objectid or name")
+            .argument("<id>", "objectid or name")
+            .option("-f, --file <save_path>", "save desc to file")
+            .action(async (id, options) => {
+                const meta_client = cyfs.create_meta_client(options.endpoint) 
+                await get_desc(meta_client, id, options);
+            })
+        )
         .addCommand(new Command("transfer")
             .alias("trans")
             .description("trans balance to other account")
@@ -120,6 +129,40 @@ export function makeCommand(config: CyfsToolConfig) {
                 await getbalance(meta_client, account, coinid);
             })
         )
+}
+
+async function get_desc(client: cyfs.MetaClient, id: string, options: any) {
+    const objid = await get_objid_from_str(client, id);
+    if (objid.err) {
+        console.error(`invalid to account ${id}`)
+        return;
+    }
+
+    const data = await client.getDesc(objid.unwrap())
+    if (data.err) {
+        console.error(`get desc for id ${objid.unwrap().to_base_58()} err ${data.val}`)
+        return;
+    }
+
+    const binary = data.unwrap().match({
+        Device: (obj) => obj.to_vec().unwrap(),
+        People: (obj) => obj.to_vec().unwrap(),
+        UnionAccount: (obj) => obj.to_vec().unwrap(),
+        Group: (obj) => obj.to_vec().unwrap(),
+        File: (obj) => obj.to_vec().unwrap(),
+        Org: (obj) => obj.to_vec().unwrap(),
+        MinerGroup: (obj) => obj.to_vec().unwrap(),
+        SNService: (obj) => obj.to_vec().unwrap(),
+        Contract: (obj) => obj.to_vec().unwrap(),
+        Data: (data) => data.data
+    });
+
+    console.info(`get desc ${objid.unwrap().to_base_58()} : ${binary!.toHex()}`);
+
+    if (options.file) {
+        fs.writeFileSync(options.file, binary!);
+        console.log("write obj to", options.file)
+    }
 }
 
 async function put_desc(client: cyfs.MetaClient, price: number, coinid: number, options: any) {

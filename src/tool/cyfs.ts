@@ -10,8 +10,8 @@ import { CyfsToolConfig } from './lib/util';
 
 async function main(){
     const package_json = fs.readJSONSync(path.join(__dirname, "package.json"));
-    console.log("[cyfs], 工具目录：", __dirname);
-    console.log("[cyfs], 版本号：", package_json.version);
+    console.log("[cyfs], Tool Dir：", __dirname);
+    console.log("[cyfs], Version：", package_json.version);
 
     let userHome, runtime_root;
     if(os.platform()==='win32'){

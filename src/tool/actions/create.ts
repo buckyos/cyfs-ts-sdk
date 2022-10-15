@@ -99,7 +99,7 @@ export function makeCommand(config: CyfsToolConfig) {
                 return;
             }
             if(options.name==undefined){
-                console.log("请使用 -n 指定工程名字, -o 指定owner密钥配对文件名字(owner_name.desc, owner_name.sec):");
+                console.log("Please use -n to specify the project name, -o to specify the owner desc/sec file name(owner_name.desc, owner_name.sec):");
                 console.log("  cyfs create -n <name> -o <owner_name>");
                 return;
             }
@@ -117,7 +117,7 @@ export function makeCommand(config: CyfsToolConfig) {
 
 function run(name: string, owner: string, ctx: CyfsToolContext) {
     if(ctx.cyfs_project_exist) {
-        console.error(`指定工程${ctx.project_dir}已存在, 可在工程目录下使用 cyfs update 更新`);
+        console.error(`project ${ctx.project_dir} existing, it can be updated with cyfs update in the project directory`);
         return;
     }
 

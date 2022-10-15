@@ -274,12 +274,12 @@ async function run(upload_path: string, options:any, stack: SharedCyfsStack) {
     }
     const cyfs_link = `cyfs://o/${owner_id}/${obj_id}`;
     if (is_dir) {
-        (console as any).origin.log(`\n目录${path}上传完成，可用cyfs浏览器打开${cyfs_link}/{目录内部路径} 访问对应文件`);
+        (console as any).origin.log(`\nDir ${path} upload finish，use CYFS Browser to open ${cyfs_link}/{inner_path} to access corresponding file`);
     } else {
-        (console as any).origin.log(`\n文件${path}上传完成，可用cyfs浏览器打开${cyfs_link}访问`);
+        (console as any).origin.log(`\nFile ${path} upload finish，use CYFS Browser to open ${cyfs_link} to access it`);
     }
 
-    (console as any).origin.log(`\n上传途径： ${endpoint} -> ${options.target || "runtime"}`)
+    (console as any).origin.log(`\nupload path： ${endpoint} -> ${options.target || "runtime"}`)
     
     if (options.save) {
         // 把对象内容写成文件
@@ -294,6 +294,6 @@ async function run(upload_path: string, options:any, stack: SharedCyfsStack) {
 
         fs.writeFileSync(path.join(options.save, `${obj_id}.fileobj`), obj_resp.object.object_raw);
 
-        (console as any).origin.log(`\n已生成对应dir obj对象为${path.join(options.save, `${obj_id}.fileobj`)}`);
+        (console as any).origin.log(`\nSave dir/file object: ${path.join(options.save, `${obj_id}.fileobj`)}`);
     }
 }

@@ -1,7 +1,7 @@
-import { AppExtInfoDecoder, create_meta_client, SharedCyfsStack } from "../../sdk";
+import { AppExtInfoDecoder} from "../../sdk";
 import * as fs from 'fs-extra';
 import { put_app_obj, update_ext_info } from './deploy'
-import { create_stack, CyfsToolConfig, question, stop_runtime, upload_app_objs} from "../lib/util";
+import { create_stack, CyfsToolConfig, question, stop_runtime} from "../lib/util";
 import { CyfsToolContext } from "../lib/ctx";
 import { setup_app_obj } from "./create";
 import { Command } from "commander";
@@ -30,7 +30,7 @@ export function makeCommand(config: CyfsToolConfig) {
             ctx.init();
 
             if(!ctx.cyfs_project_exist) {
-                console.error("当前目录下找不到 .cyfs 目录，请进入 cyfs 项目目录下操作");
+                console.error(".cyfs directory is not found in the current directory, please go to the cyfs project directory");
                 return;
             }
 
@@ -42,7 +42,7 @@ export async function run(options:any, config: CyfsToolConfig, ctx: CyfsToolCont
     const app = ctx.get_app_obj();
     if (!options.show) {
         if (options.owner && options.owner !== "") {
-            const answer = await question(`重新设置owner会清除旧有App数据，重新生成DEC ID，是否继续？(yes/no)`);
+            const answer = await question(`Resetting the owner will clear the old App data and regenerate the DEC ID, Continue?(yes/no)`);
             if (answer !== "yes") {
                 process.exit(0);
             }
@@ -56,7 +56,7 @@ export async function run(options:any, config: CyfsToolConfig, ctx: CyfsToolCont
             ctx.save_owner();
     
             // 重新生成app obj
-            (console as any).origin.log('正在重新生成App数据...');
+            (console as any).origin.log('Regenerating App data...');
             setup_app_obj(ctx);
     
             // 重置版本号
@@ -64,7 +64,7 @@ export async function run(options:any, config: CyfsToolConfig, ctx: CyfsToolCont
             ctx.save_project_config();
     
             // 只能修改owner，修改完了就退出
-            (console as any).origin.log('owner重新设置完毕，已清除版本号. 重新生成DecId. 请修改代码中的DecId，并新owner匹配的runtime上重新deploy')
+            (console as any).origin.log('The owner reset and version cleared. Regenerate the DecId. Please modify the DecId in the code and re-deploy it on the new owner`s runtime.')
             process.exit(0);
         }
 
@@ -141,28 +141,28 @@ export async function run(options:any, config: CyfsToolConfig, ctx: CyfsToolCont
         }
     }
 
-    (console as any).origin.log(`App对象链接： cyfs://${app.desc().owner()?.unwrap()}/${app.desc().calculate_id()}`);
+    (console as any).origin.log(`App Link： cyfs://${app.desc().owner()?.unwrap()}/${app.desc().calculate_id()}`);
     const desc = app.app_desc()
     if (desc) {
-        (console as any).origin.log("App 描述:", desc);
+        (console as any).origin.log("App Desc:", desc);
         
     }
     const icon = app.icon()
     if (icon) {
-        (console as any).origin.log("App 图标链接:", icon);
+        (console as any).origin.log("App Icon:", icon);
     }
-    (console as any).origin.log('对象内存储版本：');
+    (console as any).origin.log('Versions in App：');
     for (const [ver, fid] of app.source().entries()) {
         (console as any).origin.log(`\t${ver}: ${fid}`);
     }
 
-    (console as any).origin.log('对象内tag：');
+    (console as any).origin.log('Tags in App：');
     for (const [tag, version] of app.tags().entries()) {
         (console as any).origin.log(`\t${tag}: ${version}`);
     }
 
     if(fs.existsSync(ctx.get_app_ext_file())) {
         const appext = new AppExtInfoDecoder().from_raw(new Uint8Array(fs.readFileSync(ctx.get_app_ext_file()))).unwrap();
-        (console as any).origin.log(`App额外信息： ${appext.info()}`);
+        (console as any).origin.log(`App ExtInfo： ${appext.info()}`);
     }
 }

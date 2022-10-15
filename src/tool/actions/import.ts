@@ -52,16 +52,16 @@ function import_people(basePath: string): Promise<null> {
                     const people_sec_path = path.join(basePath, 'people.sec');
                     fs.writeFileSync(people_desc_path, Buffer.from(data.desc, 'hex'));
                     fs.writeFileSync(people_sec_path, Buffer.from(data.sec, 'hex'));
-                    console.log("密钥已接收，正在校验...");
+                    console.log("The key has been received, verifing...");
                     res.writeHead(200);
                     const r = new PeopleDecoder().raw_decode(new Uint8Array(fs.readFileSync(people_desc_path)));
                     if (r.err) {
-                        console.error('Desc校验失败！请重新导入');
+                        console.error('Desc verify failed! Please re-import');
                         res.write(JSON.stringify({code:r.val.code, msg:r.val.msg}))
                     } else {
                         const [people, _] = r.unwrap();
-                        console.log(`接收成功，PeopleId: ${people.desc().calculate_id()}`);
-                        console.log(`密钥导入完成！\ndesc位置: ${people_desc_path}\nsec位置: ${people_sec_path}`);
+                        console.log(`Import success，PeopleId: ${people.desc().calculate_id()}`);
+                        console.log(`Key import completed！\ndesc : ${people_desc_path}\nsec : ${people_sec_path}`);
                         res.write(JSON.stringify({code:0, msg:""}))
                     }
                     res.end();
@@ -77,9 +77,9 @@ function import_people(basePath: string): Promise<null> {
             const blog = console;
             console = (console as any).origin;
             qrcode.generate(JSON.stringify(data), {small: true});
-            console.log('请用超送扫描以上二维码，导入people密钥对');
-            console.log('如果二维码显示出错，请将控制台设置为等宽字体后再次执行该命令，重新扫码')
-            console.log(`密钥对存储位置： ${basePath}`);
+            console.log('Please scan the above QR code with CyberChat to import the PEOPLE identity files');
+            console.log('If the QR code display error, please set the console to equal-width font and then execute the command again and scan the code again')
+            console.log(`identity files storage location： ${basePath}`);
             console = blog;
         });
         server.listen(port);
@@ -105,7 +105,7 @@ async function run(basePath: string) {
     fs.ensureDirSync(basePath);
     const people_sec_path = path.join(basePath, 'people.sec');
     if (fs.existsSync(people_sec_path)) {
-        const answer = await question(`已存在people密钥在${people_sec_path}\n是否覆盖已存在的people密钥对？(yes/no)`)
+        const answer = await question(`There already exists identity files in${people_sec_path}\nOverwrite the existing PEOPLE identity files?(yes/no)`)
         if (answer === 'yes') {
             await import_people(basePath);
         } else {

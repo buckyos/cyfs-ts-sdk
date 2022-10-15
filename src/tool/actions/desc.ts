@@ -101,9 +101,9 @@ function create_device(owner: cyfs.ObjectId, pk: cyfs.PrivateKey, category: cyfs
 
 function check_desc_file(desc_path: string) {
     if (fs.existsSync(desc_path)) {
-        console.error(`身份配置文件已存在于 ${path.dirname(desc_path)}`);
-        console.error(`  * 如需覆盖请手工删除，请注意备份！`);
-        console.error(`  * 或者请通过选项 -s xxx 指定其他保存位置！`);
+        console.error(`he identity profile already exists in ${path.dirname(desc_path)}`);
+        console.error(`  * If you need to overwrite please delete manually, pay attention to backup!`);
+        console.error(`  * Or specify another save location with the option -s <save_path>!`);
         process.exit(0);
     }
 }
@@ -252,8 +252,8 @@ async function run(option: any) {
             }
         }
 
-        console.log("助记词：", mnemonic);
-        console.log("请妥善保管好助记词，该助记词可导入超送进行后续管理")
+        console.log("Mnemonic：", mnemonic);
+        console.log("Please keep the mnemonic in a safe place, it can be imported into CyberChat for management")
     } else {
         const workspace = option.save;
         fs.ensureDirSync(workspace);
@@ -336,27 +336,27 @@ async function run(option: any) {
         console.log("");
         console.log("");
         console.log("===============");
-        console.log("已为您生成专属 CYFS 身份密钥文件，请妥善保管并按照教程使用.");
-        console.log(`输出目录:  ${workspace} `);
+        console.log("A unique CYFS identity file has been generated for you, please keep it safe and use it according to the tutorial.");
+        console.log(`Output Directory:  ${workspace} `);
         console.log("===============");
         if (people_desc_path) {
-            console.log("*个人(people)身份密钥文件:");
+            console.log("*people Identity file:");
             console.log(`    * ${people_desc_path}`);
             console.log(`    * ${people_sec_path}`);
         }
         if (runtime_desc_path) {
-            console.log("*客户端运行时(cyfs-runtime)身份密钥文件:");
+            console.log("*cyfs-runtime Identity file:");
             console.log(`    * ${runtime_desc_path}`);
             console.log(`    * ${runtime_sec_path}`);
         }
         if (ood_desc_path) {
-            console.log("*OOD设备(cyfs-ood)身份密钥文件:");
+            console.log("*cyfs-ood Identity file:");
             console.log(`    * ${ood_desc_path}`);
             console.log(`    * ${ood_sec_path}`);
         }
         console.log("===============");
-        console.log("助记词：", mnemonic);
-        console.log("请妥善保管好助记词，该助记词可导入超送进行后续管理")
+        console.log("Mnemonic：", mnemonic);
+        console.log("Please keep the mnemonic in a safe place, it can be imported into CyberChat for management")
 
 
     }
