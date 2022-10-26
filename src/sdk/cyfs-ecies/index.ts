@@ -16,15 +16,20 @@ export function generate_keypair(): [Uint8Array, Uint8Array] {
 export function encapsulate(sk: Uint8Array, peer_pk: Uint8Array): AesKey {
     const full_pk = secp256k1.publicKeyConvert(peer_pk, false);
     const shared_point = secp256k1.publicKeyTweakMul(full_pk, sk, false);
-    const master = secp256k1.publicKeyCombine([secp256k1.publicKeyCreate(sk), shared_point])
 
+    const master = new Uint8Array(65*2);
+    master.set(secp256k1.publicKeyCreate(sk, false), 0);
+    master.set(shared_point, 65);
     return hkdf_sha256(master)
 }
 
 export function decapsulate(pk: Uint8Array, peer_sk: Uint8Array): AesKey {
     const full_pk = secp256k1.publicKeyConvert(pk, false);
     const shared_point = secp256k1.publicKeyTweakMul(full_pk, peer_sk, false);
-    const master = secp256k1.publicKeyCombine([full_pk, shared_point])
+
+    const master = new Uint8Array(65*2);
+    master.set(full_pk, 0);
+    master.set(shared_point, 65);
 
     return hkdf_sha256(master)
 }
