@@ -387,3 +387,41 @@ export interface CryptoDecryptDataOutputResponse {
     result: DecryptDataResult,
     data: Uint8Array,
 }
+
+export class CryptoDataOutputRequestHelper {
+    static new_encrypt_by_device(aes_key: boolean, data?: Uint8Array): CryptoEncryptDataOutputRequest {
+        return {
+            common: {flags: 0},
+            encrypt_type: aes_key?CryptoEncryptType.GenAESKeyAndEncrypt:CryptoEncryptType.EncryptData,
+            flags: CRYPTO_REQUEST_FLAG_CRYPT_BY_DEVICE,
+            data
+        }
+    }
+
+    static new_encrypt_by_owner(aes_key: boolean, data?: Uint8Array): CryptoEncryptDataOutputRequest {
+        return {
+            common: {flags: 0},
+            encrypt_type: aes_key?CryptoEncryptType.GenAESKeyAndEncrypt:CryptoEncryptType.EncryptData,
+            flags: CRYPTO_REQUEST_FLAG_CRYPT_BY_OWNER,
+            data
+        }
+    }
+
+    static new_decrypt_by_device(aes_key: boolean, data: Uint8Array): CryptoDecryptDataOutputRequest {
+        return {
+            common: {flags: 0},
+            decrypt_type: aes_key?CryptoDecryptType.DecryptAESKey:CryptoDecryptType.DecryptData,
+            flags: CRYPTO_REQUEST_FLAG_CRYPT_BY_DEVICE,
+            data
+        }
+    }
+
+    static new_decrypt_by_owner(aes_key: boolean, data: Uint8Array): CryptoDecryptDataOutputRequest {
+        return {
+            common: {flags: 0},
+            decrypt_type: aes_key?CryptoDecryptType.DecryptAESKey:CryptoDecryptType.DecryptData,
+            flags: CRYPTO_REQUEST_FLAG_CRYPT_BY_OWNER,
+            data
+        }
+    }
+}
