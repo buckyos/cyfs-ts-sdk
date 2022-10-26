@@ -3,7 +3,7 @@ import { RawEncode, RawDecode } from "../base/raw_encode";
 import {} from "../base/buffer";
 import JSBI from 'jsbi';
 import { DataViewJSBIHelper } from '../../platform-spec';
-import {md, util} from 'node-forge'
+import {md, util, random} from 'node-forge'
 import { from_base_58, to_base_58 } from "../base/basex";
 
 /**
@@ -90,8 +90,7 @@ export class AesKey implements RawEncode {
     }
 
     static random(): AesKey {
-        const buf = new Uint8Array(48);
-        window.crypto.getRandomValues(buf);
+        const buf = util.binary.raw.decode(random.getBytesSync(48))
         return new AesKey(buf);
     }
 
