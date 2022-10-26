@@ -98,7 +98,9 @@ const sdk_only_deps = [
     "node-forge",
     "bip39",
     "fs-extra",
-    "node-fetch"
+    "node-fetch",
+    "secp256k1",
+    "@noble/hashes"
 ]
 
 function main(){

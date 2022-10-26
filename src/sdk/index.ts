@@ -19,3 +19,4 @@ export * from './ethabi';
 export * from './util';
 
 export * from './cyfs-cip';
+export * from './cyfs-ecies';

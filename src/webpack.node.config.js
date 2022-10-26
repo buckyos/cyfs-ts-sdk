@@ -51,7 +51,9 @@ module.exports = {
         "node-localstorage": 'commonjs2 node-localstorage',
         'node-forge': 'commonjs2 node-forge',
         'bip39': 'commonjs2 bip39',
-        'google-protobuf': 'commonjs2 google-protobuf'
+        'google-protobuf': 'commonjs2 google-protobuf',
+        'secp256k1': 'commonjs2 secp256k1',
+        '@noble/hashes': 'commonjs2 @noble/hashes'
     },
     plugins: [
         new DtsBundleWebpack({

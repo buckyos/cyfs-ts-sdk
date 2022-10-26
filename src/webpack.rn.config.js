@@ -39,6 +39,7 @@ module.exports = {
             "assert": false,
             "stream": require.resolve("stream-browserify"),
             "fs": false,
+            "secp256k1": require.resolve("secp256k1/elliptic")
         }
     },
     output: {

@@ -8,9 +8,11 @@ import { ObjectLink, ObjectLinkDecoder } from "../objects/object_id";
 import { base_trace } from "../base/log";
 import JSBI from 'jsbi';
 
-import {asn1, pki, util} from 'node-forge'
+import {asn1, pki, util, md} from 'node-forge'
 import { HashValue } from "./hash";
 import { BASE36, BASE58 } from "../base/basex";
+import { encapsulate, generate_keypair } from "../../cyfs-ecies";
+import * as secp256k1 from 'secp256k1'
 
 /*************************************
  * 签名
@@ -710,26 +712,36 @@ export class RSAPublicKey extends PublicKeyBase implements PublicKeyMatcher {
 }
 
 export class Secp256k1PublicKey extends PublicKeyBase implements PublicKeyMatcher {
-    constructor(public buffer: Uint8Array) {
+    constructor(private public_key: Uint8Array) {
         super(RAW_PUBLIC_KEY_SECP256K1_CODE);
-
-        // TODO: 转换buffer到具体的公玥对象
     }
 
     key_size(): number {
-        throw Error("not implemented");
+        return 33;
     }
 
     encrypt(data: Uint8Array, output: Uint8Array): BuckyResult<number> {
-        throw Error("not implemented");
+        return Err(new BuckyError(BuckyErrorCode.NotSupport, "direct encyrpt with private key of secp256 not support!"));
     }
 
     gen_aeskey_and_encrypt(): BuckyResult<[AesKey, Uint8Array]> {
-        throw Error("not implemented");
+        const [ephemeral_sk, ephemeral_pk] = generate_keypair();
+
+        const aes_key = encapsulate(ephemeral_sk, this.public_key);
+        const pk_buf = secp256k1.publicKeyConvert(ephemeral_pk, true);
+
+        return Ok([aes_key, pk_buf])
     }
 
     verify(data: Uint8Array, sign: Signature): boolean {
-        throw Error("not implemented");
+        const sign_time = new BuckyNumber('u64', sign.sign_time);
+        const final_data = new Uint8Array(data.length + sign_time.raw_measure().unwrap());
+        final_data.set(data);
+        sign_time.raw_encode(final_data.offset(data.length)).unwrap();
+
+        const hash = HashValue.hash_data(final_data)
+
+        return secp256k1.ecdsaVerify(sign.sign.as_slice(), hash.as_slice(), this.public_key)
     }
 
     match<T>(p: PublicKeyPattern<T>): T {
@@ -748,9 +760,10 @@ export class Secp256k1PublicKey extends PublicKeyBase implements PublicKeyMatche
         }
         buf = r.unwrap();
 
-        buf.set(this.buffer);
+        const comprssed = secp256k1.publicKeyConvert(this.public_key, true);
+        buf.set(comprssed);
 
-        buf = buf.offset(this.buffer.length)
+        buf = buf.offset(comprssed.byteLength)
         return Ok(buf)
     }
 }
