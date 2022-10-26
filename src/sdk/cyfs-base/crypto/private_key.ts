@@ -6,7 +6,6 @@ import { BuckyNumber, BuckyNumberDecoder } from "../base/bucky_number";
 import {pki, asn1, util, random, md} from 'node-forge'
 import { KEY_TYPE_RSA, KEY_TYPE_SECP256K1, PublicKey, RAW_PUBLIC_KEY_RSA_1024_CODE, RAW_PUBLIC_KEY_RSA_2048_CODE, RAW_PUBLIC_KEY_RSA_3072_CODE, Rsa1024SignData, Rsa2048SignData, RSAPublicKey, Signature, SignatureSource } from "./public_key";
 import { bucky_time_now } from "../base/time";
-import { HashValue } from "./hash";
 import {generate_rsa_by_rng, RsaRng} from './key_generator'
 
 function bits_2_keysize(bits: number): number {
@@ -78,7 +77,7 @@ export abstract class PrivateKey implements RawEncode{
     }
 
     to_hex(): BuckyResult<string> {
-        let ret = this.to_vec();
+        const ret = this.to_vec();
         if (ret.err) {
             return ret;
         }
@@ -112,17 +111,17 @@ export class RSAPrivateKey extends PrivateKey{
         return Ok(buf.offset(der_key.length()));
     }
     public(): PublicKey {
-        let pub_key = pki.rsa.setPublicKey(this.value.n, this.value.e)
+        const pub_key = pki.rsa.setPublicKey(this.value.n, this.value.e)
         return new RSAPublicKey(this.code, pub_key);
     }
     sign(data: Uint8Array, sign_source: SignatureSource): Signature {
-        let create_time = new BuckyNumber('u64', bucky_time_now());
-        let data_new = new Uint8Array(data.length + create_time.raw_measure().unwrap());
+        const create_time = new BuckyNumber('u64', bucky_time_now());
+        const data_new = new Uint8Array(data.length + create_time.raw_measure().unwrap());
         data_new.set(data);
         create_time.raw_encode(data_new.offset(data.length)).unwrap();
-        let digest = md.sha256.create().update(util.binary.raw.encode(data_new));
+        const digest = md.sha256.create().update(util.binary.raw.encode(data_new));
         // let hash = HashValue.hash_data(data_new);
-        let sign_buf = this.value.sign(digest, 'RSASSA-PKCS1-V1_5');
+        const sign_buf = this.value.sign(digest, 'RSASSA-PKCS1-V1_5');
         let sign_data;
         switch (this.code){
             case RAW_PUBLIC_KEY_RSA_1024_CODE: {
@@ -137,11 +136,11 @@ export class RSAPrivateKey extends PrivateKey{
                 throw new Err("unsupport privice key bits");
             }
         }
-        let sign = new Signature(sign_source, 0, create_time.val, sign_data);
+        const sign = new Signature(sign_source, 0, create_time.val, sign_data);
         return sign;
     }
     decrypt(input: Uint8Array, out: Uint8Array): BuckyResult<number> {
-        let ret = this.value.decrypt(util.binary.raw.encode(input), 'RSAES-PKCS1-V1_5');
+        const ret = this.value.decrypt(util.binary.raw.encode(input), 'RSAES-PKCS1-V1_5');
         out.set(util.binary.raw.decode(ret));
         return Ok(ret.length);
     }
@@ -164,7 +163,7 @@ export class Secp256k1PrivateKey extends PrivateKey{
         throw new Error("Method not implemented.");
     }
     decrypt(input: Uint8Array, out: Uint8Array): BuckyResult<number> {
-        throw new Error("Method not implemented.");
+        throw new Error("direct decyrpt with private key of secp256 not support!");
     }
 }
 
@@ -179,18 +178,18 @@ export class PrivatekeyDecoder implements RawDecode<PrivateKey> {
                 {
                     let len;
                     {
-                        let r = new BuckyNumberDecoder('u16').raw_decode(buf);
+                        const r = new BuckyNumberDecoder('u16').raw_decode(buf);
                         if (r.err) {
                             return r;
                         }
                         [len, buf] = r.unwrap();
                     }
-                    let der_buf = buf.slice(0, len.toNumber());
-                    let pk = pki.privateKeyFromAsn1(asn1.fromDer(util.binary.raw.encode(der_buf))) as pki.rsa.PrivateKey
+                    const der_buf = buf.slice(0, len.toNumber());
+                    const pk = pki.privateKeyFromAsn1(asn1.fromDer(util.binary.raw.encode(der_buf))) as pki.rsa.PrivateKey
                     buf = buf.offset(len.toNumber());
 
-                    let keySize = pk.n.bitLength();
-                    let rsa = new RSAPrivateKey(bits_2_keysize(keySize), pk);
+                    const keySize = pk.n.bitLength();
+                    const rsa = new RSAPrivateKey(bits_2_keysize(keySize), pk);
                     return Ok([rsa, buf] as [PrivateKey, Uint8Array]);
                 }
             default:

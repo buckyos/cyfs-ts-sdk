@@ -1,5 +1,5 @@
 import { JsonCodec } from "..";
-import { AnyNamedObject, BuckyError, BuckyErrorCode, BuckyResult, Err, ObjectId, Ok } from "../../cyfs-base";
+import { AesKey, AnyNamedObject, BuckyError, BuckyErrorCode, BuckyResult, Err, ObjectId, Ok } from "../../cyfs-base";
 import { NONObjectInfo, NONObjectInfoJsonCodec } from "../non/def";
 
 export interface CryptoOutputRequestCommon {
@@ -337,4 +337,53 @@ export class CryptoVerifyObjectOutputResponseJsonCodec extends JsonCodec<CryptoV
         }
         return Ok({result: r.unwrap()})
     }
+}
+
+export const CRYPTO_REQUEST_FLAG_CRYPT_BY_OWNER = 0x01 << 1;
+export const CRYPTO_REQUEST_FLAG_CRYPT_BY_DEVICE = 0x01 << 2;
+
+export enum CryptoEncryptType {
+    EncryptData = "encrypt_data",
+    GenAESKeyAndEncrypt = "gen_aeskey_and_encrypt",
+}
+
+export interface CryptoEncryptDataOutputRequest {
+    common: CryptoOutputRequestCommon,
+
+    encrypt_type: CryptoEncryptType,
+
+    data?: Uint8Array,
+
+    flags: number,
+}
+
+export interface CryptoEncryptDataOutputResponse {
+    aes_key?: AesKey,
+
+    result: Uint8Array,
+}
+
+export enum CryptoDecryptType {
+    DecryptData = "decrypt_data",
+    DecryptAESKey = "decrypt_aeskey",
+}
+
+export interface CryptoDecryptDataOutputRequest {
+    common: CryptoOutputRequestCommon,
+
+    decrypt_type: CryptoDecryptType,
+
+    data: Uint8Array,
+
+    flags: number,
+}
+
+export enum DecryptDataResult {
+    Decrypted = "decrypted",
+    Pending = "pending",
+}
+
+export interface CryptoDecryptDataOutputResponse {
+    result: DecryptDataResult,
+    data: Uint8Array,
 }

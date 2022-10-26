@@ -1,7 +1,7 @@
 import { EventListenerAsyncRoutineT, BuckyError, BuckyErrorCode, BuckyResult, Err, Ok } from '../../cyfs-base';
 import { AclHandlerRequest, AclHandlerResponse } from '../acl/request';
 import { BuckyResultJsonCodec, JsonCodec } from '../base/codec';
-import { CryptoSignObjectInputRequest, CryptoSignObjectInputResponse, CryptoVerifyObjectInputRequest, CryptoVerifyObjectInputResponse } from '../crypto/input_request';
+import { CryptoDecryptDataInputRequest, CryptoDecryptDataInputResponse, CryptoEncryptDataInputRequest, CryptoEncryptDataInputResponse, CryptoSignObjectInputRequest, CryptoSignObjectInputResponse, CryptoVerifyObjectInputRequest, CryptoVerifyObjectInputResponse } from '../crypto/input_request';
 import { NDNDeleteDataInputRequest, NDNDeleteDataInputResponse, NDNGetDataInputRequest, NDNGetDataInputResponse, NDNPutDataInputRequest, NDNPutDataInputResponse } from '../ndn/input_request';
 import { NONDeleteObjectInputRequest, NONDeleteObjectInputResponse, NONGetObjectInputRequest, NONGetObjectInputResponse, NONPostObjectInputRequest, NONPostObjectInputResponse, NONPutObjectInputRequest, NONPutObjectInputResponse} from '../non/input_request';
 import { RouterHandlerAction } from './def';
@@ -35,6 +35,11 @@ export type RouterHandlerSignObjectRequest =
 export type RouterHandlerVerifyObjectRequest =
     RouterHandlerRequest<CryptoVerifyObjectInputRequest, CryptoVerifyObjectInputResponse>;
 
+export type RouterHandlerEncryptDataRequest =
+    RouterHandlerRequest<CryptoEncryptDataInputRequest, CryptoEncryptDataInputResponse>;
+export type RouterHandlerDecryptDataRequest =
+    RouterHandlerRequest<CryptoDecryptDataInputRequest, CryptoDecryptDataInputResponse>;
+
 export type RouterHandlerAclRequest = 
     RouterHandlerRequest<AclHandlerRequest, AclHandlerResponse>;
 
@@ -57,6 +62,11 @@ export type RouterHandlerSignObjectResult =
     RouterHandlerResponse<CryptoSignObjectInputRequest, CryptoSignObjectInputResponse>;
 export type RouterHandlerVerifyObjectResult =
     RouterHandlerResponse<CryptoVerifyObjectInputRequest, CryptoVerifyObjectInputResponse>;
+
+export type RouterHandlerEncryptDataResult =
+    RouterHandlerResponse<CryptoEncryptDataInputRequest, CryptoEncryptDataInputResponse>;
+export type RouterHandlerDecryptDataResult =
+    RouterHandlerResponse<CryptoDecryptDataInputRequest, CryptoDecryptDataInputResponse>;
 
 export type RouterHandlerAclResult =
     RouterHandlerResponse<AclHandlerRequest, AclHandlerResponse>;

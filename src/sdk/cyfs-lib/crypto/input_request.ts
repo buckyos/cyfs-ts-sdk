@@ -1,8 +1,8 @@
 import { JsonCodec, VerifyObjectTypeJsonCodec } from "..";
-import { BuckyResult, ObjectId, Ok } from "../../cyfs-base";
+import { AesKey, BuckyResult, ObjectId, Ok } from "../../cyfs-base";
 import { RequestSourceInfo, SourceHelper } from "../access/source";
 import { NONObjectInfo, NONObjectInfoJsonCodec } from "../non/def";
-import { CryptoSignObjectOutputResponse, CryptoVerifyObjectOutputResponse, VerifyObjectType, VerifySignType } from "./output_request";
+import { CryptoDecryptDataOutputResponse, CryptoDecryptType, CryptoEncryptDataOutputResponse, CryptoEncryptType, CryptoSignObjectOutputResponse, CryptoVerifyObjectOutputResponse, DecryptDataResult, VerifyObjectType, VerifySignType } from "./output_request";
 
 export interface CryptoInputRequestCommon {
     // 请求路径，可为空
@@ -162,3 +162,159 @@ export class CryptoVerifyObjectInputRequestJsonCodec extends JsonCodec<CryptoVer
 }
 
 export type CryptoVerifyObjectInputResponse = CryptoVerifyObjectOutputResponse;
+
+export interface CryptoEncryptDataInputRequest {
+    common: CryptoInputRequestCommon,
+
+    encrypt_type: CryptoEncryptType,
+
+    data?: Uint8Array,
+
+    flags: number,
+}
+export type CryptoEncryptDataInputResponse = CryptoEncryptDataOutputResponse;
+
+export class CryptoEncryptDataInputRequestJsonCodec extends JsonCodec<CryptoEncryptDataInputRequest> {
+    encode_object(param: CryptoEncryptDataInputRequest) {
+        return {
+            common: new CryptoInputRequestCommonJsonCodec().encode_object(param.common),
+            encrypt_type: param.encrypt_type,
+            data: param.data?param.data.toHex():undefined,
+            flags: param.flags
+        }
+    }
+
+    decode_object(o: any): BuckyResult<CryptoEncryptDataInputRequest> {
+        let data;
+        if (o.data) {
+            const r = Uint8Array.prototype.fromHex(o.data);
+            if (r.err) {
+                return r;
+            }
+            data = r.unwrap();
+        }
+
+        let common;
+        {
+            const r = new CryptoInputRequestCommonJsonCodec().decode_object(o.common);
+            if (r.err) {
+                return r;
+            }
+            common = r.unwrap();
+        }
+
+        return Ok({
+            common,
+            data,
+            encrypt_type: o.encrypt_type as CryptoEncryptType,
+            flags: o.flags
+        })
+    }
+}
+
+export class CryptoEncryptDataInputResponseJsonCodec extends JsonCodec<CryptoEncryptDataInputResponse> {
+    encode_object(param: CryptoEncryptDataInputResponse) {
+        return {
+            aes_key: param.aes_key?param.aes_key.toString():undefined,
+            data: param.result.toHex()
+        }
+    }
+
+    decode_object(o: any): BuckyResult<CryptoEncryptDataInputResponse> {
+        let data;
+        {
+            const r = Uint8Array.prototype.fromHex(o.data);
+            if (r.err) {
+                return r;
+            }
+            data = r.unwrap();
+        }
+
+        let aes_key;
+        if (o.aes_key) {
+            const r = AesKey.from_str(o.aes_key);
+            if (r.err) {
+                return r;
+            }
+            aes_key = r.unwrap();
+        }
+
+        return Ok({
+            result: data,
+            aes_key
+        })
+    }
+}
+
+export interface CryptoDecryptDataInputRequest {
+    common: CryptoInputRequestCommon,
+
+    decrypt_type: CryptoDecryptType,
+
+    data: Uint8Array,
+
+    flags: number,
+}
+export type CryptoDecryptDataInputResponse = CryptoDecryptDataOutputResponse;
+export class CryptoDecryptDataInputRequestJsonCodec extends JsonCodec<CryptoDecryptDataInputRequest> {
+    encode_object(param: CryptoDecryptDataInputRequest) {
+        return {
+            common: new CryptoInputRequestCommonJsonCodec().encode_object(param.common),
+            decrypt_type: param.decrypt_type,
+            data: param.data?param.data.toHex():undefined,
+            flags: param.flags
+        }
+    }
+
+    decode_object(o: any): BuckyResult<CryptoDecryptDataInputRequest> {
+        let data;
+        {
+            const r = Uint8Array.prototype.fromHex(o.data);
+            if (r.err) {
+                return r;
+            }
+            data = r.unwrap();
+        }
+
+        let common;
+        {
+            const r = new CryptoInputRequestCommonJsonCodec().decode_object(o.common);
+            if (r.err) {
+                return r;
+            }
+            common = r.unwrap();
+        }
+
+        return Ok({
+            common,
+            data,
+            decrypt_type: o.decrypt_type as CryptoDecryptType,
+            flags: o.flags
+        })
+    }
+}
+
+export class CryptoDecryptDataInputResponseJsonCodec extends JsonCodec<CryptoDecryptDataInputResponse> {
+    encode_object(param: CryptoDecryptDataInputResponse) {
+        return {
+            result: param.result,
+            data: param.data.toHex()
+        }
+    }
+
+    decode_object(o: any): BuckyResult<CryptoDecryptDataInputResponse> {
+        let data;
+        {
+            const r = Uint8Array.prototype.fromHex(o.data);
+            if (r.err) {
+                return r;
+            }
+            data = r.unwrap();
+        }
+
+        return Ok({
+            result: o.result as DecryptDataResult,
+            data
+        })
+    }
+}

@@ -23,6 +23,9 @@ export enum RouterHandlerCategory {
     SignObject = "sign_object",
     VerifyObject = "verify_object",
 
+    EncryptData = "encrypt_data",
+    DecryptData = "decrypt_data",
+
     Acl = "acl",
     Interest = "interest"
 }

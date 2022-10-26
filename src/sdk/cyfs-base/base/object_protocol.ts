@@ -35,10 +35,15 @@ export const CYFS_VERIFY_SIGNS = "cyfs-verify-signs";
 
 export const CYFS_VERIFY_TYPE = "cyfs-verify-type";
 export const CYFS_SIGN_TYPE = "cyfs-sign-type";
-export const CYFS_SIGN_FLAGS = "cyfs-sign-flags";
+export const CYFS_CRYPTO_FLAGS = "cyfs-crypto-flags";
 export const CYFS_VERIFY_RET = "cyfs-verify-ret";
 
 export const CYFS_SIGN_RET = "cyfs-sign-ret";
+
+export const CYFS_ENCRYPT_TYPE = "cyfs-encrypt-type";
+export const CYFS_DECRYPT_TYPE = "cyfs-decrypt-type";
+export const CYFS_DECRYPT_RET = "cyfs-decrypt-ret";
+export const CYFS_AES_KEY = "cyfs-aes-key";
 
 export const CYFS_FLAGS = "cyfs-flags";
 export const CYFS_TARGET = "cyfs-target";

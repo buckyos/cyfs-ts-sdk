@@ -1,11 +1,10 @@
 import { Ok, BuckyResult} from "../base/results";
 import { RawEncode, RawDecode } from "../base/raw_encode";
 import {} from "../base/buffer";
-import { Option } from "../base/option";
-// import {sha256} from "js-sha256";
 import JSBI from 'jsbi';
 import { DataViewJSBIHelper } from '../../platform-spec';
 import {md, util} from 'node-forge'
+import { from_base_58, to_base_58 } from "../base/basex";
 
 /**
  * KeyMixHash
@@ -65,7 +64,7 @@ export class KeyMixHashDecoder implements RawDecode<KeyMixHash>{
  * AesKey
  */
 
-export const AES_KEY_LEN = 32;
+export const AES_KEY_LEN = 48;
 
 export class AesKey implements RawEncode {
     m_buf: Uint8Array;
@@ -91,24 +90,26 @@ export class AesKey implements RawEncode {
     }
 
     static random(): AesKey {
-        const buf = new Uint8Array(32);
+        const buf = new Uint8Array(48);
         window.crypto.getRandomValues(buf);
         return new AesKey(buf);
     }
 
-    static mix_hash(salt?: JSBI): KeyMixHash {
+    mix_hash(salt?: JSBI): KeyMixHash {
         //const hash = sha256.create();
         const hash = md.sha256.create()
+        hash.update(util.binary.raw.encode(this.as_slice()));
         if(salt){
-            const buf = new Uint8Array(4);
+            const buf = new Uint8Array(8);
             const view = buf.offsetView(0);
-            DataViewJSBIHelper.setBigUint64(view, 0, salt);
+            DataViewJSBIHelper.setBigUint64(view, 0, salt, true);
             // view.setBigUint64(0, salt.unwrap());
             hash.update(util.binary.raw.encode(new Uint8Array(view.buffer)));
         }
         // const val = hash.arrayBuffer();
         const val = util.binary.raw.decode(hash.digest().bytes());
-        return new KeyMixHash(val);
+        val[0] = val[0] & 0x7f;
+        return KeyMixHash.copy_from_slice(val);
     }
 
     static copy_from_slice(buf:Uint8Array): AesKey{
@@ -122,6 +123,19 @@ export class AesKey implements RawEncode {
     raw_encode(buf: Uint8Array): BuckyResult<Uint8Array>{
         buf.set(this.as_slice());
         return Ok(buf.offset(this.as_slice().length));
+    }
+
+    toString(): string {
+        return to_base_58(this.as_slice())
+    }
+
+    static from_str(s: string): BuckyResult<AesKey> {
+        const r = from_base_58(s, AES_KEY_LEN);
+        if (r.err) {
+            return r;
+        }
+
+        return Ok(new AesKey(r.unwrap()))
     }
 }
 

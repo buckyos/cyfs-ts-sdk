@@ -6,21 +6,30 @@ import {
     CYFS_FLAGS,
     CYFS_OBJECT_ID,
     CYFS_REQ_PATH,
-    CYFS_SIGN_FLAGS,
+    CYFS_CRYPTO_FLAGS,
     CYFS_SIGN_OBJ,
     CYFS_SIGN_OBJ_ID,
     CYFS_SIGN_RET,
     CYFS_SIGN_TYPE,
     CYFS_TARGET,
     CYFS_VERIFY_SIGNS,
-    CYFS_VERIFY_TYPE
+    CYFS_VERIFY_TYPE,
+    AesKey,
+    CYFS_AES_KEY,
+    CYFS_DECRYPT_RET,
+    CYFS_DECRYPT_TYPE,
+    CYFS_ENCRYPT_TYPE,
+    error
 } from "../../cyfs-base";
-import { Err, Ok } from "ts-results";
+import { Err, Ok, Some } from "ts-results";
 import { BuckyError, BuckyResult } from "../../cyfs-base";
 import { ObjectId } from "../../cyfs-base/objects/object_id";
 import { CryptoSignObjectRequest, CryptoVerifyObjectRequest } from './request';
-import { CryptoOutputRequestCommon, CryptoSignObjectOutputResponse, CryptoVerifyObjectOutputRequest, CryptoVerifyObjectOutputResponse, CryptoVerifyObjectOutputResponseJsonCodec, SignObjectResult, VerifySignsJsonCodec } from "./output_request";
+import { CryptoDecryptDataOutputRequest, CryptoDecryptDataOutputResponse, CryptoEncryptDataOutputRequest, CryptoEncryptDataOutputResponse, CryptoOutputRequestCommon, CryptoSignObjectOutputResponse, CryptoVerifyObjectOutputRequest, CryptoVerifyObjectOutputResponse, CryptoVerifyObjectOutputResponseJsonCodec, DecryptDataResult, SignObjectResult, VerifySignsJsonCodec } from "./output_request";
 import { NONObjectInfo } from "../non/def";
+import { match } from "assert";
+import { info } from "console";
+import { format } from "path";
 
 
 export class CryptoRequestor {
@@ -123,7 +132,7 @@ export class CryptoRequestor {
         const http_req = new HttpRequest('POST', url);
         this.encode_common_headers(req.common, http_req);
         http_req.insert_header(CYFS_OBJECT_ID, req.object.object_id.to_string());
-        http_req.insert_header(CYFS_SIGN_FLAGS, req.flags.toString());
+        http_req.insert_header(CYFS_CRYPTO_FLAGS, req.flags.toString());
         return http_req;
     }
 
@@ -178,6 +187,124 @@ export class CryptoRequestor {
         } else {
             const e = await RequestorHelper.error_from_resp(resp);
             return Err(e)
+        }
+    }
+
+    // encrypt
+    encode_encrypt_data_request(req: CryptoEncryptDataOutputRequest): HttpRequest {
+        const url = this.service_url + "encrypt";
+
+        const http_req = new HttpRequest('POST', url);
+        this.encode_common_headers(req.common, http_req);
+        http_req.insert_header(CYFS_ENCRYPT_TYPE, req.encrypt_type);
+        http_req.insert_header(CYFS_CRYPTO_FLAGS, req.flags.toString());
+
+        return http_req
+    }
+
+    async decode_encrypt_data_response(
+        resp: Response,
+    ): Promise<BuckyResult<CryptoEncryptDataOutputResponse>> {
+        let aes_key;
+        if (resp.headers.has(CYFS_AES_KEY)) {
+            const r = AesKey.from_str(resp.headers.get(CYFS_AES_KEY)!)
+            if (r.err) {
+                return r;
+            }
+            aes_key = r.unwrap();
+        }
+
+        const result = new Uint8Array(await resp.arrayBuffer())
+
+        return Ok({ aes_key, result })
+    }
+
+    public async encrypt_data(
+        req: CryptoEncryptDataOutputRequest,
+    ): Promise<BuckyResult<CryptoEncryptDataOutputResponse>> {
+        const http_req = this.encode_encrypt_data_request(req);
+        let data_len = 0;
+        if (req.data) {
+            data_len = req.data.byteLength;
+            http_req.set_body(req.data)
+        }
+
+        const resp_r = await this.requestor.request(http_req);
+        if (resp_r.err) {
+            return resp_r;
+        }
+        const resp = resp_r.unwrap();
+
+        if (resp.status === 200) {
+            const eresp_r = await this.decode_encrypt_data_response(resp);
+            if (eresp_r.err) {
+                return eresp_r;
+            }
+            const eresp = eresp_r.unwrap()
+
+            console.info(`encrypt data success: data=${data_len}, type=${req.encrypt_type}, ret=${eresp.result.byteLength}`);
+
+            return Ok(eresp);
+        } else {
+            const e = await RequestorHelper.error_from_resp(resp);
+            console.error(`encrypt data failed: data=${data_len}, type=${req.encrypt_type}, ${e}`);
+            return Err(e);
+        }
+    }
+
+    // decrypt
+    encode_decrypt_data_request(req: CryptoDecryptDataOutputRequest): HttpRequest {
+        const url = this.service_url + "decrypt";
+
+        const http_req = new HttpRequest('POST', url);
+        this.encode_common_headers(req.common, http_req);
+        http_req.insert_header(CYFS_DECRYPT_TYPE, req.decrypt_type);
+        http_req.insert_header(CYFS_CRYPTO_FLAGS, req.flags.toString());
+
+        return http_req
+    }
+
+    async decode_decrypt_data_response(
+        resp: Response,
+    ): Promise<BuckyResult<CryptoDecryptDataOutputResponse>> {
+        const result = RequestorHelper.decode_header(resp, CYFS_DECRYPT_RET, (s) => s as DecryptDataResult);
+        if (result.err) {
+            return result;
+        }
+
+        const data = new Uint8Array(await resp.arrayBuffer());
+
+        return Ok({ result: result.unwrap(), data });
+    }
+
+    public async decrypt_data(
+        req: CryptoDecryptDataOutputRequest,
+    ): Promise<BuckyResult<CryptoDecryptDataOutputResponse>> {
+        const http_req = this.encode_decrypt_data_request(req);
+        const data_len = req.data.byteLength;
+        http_req.set_body(req.data);
+
+        const resp_r = await this.requestor.request(http_req);
+        if (resp_r.err) {
+            return resp_r;
+        }
+        const resp = resp_r.unwrap();
+
+        if (resp.status === 200) {
+            const dresp_r = await this.decode_decrypt_data_response(resp);
+            if (dresp_r.err) {
+                return dresp_r;
+            }
+            const dresp = dresp_r.unwrap();
+
+            console.info(`decrypt data crypto success: data=${data_len}, type=${req.decrypt_type}, ${dresp}`);
+
+            return Ok(dresp);
+        } else {
+            const e = await RequestorHelper.error_from_resp(resp);
+            console.error(`decrypt data crypto failed: data=${data_len}, type=${req.decrypt_type}, ${e}`);
+
+            return Err(e);
         }
     }
 }
