@@ -257,7 +257,7 @@ export class RouterHandlerManager {
         const req_codec = new CryptoDecryptDataInputRequestJsonCodec();
         const resp_codec = new CryptoDecryptDataInputResponseJsonCodec();
 
-        return this.add_handler(chain, id, index, RouterHandlerCategory.EncryptData, req_codec, resp_codec,
+        return this.add_handler(chain, id, index, RouterHandlerCategory.DecryptData, req_codec, resp_codec,
             filter, req_path, default_action, routine);
     }
 
