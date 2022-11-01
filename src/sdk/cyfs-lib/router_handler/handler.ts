@@ -4,8 +4,10 @@ import { CyfsStackEventType } from "../stack/stack";
 import { RouterHandlerCategory, RouterHandlerAction, RouterHandlerChain } from "./def";
 import {
     RouterHandlerAclRoutine,
+    RouterHandlerDecryptDataRoutine,
     RouterHandlerDeleteDataRoutine,
     RouterHandlerDeleteObjectRoutine,
+    RouterHandlerEncryptDataRoutine,
     RouterHandlerGetDataRoutine,
     RouterHandlerGetObjectRoutine,
     RouterHandlerPostObjectRoutine,
@@ -20,7 +22,7 @@ import {
 } from './request';
 import { JsonCodec } from '../base/codec';
 import { NONDeleteObjectInputRequestJsonCodec, NONDeleteObjectInputResponseJsonCodec, NONGetObjectInputRequestJsonCodec, NONGetObjectInputResponseJsonCodec, NONPostObjectInputRequestJsonCodec, NONPostObjectInputResponseJsonCodec, NONPutObjectInputRequestJsonCodec, NONPutObjectInputResponseJsonCodec } from '../non/input_request';
-import { CryptoSignObjectInputRequestJsonCodec, CryptoVerifyObjectInputRequestJsonCodec } from "../crypto/input_request";
+import { CryptoDecryptDataInputRequestJsonCodec, CryptoDecryptDataInputResponseJsonCodec, CryptoEncryptDataInputRequestJsonCodec, CryptoEncryptDataInputResponseJsonCodec, CryptoSignObjectInputRequestJsonCodec, CryptoVerifyObjectInputRequestJsonCodec } from "../crypto/input_request";
 import { CryptoSignObjectOutputResponseJsonCodec, CryptoVerifyObjectOutputResponseJsonCodec } from "../crypto/output_request";
 import { AclHandlerRequestJsonCodec, AclHandlerResponseJsonCodec } from "../acl/request";
 import { NDNDeleteDataInputRequestJsonCodec, NDNDeleteDataInputResponseJsonCodec, NDNGetDataInputRequestJsonCodec, NDNGetDataInputResponseJsonCodec, NDNPutDataInputRequestJsonCodec, NDNPutDataInputResponseJsonCodec } from "../ndn/input_request";
@@ -224,6 +226,38 @@ export class RouterHandlerManager {
         const resp_codec = new CryptoVerifyObjectOutputResponseJsonCodec();
 
         return this.add_handler(chain, id, index, RouterHandlerCategory.VerifyObject, req_codec, resp_codec,
+            filter, req_path, default_action, routine);
+    }
+
+    add_encrypt_data_handler(
+        chain: RouterHandlerChain,
+        id: string,
+        index: number,
+        filter: string|undefined,
+        req_path: string|undefined,
+        default_action: RouterHandlerAction,
+        routine?: RouterHandlerEncryptDataRoutine
+    ): Promise<BuckyResult<void>> {
+        const req_codec = new CryptoEncryptDataInputRequestJsonCodec();
+        const resp_codec = new CryptoEncryptDataInputResponseJsonCodec();
+
+        return this.add_handler(chain, id, index, RouterHandlerCategory.EncryptData, req_codec, resp_codec,
+            filter, req_path, default_action, routine);
+    }
+
+    add_decrypt_data_handler(
+        chain: RouterHandlerChain,
+        id: string,
+        index: number,
+        filter: string|undefined,
+        req_path: string|undefined,
+        default_action: RouterHandlerAction,
+        routine?: RouterHandlerDecryptDataRoutine
+    ): Promise<BuckyResult<void>> {
+        const req_codec = new CryptoDecryptDataInputRequestJsonCodec();
+        const resp_codec = new CryptoDecryptDataInputResponseJsonCodec();
+
+        return this.add_handler(chain, id, index, RouterHandlerCategory.EncryptData, req_codec, resp_codec,
             filter, req_path, default_action, routine);
     }
 

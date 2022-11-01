@@ -42,6 +42,8 @@ export enum RouterHandlerChain {
 
     PreCrypto = "pre_crypto",
     PostCrypto = "post_crypto",
+    EncryptData = "encrypt_data",
+    DecryptData = "decrypt_data",
 
     Handler = "handler",
 

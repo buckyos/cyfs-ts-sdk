@@ -82,6 +82,8 @@ export type RouterHandlerDeleteDataRoutine = EventListenerAsyncRoutineT<RouterHa
 
 export type RouterHandlerSignObjectRoutine = EventListenerAsyncRoutineT<RouterHandlerSignObjectRequest, RouterHandlerSignObjectResult>;
 export type RouterHandlerVerifyObjectRoutine = EventListenerAsyncRoutineT<RouterHandlerVerifyObjectRequest, RouterHandlerVerifyObjectResult>;
+export type RouterHandlerEncryptDataRoutine = EventListenerAsyncRoutineT<RouterHandlerEncryptDataRequest, RouterHandlerEncryptDataResult>;
+export type RouterHandlerDecryptDataRoutine = EventListenerAsyncRoutineT<RouterHandlerDecryptDataRequest, RouterHandlerDecryptDataResult>;
 export type RouterHandlerAclRoutine = EventListenerAsyncRoutineT<RouterHandlerAclRequest, RouterHandlerAclResult>;
 
 
