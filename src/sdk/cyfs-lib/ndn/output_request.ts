@@ -1,6 +1,6 @@
 import { ObjectId, Attributes, BuckyResult, DeviceId, Ok } from "../../cyfs-base"
 import { JsonCodec } from "../base/codec"
-import { NDNAPILevel, NDNDataRefererObject, NDNDataRefererObjectJsonCodec, NDNPutDataResult } from "./def"
+import { NDNAPILevel, NDNDataRefererObject, NDNPutDataResult } from "./def"
 import { NDNQueryFileInputResponse, NDNQueryFileInputResponseJsonCodec, NDNQueryFileParam, NDNQueryFileParamJsonCodec } from './input_request';
 
 export interface NDNOutputRequestCommon {
@@ -37,15 +37,6 @@ export class NDNOutputRequestCommonJsonCodec extends JsonCodec<NDNOutputRequestC
             }
         }
 
-        let source;
-        {
-            const r = DeviceId.from_base_58(o.source);
-            if (r.err) {
-                return r;
-            }
-            source = r.unwrap();
-        }
-
         let target;
         {
             if (o.target) {
@@ -59,7 +50,7 @@ export class NDNOutputRequestCommonJsonCodec extends JsonCodec<NDNOutputRequestC
 
         const referer_object = [];
         for (const object of o.referer_object) {
-            const r = new NDNDataRefererObjectJsonCodec().decode_object(object);
+            const r = NDNDataRefererObject.from_str(object);
             if (r.err) {
                 return r;
             }

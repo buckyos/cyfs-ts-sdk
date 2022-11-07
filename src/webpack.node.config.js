@@ -6,6 +6,7 @@ const cc = require('./webpack.cc');
 module.exports = {
     mode : 'production',
     entry: './src/sdk/index.ts',
+    devtool: 'source-map',
     module: {
         rules: [
             {

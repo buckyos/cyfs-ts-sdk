@@ -1,7 +1,7 @@
 import { JsonCodec } from "..";
 import { BuckyResult, DeviceId, Ok } from "../../cyfs-base";
 import { RequestProtocol } from "../access/source";
-import { NDNDataRefererObject, NDNDataRefererObjectJsonCodec } from "../ndn/def";
+import { NDNDataRefererObject } from "../ndn/def";
 import { NONSlimObjectInfo, NONSlimObjectInfoJsonCodec } from "../non/def";
 import { AclAccess, AclAction } from "./def";
 
@@ -44,7 +44,7 @@ export class AclHandlerRequestJsonCodec extends JsonCodec<AclHandlerRequest> {
         if (param.referer_object) {
             ret.referer_object = [];
             for (const obj of param.referer_object) {
-                ret.referer_object.push(new NDNDataRefererObjectJsonCodec().encode_object(obj))
+                ret.referer_object.push(obj.toString())
             }
         }
         return ret;
@@ -69,7 +69,7 @@ export class AclHandlerRequestJsonCodec extends JsonCodec<AclHandlerRequest> {
         if (o.referer_object) {
             referer_object = [];
             for (const obj of o.referer_object) {
-                const r = new NDNDataRefererObjectJsonCodec().decode_object(obj);
+                const r = NDNDataRefererObject.from_str(obj);
                 if (r.err) {
                     return r;
                 }

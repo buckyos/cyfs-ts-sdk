@@ -2,8 +2,9 @@ import JSBI from 'jsbi'
 import { BuckyResult, Ok, ObjectId, Attributes, HashValue, ChunkId, BuckyError, BuckyErrorCode, Err, FileId } from "../../cyfs-base"
 import { RequestSourceInfo, SourceHelper } from '../access/source'
 import { JsonCodec, JsonCodecHelper } from "../base/codec"
+import { NDNDataRequestRange, NDNDataResponseRange } from '../base/range'
 import { FileDirRef } from '../trans/request'
-import { NDNAPILevel, NDNDataRefererObject, NDNDataRefererObjectJsonCodec, NDNPutDataResult } from "./def"
+import { NDNAPILevel, NDNDataRefererObject, NDNDataType, NDNPutDataResult } from "./def"
 
 export interface NDNInputRequestCommon {
     // 请求路径，可为空
@@ -44,7 +45,7 @@ export class NDNInputRequestCommonJsonCodec extends JsonCodec<NDNInputRequestCom
         }
 
         for (const object of param.referer_object) {
-            o.referer_object.push(new NDNDataRefererObjectJsonCodec().encode_object(object))
+            o.referer_object.push(object.toString())
         }
 
         if (param.user_data) {
@@ -59,17 +60,6 @@ export class NDNInputRequestCommonJsonCodec extends JsonCodec<NDNInputRequestCom
     }
 
     decode_object(o: any): BuckyResult<NDNInputRequestCommon> {
-        let dec_id;
-        {
-            if (o.dec_id) {
-                const r = ObjectId.from_base_58(o.dec_id);
-                if (r.err) {
-                    return r;
-                }
-                dec_id = r.unwrap();
-            }
-        }
-
         const source = SourceHelper.obj_to_source(o.source);
 
         let target;
@@ -85,7 +75,7 @@ export class NDNInputRequestCommonJsonCodec extends JsonCodec<NDNInputRequestCom
 
         const referer_object = [];
         for (const object of o.referer_object) {
-            const r = new NDNDataRefererObjectJsonCodec().decode_object(object);
+            const r = NDNDataRefererObject.from_str(object);
             if (r.err) {
                 return r;
             }
@@ -123,6 +113,11 @@ export interface NDNGetDataInputRequest {
     // 目前只支持ChunkId/FileId/DirId
     object_id: ObjectId,
 
+    data_type: NDNDataType,
+
+    // request data range
+    range?: NDNDataRequestRange,
+
     // 对dir_id有效
     inner_path?: string,
 }
@@ -130,11 +125,16 @@ export interface NDNGetDataInputRequest {
 export class NDNGetDataInputRequestJsonCodec extends JsonCodec<NDNGetDataInputRequest> {
     constructor(private common_user_data_codec?: JsonCodec<any>) { super(); }
     encode_object(param: NDNGetDataInputRequest): any {
-        return {
+        const val: any = {
             common: new NDNInputRequestCommonJsonCodec(this.common_user_data_codec).encode_object(param.common),
             object_id: param.object_id.to_base_58(),
+            data_type: param.data_type,
             inner_path: param.inner_path,
+        };
+        if (param.range) {
+            val.range = param.range.toString();
         }
+        return val
     }
     decode_object(o: any): BuckyResult<NDNGetDataInputRequest> {
         const common = new NDNInputRequestCommonJsonCodec(this.common_user_data_codec).decode_object(o.common);
@@ -147,9 +147,16 @@ export class NDNGetDataInputRequestJsonCodec extends JsonCodec<NDNGetDataInputRe
             return id;
         }
 
+        let range;
+        if (o.range) {
+            range = NDNDataRequestRange.new_unparsed(o.range);
+        }
+
         return Ok({
             common: common.unwrap(),
             object_id: id.unwrap(),
+            data_type: o.data_type,
+            range,
             inner_path: o.inner_path
         })
     }
@@ -159,8 +166,12 @@ export interface NDNGetDataInputResponse {
     // chunk_id/file_id
     object_id: ObjectId,
 
+    owner_id?: ObjectId,
+
     // 所属file的attr
     attr?: Attributes,
+
+    range?: NDNDataResponseRange,
 
     length: number,
     // TODO: 这里在rust中是个Reader，在ts里应该是什么？
@@ -178,6 +189,12 @@ export class NDNGetDataInputResponseJsonCodec extends JsonCodec<NDNGetDataInputR
         if (param.attr) {
             o.attr = param.attr.flags;
         }
+        if (param.owner_id) {
+            o.owner_id = param.owner_id.to_base_58()
+        }
+        if (param.range) {
+            o.range = param.range.toString()
+        }
         return o;
     }
     decode_object(o: any): BuckyResult<NDNGetDataInputResponse> {
@@ -185,20 +202,37 @@ export class NDNGetDataInputResponseJsonCodec extends JsonCodec<NDNGetDataInputR
         if (id.err) {
             return id;
         }
-        const data = Uint8Array.prototype.fromHex(o.data);
-        if (data.err) {
-            return data;
-        }
+        // 现在事件不支持data的返回和修改
+        const data = new Uint8Array()
         let attr;
         if (o.attr) {
             attr = new Attributes(o.attr);
         }
 
+        let owner_id;
+        if (o.owner_id) {
+            const r = ObjectId.from_base_58(o.owner_id);
+            if (r.err) {
+                return r;
+            }
+            owner_id = r.unwrap()
+        }
+        let range;
+        if (o.range) {
+            const r = NDNDataResponseRange.from_json(o.range);
+            if (r.err) {
+                return r;
+            }
+            range = r.unwrap()
+        }
+
         return Ok({
             object_id: id.unwrap(),
+            owner_id,
             attr,
+            range,
             length: o.length,
-            data: data.unwrap()
+            data
         })
     }
 }
@@ -208,6 +242,7 @@ export interface NDNPutDataInputRequest {
     common: NDNInputRequestCommon,
 
     object_id: ObjectId,
+    data_type: NDNDataType,
 
     length: number,
     // TODO: 这里在rust中是个Reader，在ts里应该是什么？
@@ -220,6 +255,7 @@ export class NDNPutDataInputRequestJsonCodec extends JsonCodec<NDNPutDataInputRe
         return {
             common: new NDNInputRequestCommonJsonCodec(this.common_user_data_codec).encode_object(param.common),
             object_id: param.object_id.to_base_58(),
+            data_type: param.data_type,
             length: param.length,
             data: param.data.toHex()
         }
@@ -242,6 +278,7 @@ export class NDNPutDataInputRequestJsonCodec extends JsonCodec<NDNPutDataInputRe
         return Ok({
             common: common.unwrap(),
             object_id: id.unwrap(),
+            data_type: o.data_type as NDNDataType,
             length: o.length,
             data: data.unwrap()
         })
