@@ -318,6 +318,7 @@ function start_runtime(config: CyfsToolConfig) {
         cmd += ' --anonymous'
     }
     child_runtime = child_process.spawn(cmd, {windowsHide: true, stdio: 'ignore', shell: false});
+    console.log("start cyfs runtime. pid", child_runtime.pid);
 }
 
 export async function create_stack(endpoint: string, config: CyfsToolConfig, dec_id?: ObjectId): Promise<[SharedCyfsStack, boolean]> {
@@ -325,7 +326,8 @@ export async function create_stack(endpoint: string, config: CyfsToolConfig, dec
         return [SharedCyfsStack.open_default(dec_id), true];
     } else if (endpoint === "runtime") {
         // retry 3 times
-        for (let index = 0; index < 3; index++) {
+        let wait_times = 2000;
+        for (let index = 0; index <= 3; index++) {
             console.log('check cyfs-runtime running...')
             const [running, writable] = await check_runtime(endpoint);
             if (running) {
@@ -337,7 +339,8 @@ export async function create_stack(endpoint: string, config: CyfsToolConfig, dec
                 console.log('cyfs-runtime not running, try start runtime...');
                 start_runtime(config);
             }
-            await sleep(2000)
+            await sleep(wait_times)
+            wait_times *= 2;
         }
 
         console.error('cannot start cyfs-runtime, please check cyfs-runtime status')

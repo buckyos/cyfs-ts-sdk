@@ -491,7 +491,7 @@ async function list(cur_path: string, target_id: ObjectId, stack: SharedCyfsStac
         list_ret = await op.list()
         //console_orig.log(`list: ${list_ret}`)
     } else {
-        list_ret = await stack.root_state_access_stub(target_id, dec_id).list(sub_path, page_index, page_size);
+        list_ret = await stack.root_state_accessor_stub(target_id, dec_id).list(sub_path, page_index, page_size);
     }
     if (list_ret.err) {
         console_orig.log(`error: list ${cur_path} err ${list_ret.val}`)
@@ -524,7 +524,7 @@ async function cd(cur_path: string, dst_path: string, target_id: ObjectId, stack
     const new_path = path.resolve(cur_path, dst_path);
     // 如果这个path存在，且是ObjectMap，返回new_path。否则返回cur_path
     const [dec_id, sub_path] = extract_path(new_path);
-    const ret = await stack.root_state_access_stub(target_id, dec_id).get_object_by_path(sub_path);
+    const ret = await stack.root_state_accessor_stub(target_id, dec_id).get_object_by_path(sub_path);
     if (ret.err) {
         console_orig.error(`stat path ${new_path} err ${ret.val}`)
         return cur_path

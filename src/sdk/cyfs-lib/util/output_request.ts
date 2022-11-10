@@ -340,8 +340,8 @@ export interface DeviceStaticInfo {
 
     zone_role: ZoneRole,
 
-    root_state_access_mode: GlobalStateAccessMode,
-    local_cache_access_mode: GlobalStateAccessMode,
+    root_state_accessor_mode: GlobalStateAccessMode,
+    local_cache_accessor_mode: GlobalStateAccessMode,
 
     // 当前zone的主ood id
     ood_device_id: DeviceId;
@@ -412,8 +412,8 @@ export class DeviceStaticInfoJsonCodec extends JsonCodec<DeviceStaticInfo> {
             ood_work_mode: o.ood_work_mode as OODWorkMode,
             zone_role: o.zone_role as ZoneRole,
 
-            root_state_access_mode: o.root_state_access_mode as GlobalStateAccessMode,
-            local_cache_access_mode: o.local_cache_access_mode as GlobalStateAccessMode,
+            root_state_accessor_mode: o.root_state_accessor_mode as GlobalStateAccessMode,
+            local_cache_accessor_mode: o.local_cache_accessor_mode as GlobalStateAccessMode,
 
             ood_device_id,
             zone_id,

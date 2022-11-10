@@ -288,8 +288,8 @@ async function test_root_state_impl(
     }
 
     {
-        const root_state_access_stub = stack.root_state_access_stub();
-        const r1 = await root_state_access_stub.get_object_by_path("/test/it");
+        const root_state_accessor_stub = stack.root_state_accessor_stub();
+        const r1 = await root_state_accessor_stub.get_object_by_path("/test/it");
         if (r1.err) {
             console.log(`get_object_by_path for root_state failed: ${r1.err}`);
         } else {
@@ -301,7 +301,7 @@ async function test_root_state_impl(
             }
         }
 
-        const r2 = await root_state_access_stub.list("/test/it", 2, 2);
+        const r2 = await root_state_accessor_stub.list("/test/it", 2, 2);
         if (r2.err) {
             console.log(`list for root_state failed: ${r2.err}`);
         } else {
@@ -406,23 +406,23 @@ async function test_root_state_codec(
     // access
     {
         // const rpath = `/$/${stack.dec_id}/${full_path}`;
-        const root_state_access_stub = stack.root_state_access_stub(stack.local_device_id().object_id, stack.dec_id);
+        const root_state_accessor_stub = stack.root_state_accessor_stub(stack.local_device_id().object_id, stack.dec_id);
         {
-            const l1 = await root_state_access_stub.list(path);
+            const l1 = await root_state_accessor_stub.list(path);
             assert(l1.ok);
             const resp = l1.unwrap();
             console.info(resp);
         }
 
         {
-            const r1 = await root_state_access_stub.get_object_by_path(path);
+            const r1 = await root_state_accessor_stub.get_object_by_path(path);
             assert(r1.ok);
             const resp = r1.unwrap();
             console.info(resp);
         }
 
         {
-            const r1 = await root_state_access_stub.get_object_by_path(full_path);
+            const r1 = await root_state_accessor_stub.get_object_by_path(full_path);
             assert(!r1.ok);
             // const resp = r1.unwrap();
             // console.info(resp);

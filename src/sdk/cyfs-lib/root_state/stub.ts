@@ -1,4 +1,4 @@
-import { GlobalStateRequestor, OpEnvRequestor, GlobalStateAccessRequestor } from "./requestor";
+import { GlobalStateRequestor, OpEnvRequestor, GlobalStateAccessorRequestor } from "./requestor";
 import { BuckyResult, ObjectId, Ok, ObjectMapSimpleContentType, } from "../../cyfs-base";
 import {
     RootStateGetCurrentRootOutputRequest,
@@ -1041,8 +1041,8 @@ export class PathOpEnvStub {
     }
 }
 
-export class GlobalStateAccessStub {
-    constructor(private requestor: GlobalStateAccessRequestor, private target?: ObjectId, private target_dec_id?: ObjectId) {
+export class GlobalStateAccessorStub {
+    constructor(private requestor: GlobalStateAccessorRequestor, private target?: ObjectId, private target_dec_id?: ObjectId) {
     }
 
     public async get_object_by_path(

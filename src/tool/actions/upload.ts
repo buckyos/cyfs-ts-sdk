@@ -36,7 +36,7 @@ export function makeCommand(config: CyfsToolConfig): Command {
 async function upload_obj(stack: SharedCyfsStack, target: ObjectId, path: string): Promise<ObjectId[] | undefined> {
     console.log("upload obj from root state path", path)
     let files: ObjectId[] = [];
-    const stub = stack.root_state_access_stub();
+    const stub = stack.root_state_accessor_stub();
     const r = await stub.get_object_by_path(path);
     if (r.err) {
         console.log(`get root state path ${path} err ${r.val}`)

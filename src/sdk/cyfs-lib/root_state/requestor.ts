@@ -1134,18 +1134,18 @@ export class OpEnvRequestor {
     }
 }
 
-export class GlobalStateAccessRequestor {
+export class GlobalStateAccessorRequestor {
     private category_: GlobalStateCategory;
     private service_url_: string;
     private dec_id_: ObjectId;
     private requestor_: BaseRequestor;
 
-    public static new_root_state_access(requestor: BaseRequestor, dec_id?: ObjectId): GlobalStateAccessRequestor {
-        return new GlobalStateAccessRequestor(GlobalStateCategory.RootState, requestor, dec_id)
+    public static new_root_state_accessor(requestor: BaseRequestor, dec_id?: ObjectId): GlobalStateAccessorRequestor {
+        return new GlobalStateAccessorRequestor(GlobalStateCategory.RootState, requestor, dec_id)
     }
 
-    public static new_local_cache_access(requestor: BaseRequestor, dec_id?: ObjectId): GlobalStateAccessRequestor {
-        return new GlobalStateAccessRequestor(GlobalStateCategory.LocalCache, requestor, dec_id)
+    public static new_local_cache_accessor(requestor: BaseRequestor, dec_id?: ObjectId): GlobalStateAccessorRequestor {
+        return new GlobalStateAccessorRequestor(GlobalStateCategory.LocalCache, requestor, dec_id)
     }
 
     public constructor(category: GlobalStateCategory, requestor: BaseRequestor, dec_id?: ObjectId) {
