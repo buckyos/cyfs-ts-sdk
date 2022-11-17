@@ -41,7 +41,7 @@ export class AclHandlerRequestJsonCodec extends JsonCodec<AclHandlerRequest> {
             req_path: param.req_path,
         };
 
-        if (param.referer_object) {
+        if (param.referer_object != null) {
             ret.referer_object = [];
             for (const obj of param.referer_object) {
                 ret.referer_object.push(obj.toString())

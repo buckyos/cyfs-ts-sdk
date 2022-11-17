@@ -55,7 +55,7 @@ export class NDNRequestor {
             http_req.insert_header(CYFS_TARGET, com_req.target.to_string());
         }
 
-        if (com_req.referer_object.length > 0) {
+        if (com_req.referer_object != null && com_req.referer_object.length > 0) {
             const headers = [];
             for (const object of com_req.referer_object) {
                 headers.push(object.toString());
@@ -88,7 +88,7 @@ export class NDNRequestor {
             querys.append(CYFS_TARGET, com_req.target.to_string());
         }
 
-        if (com_req.referer_object.length > 0) {
+        if (com_req.referer_object != null && com_req.referer_object.length > 0) {
             for (const object of com_req.referer_object) {
                 querys.append(CYFS_REFERER_OBJECT, object.toString());
             }

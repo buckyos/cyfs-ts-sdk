@@ -17,7 +17,7 @@ export interface NDNOutputRequestCommon {
     target?: ObjectId,
 
     // 需要处理数据的关联对象，主要用以chunk/file等
-    referer_object: NDNDataRefererObject[],
+    referer_object?: NDNDataRefererObject[],
 
     flags: number,
 }
@@ -49,12 +49,14 @@ export class NDNOutputRequestCommonJsonCodec extends JsonCodec<NDNOutputRequestC
         }
 
         const referer_object = [];
-        for (const object of o.referer_object) {
-            const r = NDNDataRefererObject.from_str(object);
-            if (r.err) {
-                return r;
+        if (o.referer_object != null) {
+            for (const object of o.referer_object) {
+                const r = NDNDataRefererObject.from_str(object);
+                if (r.err) {
+                    return r;
+                }
+                referer_object.push(r.unwrap());
             }
-            referer_object.push(r.unwrap());
         }
 
         return Ok({

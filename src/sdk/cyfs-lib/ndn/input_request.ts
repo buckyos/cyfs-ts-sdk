@@ -16,7 +16,7 @@ export interface NDNInputRequestCommon {
     level: NDNAPILevel,
 
     // 需要处理数据的关联对象，主要用以chunk
-    referer_object: NDNDataRefererObject[],
+    referer_object?: NDNDataRefererObject[],
 
     // 用以处理默认行为
     target?: ObjectId,
@@ -44,8 +44,10 @@ export class NDNInputRequestCommonJsonCodec extends JsonCodec<NDNInputRequestCom
             flags: param.flags,
         }
 
-        for (const object of param.referer_object) {
-            o.referer_object.push(object.toString())
+        if (param.referer_object != null) {
+            for (const object of param.referer_object) {
+                o.referer_object.push(object.toString())
+            }
         }
 
         if (param.user_data) {
@@ -74,12 +76,14 @@ export class NDNInputRequestCommonJsonCodec extends JsonCodec<NDNInputRequestCom
         }
 
         const referer_object = [];
-        for (const object of o.referer_object) {
-            const r = NDNDataRefererObject.from_str(object);
-            if (r.err) {
-                return r;
+        if (o.referer_object != null) {
+            for (const object of o.referer_object) {
+                const r = NDNDataRefererObject.from_str(object);
+                if (r.err) {
+                    return r;
+                }
+                referer_object.push(r.unwrap());
             }
-            referer_object.push(r.unwrap());
         }
 
         let user_data;
