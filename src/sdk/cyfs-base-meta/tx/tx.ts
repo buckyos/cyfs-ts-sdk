@@ -268,8 +268,12 @@ export class Tx extends NamedObject<MetaTxDescContentType, TxBodyContent>{
 
     // 提供一个静态的创建方法
     static create(nonce: JSBI, caller: TxCaller, gas_coin_id: number, gas_price: number, max_fee: number, condition: Option<TxCondition>, body: MetaTxBody, data: Uint8Array): Tx {
+        return Tx.create_with_multi_body(nonce, caller, gas_coin_id, gas_price, max_fee, condition, [body], data)
+    }
+
+    static create_with_multi_body(nonce: JSBI, caller: TxCaller, gas_coin_id: number, gas_price: number, max_fee: number, condition: Option<TxCondition>, bodys: MetaTxBody[], data: Uint8Array): Tx {
         // 创建DescContent部分
-        const desc_content = new TxDescContent(nonce, caller, gas_coin_id, gas_price, max_fee, condition, new TypeBuffer(new Vec([body])));
+        const desc_content = new TxDescContent(nonce, caller, gas_coin_id, gas_price, max_fee, condition, new TypeBuffer(new Vec(bodys)));
 
         // 创建BodyContent部分
         const body_content = new TxBodyContent(data);
