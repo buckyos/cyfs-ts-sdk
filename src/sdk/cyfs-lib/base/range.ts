@@ -1,4 +1,5 @@
 import { BuckyError, BuckyErrorCode, BuckyResult, Err, Ok } from "../../cyfs-base";
+import { from_base_str } from "../../cyfs-base/base/basex";
 
 export interface NDNDataRange {
     start?: number,
@@ -264,5 +265,9 @@ export class NDNDataResponseRange {
 
     toString(): string {
         return JSON.stringify(this.to_json());
+    }
+
+    static from_str(s: string): BuckyResult<NDNDataResponseRange> {
+        return NDNDataResponseRange.from_json(JSON.parse(s))
     }
 }

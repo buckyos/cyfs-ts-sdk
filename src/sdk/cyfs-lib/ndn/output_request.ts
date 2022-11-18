@@ -1,5 +1,6 @@
 import { ObjectId, Attributes, BuckyResult, DeviceId, Ok } from "../../cyfs-base"
 import { JsonCodec } from "../base/codec"
+import { NDNDataRequestRange, NDNDataResponseRange } from "../base/range";
 import { NDNAPILevel, NDNDataRefererObject, NDNPutDataResult } from "./def"
 import { NDNQueryFileInputResponse, NDNQueryFileInputResponseJsonCodec, NDNQueryFileParam, NDNQueryFileParamJsonCodec } from './input_request';
 
@@ -172,6 +173,8 @@ export interface NDNGetDataOutputRequest {
 
     // 对dir_id有效
     inner_path?: string,
+
+    range?: NDNDataRequestRange
 }
 
 export class NDNGetDataOutputRequestJsonCodec extends JsonCodec<NDNGetDataOutputRequest> {
@@ -206,8 +209,12 @@ export interface NDNGetDataOutputResponse {
     // chunk_id/file_id
     object_id: ObjectId,
 
+    // file's owner
+    owner_id?: ObjectId,
+
     // 所属file的attr
     attr?: Attributes,
+    range?: NDNDataResponseRange,
 
     // content
     length: number,

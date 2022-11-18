@@ -679,7 +679,7 @@ export class OpEnvRequestor {
         const http_req = new HttpRequest("Get", url);
         this.encode_common_headers(OpEnvAction.Metadata, req.common, http_req);
         if (req.path) {
-            http_req.insert_header(CYFS_OP_ENV_PATH, encodeURI(req.path));
+            http_req.insert_header(CYFS_OP_ENV_PATH, encodeURIComponent(req.path));
         }
 
         return http_req;
@@ -727,9 +727,9 @@ export class OpEnvRequestor {
         this.encode_common_headers(OpEnvAction.GetByKey, req.common, http_req);
 
         if (req.path) {
-            http_req.insert_header(CYFS_OP_ENV_PATH, encodeURI(req.path!));
+            http_req.insert_header(CYFS_OP_ENV_PATH, encodeURIComponent(req.path!));
         }
-        http_req.insert_header(CYFS_OP_ENV_KEY, encodeURI(req.key));
+        http_req.insert_header(CYFS_OP_ENV_KEY, encodeURIComponent(req.key));
         return http_req;
     }
 
@@ -914,7 +914,7 @@ export class OpEnvRequestor {
         this.encode_common_headers(OpEnvAction.Contains, req.common, http_req);
 
         if (req.path) {
-            http_req.insert_header(CYFS_OP_ENV_PATH, encodeURI(req.path!));
+            http_req.insert_header(CYFS_OP_ENV_PATH, encodeURIComponent(req.path!));
         }
         http_req.insert_header(CYFS_OP_ENV_VALUE, req.value.toString());
         return http_req;
@@ -1099,7 +1099,7 @@ export class OpEnvRequestor {
 
         this.encode_common_headers(OpEnvAction.List, req.common, http_req);
         if (req.path) {
-            http_req.insert_header(CYFS_OP_ENV_PATH, encodeURI(req.path!));
+            http_req.insert_header(CYFS_OP_ENV_PATH, encodeURIComponent(req.path!));
         }
 
         return http_req

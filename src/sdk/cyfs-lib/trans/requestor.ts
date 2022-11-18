@@ -36,7 +36,7 @@ export class TransRequestor {
         }
 
         if (com_req.req_path) {
-            http_req.insert_header(CYFS_REQ_PATH, encodeURI(com_req.req_path))
+            http_req.insert_header(CYFS_REQ_PATH, encodeURIComponent(com_req.req_path))
         }
 
         http_req.insert_header(CYFS_API_LEVEL, com_req.level);

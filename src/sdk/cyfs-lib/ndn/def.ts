@@ -47,10 +47,11 @@ export class NDNDataRefererObject {
             last = `${this.target.toString()}:${last}`
         }
 
-        return last;
+        return encodeURIComponent(last);
     }
 
-    static from_str(value: string): BuckyResult<NDNDataRefererObject> {
+    static from_str(org_value: string): BuckyResult<NDNDataRefererObject> {
+        const value = decodeURIComponent(org_value);
         const parts = value.split("/");
         if (parts.length === 0) {
             const msg = `invalid NDNDataRefererObject, object_id not found! ${value}`;
