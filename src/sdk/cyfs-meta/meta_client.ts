@@ -752,14 +752,18 @@ export class MetaClient {
         return Ok((ret.unwrap() as BuckyNumber).toBigInt())
     }
 
-    private async create_tx(caller: TxCaller, body: MetaTxBody, gas_price: number, max_fee: number, tx_data: Uint8Array): Promise<BuckyResult<Tx>> {
+    public async create_tx(caller: TxCaller, body: MetaTxBody, gas_price: number, max_fee: number, tx_data: Uint8Array): Promise<BuckyResult<Tx>> {
+        return await this.create_multi_body_tx(caller, [body], gas_price, max_fee, tx_data)
+    }
+
+    public async create_multi_body_tx(caller: TxCaller, bodys: MetaTxBody[], gas_price: number, max_fee: number, tx_data: Uint8Array): Promise<BuckyResult<Tx>> {
         const nonce_r = await this.get_nonce(caller.ext().id().unwrap());
         if (nonce_r.err) {
             return nonce_r;
         }
         const nonce = JSBI.add(nonce_r.unwrap(), JSBI.BigInt(1));
 
-        const tx = Tx.create(nonce, caller, 0, gas_price, max_fee, None, body, tx_data);
+        const tx = Tx.create_with_multi_body(nonce, caller, 0, gas_price, max_fee, None, bodys, tx_data);
 
         return Ok(tx)
     }
