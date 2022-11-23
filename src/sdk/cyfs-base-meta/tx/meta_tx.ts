@@ -8,7 +8,6 @@
 import {
     SubDescType,
     DescTypeInfo, DescContent, DescContentDecoder,
-    BodyContent, BodyContentDecoder,
     NamedObjectId, NamedObjectIdDecoder,
     NamedObjectDesc, NamedObjectDescDecoder,
     NamedObject, NamedObjectBuilder, NamedObjectDecoder,
@@ -18,9 +17,8 @@ import {
 } from "../../cyfs-base/objects/object"
 
 import { Ok, BuckyResult } from "../../cyfs-base/base/results";
-import { Option, OptionEncoder, OptionDecoder, } from "../../cyfs-base/base/option";
+import { Option, OptionDecoder, OptionEncoder, } from "../../cyfs-base/base/option";
 import { BuckyNumber, BuckyNumberDecoder } from "../../cyfs-base/base/bucky_number";
-import { BuckyBuffer, BuckyBufferDecoder } from "../../cyfs-base/base/bucky_buffer";
 import { Vec, VecDecoder } from "../../cyfs-base/base/vec";
 import { ObjectId } from "../../cyfs-base/objects/object_id";
 

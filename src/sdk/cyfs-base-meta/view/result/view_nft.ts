@@ -9,9 +9,7 @@ import {
     RawEncodePurpose, Vec, VecDecoder
 } from "../../../cyfs-base";
 import {CoinTokenId, CoinTokenIdDecoder} from "../../tx/coin_token_id";
-import { Option, OptionEncoder, OptionDecoder, } from "../../../cyfs-base/base/option";
-import {ViewNameResultItem, ViewNameResultItemDecoder} from "./view_name_result_item";
-import {ViewNameResult} from "./view_name_result";
+import { Option, OptionDecoder, OptionEncoder, } from "../../../cyfs-base/base/option";
 
 export class NFTBuyItem implements RawEncode {
     constructor(

@@ -4,27 +4,16 @@ import {
     DescTypeInfo, named_id_gen_default, named_id_from_base_58, named_id_try_from_object_id, NamedObject,
     NamedObjectBuilder, NamedObjectDecoder,
     NamedObjectDesc, NamedObjectId, NamedObjectIdDecoder,
-    BodyContent,
-    BodyContentDecoder,
     SubDescType,
     NamedObjectDescDecoder
 } from "./object";
 import { ObjectTypeCode } from "./object_type_info";
-import { UniqueId, UniqueIdDecoder } from "./unique_id";
 import {
     Area,
-    BuckyError, BuckyErrorCode,
     BuckyResult,
-    None,
     Option,
-    OptionDecoder,
-    OptionEncoder,
-    PublicKey,
-    RawDecode,
-    RawEncode,
-    Some
-} from "..";
-import { Err, Ok } from "../base/results";
+    PublicKey} from "..";
+import { Ok } from "../base/results";
 import {
     DeviceBodyContent,
     DeviceDescContent,

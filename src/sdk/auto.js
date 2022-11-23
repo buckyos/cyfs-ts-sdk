@@ -2,44 +2,30 @@ const fs = require('fs-extra');
 const path = require('path');
 const child_process = require('child_process');
 
-function author(){
+function author() {
     return [
-        [
-            'f', 'a', 'n', 'f', 'e',
-            'i', 'l', 'o', 'n', 'g',
-            '@', 'b', 'u', 'c', 'k',
-            'y', 'o', 's', '.', 'c',
-            'o', 'm'
-        ],
-
+        "weiqiushi@buckyos.com",
         // 欢迎贡献:
 
-    ].map(i=>i.join('')).join(', ');
+    ].join(', ');
 }
 
 
-function author_public(){
+function author_public() {
     return [
-        [
-            'f', 'a', 'n', 'f', 'e',
-            'i', 'l', 'o', 'n', 'g',
-            '@', 'o', 'u', 't', 'l',
-            'o', 'o', 'k', '.', 'c',
-            'o', 'm'
-        ],
-
+        "weiqiushi@buckyos.com",
         // 欢迎贡献:
         
-    ].map(i=>i.join('')).join(', ');
+    ].join(', ');
 }
 
-function emit(visit, functor){
-    return (code)=>{
+function emit(visit, functor) {
+    return (code) => {
         const r = functor(code);
-        if(r.err){
+        if (r.err) {
             return r;
         }
-        if(visit){
+        if (visit) {
             visit(r);
         }
         return r;
@@ -47,9 +33,9 @@ function emit(visit, functor){
 }
 
 
-function seq(...argv){
-    return (code)=>{
-        if(argv.length===0){
+function seq(...argv) {
+    return (code) => {
+        if (argv.length===0) {
             return {
                 err: 0,
                 code,
@@ -60,10 +46,10 @@ function seq(...argv){
 
         const results = [];
         let rest = code;
-        for(const arg of argv){
+        for(const arg of argv) {
             // console.log("rest:", rest, argv.length);
             const r = arg(rest);
-            if(r.err){
+            if (r.err) {
                 return r;
             }
             rest = r.code;
@@ -71,7 +57,7 @@ function seq(...argv){
         }
         // console.log('xxx');
 
-        if(results.length>0){
+        if (results.length>0) {
             return results[results.length-1];
         }else{
             return {
@@ -83,20 +69,20 @@ function seq(...argv){
     };
 }
 
-function star(functor, visit){
-    return (code)=>{
+function star(functor, visit) {
+    return (code) => {
         let results = [];
         let r = functor(code);
-        while(r.err===0){
+        while(r.err===0) {
             results.push(r);
             r = functor(r.code);
         }
 
-        if(visit){
+        if (visit) {
             visit(results);
         }
 
-        if(results.length===0){
+        if (results.length===0) {
             return {
                 err: 0,
                 code,
@@ -112,20 +98,20 @@ function star(functor, visit){
     }
 }
 
-function plus(functor, visit){
-    return (code)=>{
+function plus(functor, visit) {
+    return (code) => {
         let results = [];
         let r = functor(code);
-        while(r.err!==0){
+        while(r.err!==0) {
             results.push(r);
             r = functor(r.code);
         }
 
-        if(visit){
+        if (visit) {
             visit(results);
         }
 
-        if(results.length===0){
+        if (results.length===0) {
             return {
                 err: 1,
             }
@@ -139,10 +125,10 @@ function plus(functor, visit){
     }
 }
 
-function question(functor, visit){
-    return (code)=>{
+function question(functor, visit) {
+    return (code) => {
         let r = functor(code);
-        if(r.err){
+        if (r.err) {
             return {
                 err: 0,
                 code,
@@ -150,29 +136,29 @@ function question(functor, visit){
             }
         }
 
-        if(visit){
+        if (visit) {
             visit(r);
         }
 
         return {
             err: 0,
             code: r.code,
-            group:[
+            group: [
                 r
             ]
         }
     }
 }
 
-function spaces(count, visit){
+function spaces(count, visit) {
     const name = spaces.name;
-    return emit(visit, (code)=>{
+    return emit(visit, (code) => {
         let i=0;
         let real_count = 0;
         const values = [' ', '\t', '\b',];
-        while( i<code.length ){
+        while( i<code.length ) {
             const c = code[i];
-            if( values.indexOf(c) < 0 ){
+            if ( values.indexOf(c) < 0 ) {
                 break;
             }else{
                 i +=1 ;
@@ -181,16 +167,16 @@ function spaces(count, visit){
         }
 
         let err;
-        if(count==='*'){
+        if (count==='*') {
             err = 0;
-        }else if(count==="?"){
+        }else if (count==="?") {
             err = real_count>=1 ? 0 : 1;
             i = 1;
-        }else if(count==="+"){
+        }else if (count==="+") {
             err = real_count>=1 ? 0 : 1;
-        }else if(count===real_count){
+        }else if (count===real_count) {
             err = 0;
-        }else if(count!=null){
+        }else if (count!=null) {
             err = 1;
             i = 0;
         }else{
@@ -200,31 +186,31 @@ function spaces(count, visit){
     });
 }
 
-function balance(l, r, visit){
+function balance(l, r, visit) {
     const name = identity.name;
-    return emit(visit, (code)=>{
-        const once = (rest)=>{
+    return emit(visit, (code) => {
+        const once = (rest) => {
             let i=0;
             let values = [];
             let stack = 0;
             let start = false;
-            while(i<rest.length){
+            while(i<rest.length) {
                 let c = rest[i];
                 values.push(c);
                 i+=1;
     
-                if(c===l){
+                if (c===l) {
                     start = true;
                     stack +=1;
                 }else{
-                    if(!start){
+                    if (!start) {
                         return {
                             err: 1,
                         };
                     }
-                    if(c===r){
+                    if (c===r) {
                         stack -=1;
-                        if(stack===0){
+                        if (stack===0) {
                             return {
                                 err: 0,
                                 i,
@@ -243,7 +229,7 @@ function balance(l, r, visit){
         }
 
         let v = once(code);
-        if(v.id.length>0){
+        if (v.id.length>0) {
             return {err:0, code: v.code, i: v.i, id: v.id, name};
         }else{
             return {err:1, code, name};
@@ -251,34 +237,34 @@ function balance(l, r, visit){
     });
 }
 
-function identity(visit, excludes){
+function identity(visit, excludes) {
     const name = identity.name;
-    return emit(visit, (code)=>{
+    return emit(visit, (code) => {
         let i=0;
         let values = [' ', '\t', '\b', ',', ':'];
-        if(excludes){
+        if (excludes) {
             values = [...values, ...excludes];
         }
         let id = [];
-        while(i<code.length){
+        while(i<code.length) {
             let c = code[i];
 
             // test balance
-            if(values.indexOf(c)>=0){
+            if (values.indexOf(c)>=0) {
                 break;
-            }else if(c==='<'){
+            }else if (c==='<') {
                 console.log(code.slice(i));
                 const r = balance('<','>')(code.slice(i));
-                if(r.err){
+                if (r.err) {
                     return r;
                 }else{
                     id.push(r.id);
                     i += r.i;
                 }
             }
-            else if(c==='('){
+            else if (c==='(') {
                 const r = balance('(',')')(code.slice(i));
-                if(r.err){
+                if (r.err) {
                     return r;
                 }else{
                     id.push(r.id);
@@ -292,7 +278,7 @@ function identity(visit, excludes){
             }
         }
 
-        if(id.length>0){
+        if (id.length>0) {
             return {err:0, code: code.slice(i), id: id.join(''), name};
         }else{
             return {err:1, code, name};
@@ -300,22 +286,22 @@ function identity(visit, excludes){
     });
 }
 
-function tuple(visit){
+function tuple(visit) {
     const name = identity.name;
-    return emit(visit, (code)=>{
+    return emit(visit, (code) => {
         let i=0;
         const values = [' ', '\t', '\b'];
         let tag = [];
         let tag_type;
-        while(i<code.length){
+        while(i<code.length) {
             let c = code[i];
 
             // test balance
-            if(values.indexOf(c)>=0){
+            if (values.indexOf(c)>=0) {
                 i +=1;
-            }else if(c==='('){
+            }else if (c==='(') {
                 const r = balance('(',')')(code.slice(i));
-                if(r.err){
+                if (r.err) {
                     return r;
                 }else{
                     tag_type = r.id.slice(1, r.id.length-1);
@@ -329,7 +315,7 @@ function tuple(visit){
             }
         }
 
-        if(tag.length>0){
+        if (tag.length>0) {
             return {err:0, code: code.slice(i), tag: tag.join(''), tag_type, name};
         }else{
             return {err:1, code, name};
@@ -337,10 +323,10 @@ function tuple(visit){
     });
 }
 
-function left(visit){
+function left(visit) {
     const name = left.name;
-    return emit(visit, (code)=>{
-        if(code.startsWith('{')){
+    return emit(visit, (code) => {
+        if (code.startsWith('{')) {
             return {err: 0, code:code.slice(1), name};
         }else{
             return {err: 1, code, name};
@@ -348,10 +334,10 @@ function left(visit){
     });
 }
 
-function colon(visit){
+function colon(visit) {
     const name = colon.name;
-    return emit(visit, (code)=>{
-        if(code.startsWith(':')){
+    return emit(visit, (code) => {
+        if (code.startsWith(':')) {
             return {err: 0, code:code.slice(1), name};
         }else{
             return {err: 1, code, name};
@@ -359,10 +345,10 @@ function colon(visit){
     });
 }
 
-function comma(visit){
+function comma(visit) {
     const name = comma.name;
-    return emit(visit, (code)=>{
-        if(code.startsWith(',')){
+    return emit(visit, (code) => {
+        if (code.startsWith(',')) {
             return {err: 0, code:code.slice(1), name};
         }else{
             return {err: 1, code, name};
@@ -370,10 +356,10 @@ function comma(visit){
     });
 }
 
-function right(visit){
+function right(visit) {
     const name = right.name;
-    return emit(visit, (code)=>{
-        if(code.startsWith('}')){
+    return emit(visit, (code) => {
+        if (code.startsWith('}')) {
             return {err: 0, code:code.slice(1), name};
         }else{
             return {err: 1, code, name};
@@ -381,10 +367,10 @@ function right(visit){
     });
 }
 
-function pub(visit){
+function pub(visit) {
     const name = pub.name;
-    return emit(visit, (code)=>{
-        if(code.startsWith('pub')){
+    return emit(visit, (code) => {
+        if (code.startsWith('pub')) {
             return {err: 0, token: 'pub', code: code.slice(3), name};
         }else{
             return {err: 1, code, name};
@@ -392,10 +378,10 @@ function pub(visit){
     });
 }
 
-function struct(visit){
+function struct(visit) {
     const name = struct.name;
-    return emit(visit, (code)=>{
-        if(code.startsWith('struct')){
+    return emit(visit, (code) => {
+        if (code.startsWith('struct')) {
             return {err: 0, code: code.slice(6), name};
         }else{
             return {err: 1, code, name};
@@ -403,11 +389,11 @@ function struct(visit){
     });
 }
 
-function enum_(visit){
+function enum_(visit) {
     const name = 'enum';
-    return emit(visit, (code)=>{
+    return emit(visit, (code) => {
         console.log(code);
-        if(code.startsWith('enum')){
+        if (code.startsWith('enum')) {
             return {err: 0, code: code.slice(4), name};
         }else{
             return {err: 1, code, name};
@@ -415,8 +401,8 @@ function enum_(visit){
     });
 }
 
-function vec(code){
-    if(!code.startsWith('Vec<')){
+function vec(code) {
+    if (!code.startsWith('Vec<')) {
         return {
             err: 1
         }
@@ -426,7 +412,7 @@ function vec(code){
     code = code.slice(3);
     
     const r = balance('<','>')(code);
-    if(r.err){
+    if (r.err) {
         return r;
     }
     let type = `Vec${r.id}`;
@@ -435,11 +421,11 @@ function vec(code){
 
     console.log("inner:", inner);
     const inner_type = ts_type(inner);
-    if(inner_type.err){
+    if (inner_type.err) {
         return inner_type;
     }
 
-    if(inner.trim()==='u8'){
+    if (inner.trim()==='u8') {
         return {
             err: 0,
             code: r.code,
@@ -458,30 +444,30 @@ function vec(code){
     }
 }
 
-function key(code){
+function key(code) {
     let pre = [];
     let i = 0;
     let inner_type_code;
 
     // console.log(i, code.length);
-    while(i<code.length){
+    while(i<code.length) {
         let c = code[i];
-        if(c!=='<'){
-            if(c===','){
+        if (c!=='<') {
+            if (c===',') {
                 i+=1;
 
                 let inner_type;
-                if(inner_type_code!=null){
+                if (inner_type_code!=null) {
                     console.log("inner_type_code:", inner_type_code);
                     inner_type = ts_type(inner_type_code);
-                    if(inner_type.err){
+                    if (inner_type.err) {
                         return inner_type;
                     }
                 }
                 
 
                 let key_type = ts_type(pre.join(''));
-                if(key_type.err){
+                if (key_type.err) {
                     return key_type;
                 }
 
@@ -503,7 +489,7 @@ function key(code){
             }
         }else{
             const r = balance('<','>')(code.slice(i));
-            if(r.err){
+            if (r.err) {
                 return r;
             }
             inner_type_code = pre.join('')+r.id;
@@ -514,22 +500,22 @@ function key(code){
     // console.log('xx:', pre);
 }
 
-function value(code){
+function value(code) {
     let pre = [];
     let i = 0;
     let inner_type_code;
-    while(i<code.length){
+    while(i<code.length) {
         let c = code[i];
         
-        if(c==='>'){
+        if (c==='>') {
             i+=1;
             break;
-        }else if(c!=='<'){
+        }else if (c!=='<') {
             pre.push(c);
             i+=1;
         }else{
             const r = balance('<','>')(code.slice(i));
-            if(r.err){
+            if (r.err) {
                 return r;
             }
             inner_type_code = pre.join('')+r.id;
@@ -540,15 +526,15 @@ function value(code){
     }
 
     let inner_type;
-    if(inner_type_code!=null){
+    if (inner_type_code!=null) {
         inner_type = ts_type(inner_type_code);
-        if(inner_type.err){
+        if (inner_type.err) {
             return inner_type;
         }
     }
 
     let value_type = ts_type(pre.join(''));
-    if(value_type.err){
+    if (value_type.err) {
         return value_type;
     }
     value_type.code = code.slice(i);
@@ -564,8 +550,8 @@ function value(code){
     // }
 }
 
-function hashmap(code){
-    if(!code.startsWith('HashMap<')){
+function hashmap(code) {
+    if (!code.startsWith('HashMap<')) {
         return {
             err: 1
         }
@@ -574,7 +560,7 @@ function hashmap(code){
     code = code.slice(7);
     
     const r = balance('<','>')(code);
-    if(r.err){
+    if (r.err) {
         return r;
     }
     // let type = `Map${r.id}`;
@@ -584,7 +570,7 @@ function hashmap(code){
 
     // console.log("parse key:", code);
     const key_type = key(code);
-    if(key_type.err){
+    if (key_type.err) {
         return key_type;
     }
     // console.log('key_type:', key_type);
@@ -592,7 +578,7 @@ function hashmap(code){
     code = key_type.code;
     // console.log("parse value:", code);
     const value_type = value(code);
-    if(value_type.err){
+    if (value_type.err) {
         return value_type;
     }
     // console.log('value_type:', value_type);
@@ -607,8 +593,8 @@ function hashmap(code){
     };
 }
 
-function option(code){
-    if(!code.startsWith('Option<')){
+function option(code) {
+    if (!code.startsWith('Option<')) {
         return {
             err: 1
         }
@@ -617,7 +603,7 @@ function option(code){
     code = code.slice(6);
     
     const r = balance('<','>')(code);
-    if(r.err){
+    if (r.err) {
         return r;
     }
     
@@ -625,7 +611,7 @@ function option(code){
     const inner = r.id.slice(1, r.id.length-1);
 
     const inner_type = ts_type(inner);
-    if(inner_type.err){
+    if (inner_type.err) {
         return inner_type;
     }
 
@@ -640,8 +626,8 @@ function option(code){
     };
 }
 
-function string(code){
-    if(!code.startsWith('String')){
+function string(code) {
+    if (!code.startsWith('String')) {
         return {
             err: 1
         }
@@ -655,8 +641,8 @@ function string(code){
     }
 }
 
-function number(code){
-    if(code.startsWith('i8')){
+function number(code) {
+    if (code.startsWith('i8')) {
         return {
             err: 0,
             code: code.slice(2),
@@ -665,7 +651,7 @@ function number(code){
             is_big_int: false,
             type: 'number',
         }
-    }else if(code.startsWith('i16')){
+    }else if (code.startsWith('i16')) {
         return {
             err: 0,
             code: code.slice(3),
@@ -674,7 +660,7 @@ function number(code){
             is_big_int: false,
             type: 'number',
         }
-    }else if(code.startsWith('i32')){
+    }else if (code.startsWith('i32')) {
         return {
             err: 0,
             code: code.slice(3),
@@ -683,16 +669,16 @@ function number(code){
             is_big_int: false,
             type: 'number',
         }
-    }else if(code.startsWith('i64')){
+    }else if (code.startsWith('i64')) {
         return {
             err: 0,
             code: code.slice(3),
             typeid: 'number',
             subtypeid: 'i64',
             is_big_int: true,
-            type: 'bigint',
+            type: 'JSBI',
         }
-    }else if(code.startsWith('u8')){
+    }else if (code.startsWith('u8')) {
         return {
             err: 0,
             code: code.slice(2),
@@ -701,7 +687,7 @@ function number(code){
             is_big_int: false,
             type: 'number',
         }
-    }else if(code.startsWith('u16')){
+    }else if (code.startsWith('u16')) {
         return {
             err: 0,
             code: code.slice(3),
@@ -710,7 +696,7 @@ function number(code){
             is_big_int: false,
             type: 'number',
         }
-    }else if(code.startsWith('u32')){
+    }else if (code.startsWith('u32')) {
         return {
             err: 0,
             code: code.slice(3),
@@ -719,14 +705,14 @@ function number(code){
             is_big_int: false,
             type: 'number',
         }
-    }else if(code.startsWith('u64')){
+    }else if (code.startsWith('u64')) {
         return {
             err: 0,
             code: code.slice(3),
             typeid: 'number',
             subtypeid: 'u64',
             is_big_int: true,
-            type: 'bigint',
+            type: 'JSBI',
         }
     }else{
         return {
@@ -735,11 +721,11 @@ function number(code){
     }
 }
 
-function ts_type(code){
+function ts_type(code) {
     // number?
     {
         const r = number(code);
-        if(r.err===0){
+        if (r.err===0) {
             return r;
         }
     }
@@ -747,7 +733,7 @@ function ts_type(code){
     // string?
     {
         const r = string(code);
-        if(r.err===0){
+        if (r.err===0) {
             return r;
         }
     }
@@ -755,7 +741,7 @@ function ts_type(code){
     // vec?
     {
         const r = vec(code);
-        if(r.err===0){
+        if (r.err===0) {
             return r;
         }
     }
@@ -763,7 +749,7 @@ function ts_type(code){
     // option?
     {
         const r = option(code);
-        if(r.err===0){
+        if (r.err===0) {
             return r;
         }
     }
@@ -771,7 +757,7 @@ function ts_type(code){
     // hashmap?
     {
         const r = hashmap(code);
-        if(r.err===0){
+        if (r.err===0) {
             return r;
         }
     }
@@ -783,10 +769,10 @@ function ts_type(code){
     }
 }
 
-function convert(ts_type_info, name){
+function convert(ts_type_info, name) {
     // 先只处理基本类型
     // TODO
-    switch(ts_type_info.typeid){
+    switch(ts_type_info.typeid) {
         case 'number':{
             return `new BuckyNumber('${ts_type_info.subtypeid}', ${name})`;
         }
@@ -805,10 +791,10 @@ function convert(ts_type_info, name){
     }
 }
 
-function convert_type(ts_type_info){
+function convert_type(ts_type_info) {
     // 先只处理基本类型
     // TODO
-    switch(ts_type_info.typeid){
+    switch(ts_type_info.typeid) {
         case 'number':{
             return `BuckyNumberWrapper`;
         }
@@ -827,12 +813,12 @@ function convert_type(ts_type_info){
     }
 }
 
-function ts_value(ts_type_info, name){
+function ts_value(ts_type_info, name) {
     // 先只处理基本类型
     // TODO
-    switch(ts_type_info.typeid){
+    switch(ts_type_info.typeid) {
         case 'number':{
-            if(ts_type_info.is_big_int){
+            if (ts_type_info.is_big_int) {
                 return `${name}.toBigInt()`;
             }else{
                 return `${name}.toNumber()`;
@@ -853,10 +839,10 @@ function ts_value(ts_type_info, name){
     }
 }
 
-function as(ts_type_info, name){
-    switch(ts_type_info.typeid){
+function as(ts_type_info, name) {
+    switch(ts_type_info.typeid) {
         case 'number':{
-            if(ts_type_info.is_big_int){
+            if (ts_type_info.is_big_int) {
                 return `${name}.toBigInt()`;
             }else{
                 return `${name}.toNumber()`;
@@ -869,13 +855,13 @@ function as(ts_type_info, name){
             return `${name}.value()`;
         }
         case 'vec':{
-            return `${name}.to((v:${convert_type(ts_type_info.inner_type)})=>${ts_value(ts_type_info.inner_type, 'v')})`;
+            return `${name}.to((v: ${convert_type(ts_type_info.inner_type)}) => ${ts_value(ts_type_info.inner_type, 'v')})`;
         }
         case 'option':{
-            return `${name}.to((v:${convert_type(ts_type_info.inner_type)})=>${ts_value(ts_type_info.inner_type, 'v')})`;
+            return `${name}.to((v: ${convert_type(ts_type_info.inner_type)}) => ${ts_value(ts_type_info.inner_type, 'v')})`;
         }
         case 'map':{
-            return `${name}.to(k=>${ts_value(ts_type_info.key_type,'k')}, v=>${ts_value(ts_type_info.value_type, 'v')})`;
+            return `${name}.to(k=>${ts_value(ts_type_info.key_type,'k')}, v => ${ts_value(ts_type_info.value_type, 'v')})`;
         }
         default: {
             return `${name}`;
@@ -883,9 +869,9 @@ function as(ts_type_info, name){
     }
 }
 
-function encoder(ts_type_info, name, post=''){
+function encoder(ts_type_info, name, post='') {
     // console.log(ts_type_info.type);
-    switch(ts_type_info.typeid){
+    switch(ts_type_info.typeid) {
         case 'number':{
             return `new BuckyNumber('${ts_type_info.subtypeid}', this.${name}${post})`;
         }
@@ -893,16 +879,13 @@ function encoder(ts_type_info, name, post=''){
             return `new BuckyString(this.${name}${post})`;
         }
         case 'vec':{
-            return `Vec.from(this.${name}${post}, (v:${ts_type_info.inner_type.type})=>${convert(ts_type_info.inner_type,'v')})`;
+            return `Vec.from(this.${name}${post}, (v: ${ts_type_info.inner_type.type}) => ${convert(ts_type_info.inner_type,'v')})`;
         }
         case 'buffer':{
             return `new BuckyBuffer(this.${name}${post})`;
         }
-        case 'option':{
-            return `OptionEncoder.from(this.${name}${post}, (v:${ts_type_info.inner_type.type})=>${convert(ts_type_info.inner_type,'v')})`;
-        }
         case 'map':{
-            return `BuckyMap.from(this.${name}${post},  k=>${convert(ts_type_info.key_type,'k')},  v=>${convert(ts_type_info.value_type,'v')})`;
+            return `BuckyMap.from(this.${name}${post},  k=>${convert(ts_type_info.key_type,'k')},  v => ${convert(ts_type_info.value_type,'v')})`;
         }
         default: {
             return `this.${name}${post}`;
@@ -910,8 +893,8 @@ function encoder(ts_type_info, name, post=''){
     }
 }
 
-function decoder(ts_type_info){
-    switch(ts_type_info.typeid){
+function decoder(ts_type_info) {
+    switch(ts_type_info.typeid) {
         case 'number':{
             return `new BuckyNumberDecoder('${ts_type_info.subtypeid}')`;
         }
@@ -936,23 +919,23 @@ function decoder(ts_type_info){
     }
 }
 
-function indent(src, level = 0){
+function indent(src, level = 0) {
     const dest = [];
     let t = [];
     let d = level;
-    while(d>0){
+    while(d>0) {
         d--;
         t.push('    ');
     }
     const tab = t.join('');
-    for(const item of src){
-        if(Array.isArray(item)){
+    for(const item of src) {
+        if (Array.isArray(item)) {
             const flat = indent(item, level+1);
-            for(const sub of flat){
+            for(const sub of flat) {
                 dest.push(sub);
             }
         }else{
-            if(item!==''){
+            if (item!=='') {
                 dest.push(tab+item);
             }else{
                 dest.push(item);
@@ -962,35 +945,35 @@ function indent(src, level = 0){
     return dest;
 }
 
-function code_lines(code){
+function code_lines(code) {
     const lines = code.split('\n').map(l=>l.trim()).filter(l=>l!=='');
     const out = [0,lines.length-1];
-    return lines.map((l,i)=> out.indexOf(i)>=0?l:l[l.length-1]===',' ? l: l+',');
+    return lines.map((l,i) => out.indexOf(i)>=0?l:l[l.length-1]===',' ? l: l+',');
 }
 
-function depends(types){
+function depends(types) {
     let r = [];
     let c=[];
-    for(const t of types){
-        if(c.length===4){
+    for(const t of types) {
+        if (c.length===4) {
             r.push(c.join(', '));
             c = [t];
         }else{
             c.push(t);
         }
     }
-    if(c.length>0){
+    if (c.length>0) {
         r.push(c.join(', '));
     }
     return r.map(l=>l+',');
 }
 
-function is_ts_keywords(type){
+function is_ts_keywords(type) {
     return ['i8','i16', 'i32', 'i64', 'u8', 'u16', 'u32', 'u64', 'string', 'boolean', 'for', 'let', 'var', 'const'].indexOf(type)>=0;
 }
 
 
-function relative_path(src, dest){
+function relative_path(src, dest) {
     const relative = path.relative(path.dirname(src), dest).replace(/\\/g,'/').replace('.ts','');
 
     console.log(src);
@@ -1002,14 +985,14 @@ function relative_path(src, dest){
     return relative;
 }
 
-function parse_depends(items){
+function parse_depends(items) {
 
     const dict = {
         
     };
 
-    for(const item of items){
-        if(dict[item.name]!=null){
+    for(const item of items) {
+        if (dict[item.name]!=null) {
             console.error("[error] duplicate class name:", item.name, item);
             console.log('');
             return {
@@ -1021,37 +1004,37 @@ function parse_depends(items){
     }
     // process.exit(0);
 
-    for(const item of items){
-        if(item.ext_depends==null){
+    for(const item of items) {
+        if (item.ext_depends==null) {
             item.ext_depends = [];
         }
 
-        if(item.depends==null){
+        if (item.depends==null) {
             item.depends = []
         }else{
             const expends = [];
-            for(const d of item.depends){
-                if(Array.isArray(d)){
-                    for(const x of d){
+            for(const d of item.depends) {
+                if (Array.isArray(d)) {
+                    for(const x of d) {
                         const i = x.name.indexOf('Decoder') >=0 ? x.name.replace('Decoder','') : x.name;
 
-                        if(dict[i]!=null){
+                        if (dict[i]!=null) {
                             const relative = relative_path(item.output, dict[i].output);
 
-                            if(relative[0]!=='.'){
+                            if (relative[0]!=='.') {
                                 expends.push(`import { ${x.name} } from './${relative}';`);
                             }else{
                                 expends.push(`import { ${x.name} } from '${relative}';`);
                             }
 
                         }else{
-                            if(i.indexOf('Ext')){
+                            if (i.indexOf('Ext')) {
                                 item.ext_depends.push(i);
                                 const ext = i.replace('Ext', '');
-                                if(dict[ext]!=null){
+                                if (dict[ext]!=null) {
                                     const relative = relative_path(item.output, dict[ext].output);
-                                    if(relative!=='.'){
-                                        if(relative.indexOf('ext')<0){
+                                    if (relative!=='.') {
+                                        if (relative.indexOf('ext')<0) {
                                             expends.push(`import { ${x.name} } from './${relative}_ext';`);
                                         }else{
                                             expends.push(`import { ${x.name} } from './${relative}';`);
@@ -1080,14 +1063,14 @@ function parse_depends(items){
             }
             item.depends = expends;
 
-            if(item.use_ext){
-                if(item.ext_depends.indexOf(`${item.name}Ext`)<0){
+            if (item.use_ext) {
+                if (item.ext_depends.indexOf(`${item.name}Ext`)<0) {
                     item.depends.push(`import { ${item.name}Ext } from './${ext_module(item)}'`);
                 }
             }
             item.depends.push('');
 
-            // if(item.name==="Block"){
+            // if (item.name==="Block") {
             //     process.exit(0);
             // }
         }
@@ -1098,7 +1081,7 @@ function parse_depends(items){
     }
 }
 
-function parse_struct_codes(codes){
+function parse_struct_codes(codes) {
     const tsClass = {
         name: null,
         fields: []
@@ -1111,7 +1094,7 @@ function parse_struct_codes(codes){
             question(seq(pub(), spaces('*'))),  // 可选的至多一个 `pub\s*`
 
             struct(),
-            spaces('+'), identity((r)=>{
+            spaces('+'), identity((r) => {
                 tsClass.name = r.id;
             }, ['{']), 
             spaces("*"), left(),
@@ -1122,14 +1105,14 @@ function parse_struct_codes(codes){
             
             question(seq(pub(), spaces('*'))),  // 可选的至多一个 `pub\s*`
 
-            identity((r)=>{
+            identity((r) => {
                 tsClass.fields.push({
                     name: r.id,
                     type: null
                 });
             }),
             spaces('*'), colon(),
-            spaces('*'), identity((r)=>{
+            spaces('*'), identity((r) => {
                 const field = tsClass.fields[tsClass.fields.length-1];
                 field.id = r.id;
                 field.ts_type = ts_type(field.id);
@@ -1150,10 +1133,10 @@ function parse_struct_codes(codes){
     console.log("@parse class name...");
     {
         let code = codes[0];
-        for(const s of schema.start){
+        for(const s of schema.start) {
             const r = s(code);
             console.log(` -> match ${r.name} ${r.err?'failed':'sucess'}, code: '${code}'`);
-            if(r.err){
+            if (r.err) {
                 return r;
             }
             code = r.code;
@@ -1161,14 +1144,14 @@ function parse_struct_codes(codes){
     }
 
     // fileds
-    for(let i=1;i<codes.length-1;i++){
+    for(let i=1;i<codes.length-1;i++) {
         console.log('');
         console.log("@parse fields...");
         let code = codes[i];
-        for(const s of schema.fileds){
+        for(const s of schema.fileds) {
             const r = s(code);
             console.log(` -> match ${r.name} ${r.err?'failed':'sucess'}, code:'${code}'`);
-            if(r.err){
+            if (r.err) {
                 return r;
             }
             code = r.code;
@@ -1180,10 +1163,10 @@ function parse_struct_codes(codes){
     console.log("@parse class end...");
     {
         let code = codes[codes.length-1];
-        for(const s of schema.end){
+        for(const s of schema.end) {
             const r = s(code);
             console.log(` -> match ${r.name} ${r.err?'failed':'sucess'}, code:'${code}'`);
-            if(r.err){
+            if (r.err) {
                 return r;
             }
             code = r.code;
@@ -1197,21 +1180,21 @@ function parse_struct_codes(codes){
     }
 }
 
-function parse_struct(item){
+function parse_struct(item) {
     const codes = code_lines(item.rust);
 
-    if(codes.length<2){
+    if (codes.length<2) {
         console.error('not invalid struct');
         return {err: 1};
     }
     
     const r = parse_struct_codes(codes);
-    if(r.err){
+    if (r.err) {
         return r;
     }
     item.tsClass = r.tsClass;
 
-    if(item.depends.length>0){
+    if (item.depends.length>0) {
         item.depends.push('');
     }
 
@@ -1222,18 +1205,17 @@ function parse_struct(item){
     };
 }
 
-function emit_struct(item){
+function emit_struct(item) {
     const tsClass = item.tsClass;
     let ts;
 
-    if(item.no_encode){
+    if (item.no_encode) {
         // emit typescript code
         ts = [
             `/*****************************************************`,
             ` * This code is auto generated from auto.js`,
             ` * Please DO NOT MODIFY this file`,
             ` * author: ${author()}`,
-            ` * date: ${new Date()}`,
             ` *****************************************************/`,
             ``,
             // 引用
@@ -1246,16 +1228,16 @@ function emit_struct(item){
                 // 构造函数
                 `constructor(`,
                     tsClass.fields.map(f=>`public ${f.name}: ${f.type},`),
-                `){`,
+                `) {`,
                 [
                     '// ignore'
                 ],
                 '}',
                 ...(item.ext_type? [
                     ``,
-                    `ext():${item.ext_type}{`,
+                    `ext(): ${item.ext_type}{`,
                     [
-                        `if(this.m_ext==null){`,
+                        `if (this.m_ext == null) {`,
                         [
                             `this.m_ext = new ${item.ext_type}(this);`
                         ],
@@ -1277,7 +1259,6 @@ function emit_struct(item){
             ` * This code is auto generated from auto.js`,
             ` * Please DO NOT MODIFY this file`,
             ` * author: ${author()}`,
-            ` * date: ${new Date()}`,
             ` *****************************************************/`,
             ``,
             // 引用
@@ -1290,7 +1271,7 @@ function emit_struct(item){
                 // 构造函数
                 `constructor(`,
                     tsClass.fields.map(f=>`public ${f.name}: ${f.type},`),
-                `){`,
+                `) {`,
                 [
                     '// ignore'
                 ],
@@ -1299,7 +1280,7 @@ function emit_struct(item){
                     ``,
                     `ext():${item.ext_type}{`,
                     [
-                        `if(this.m_ext==null){`,
+                        `if (this.m_ext==null) {`,
                         [
                             `this.m_ext = new ${item.ext_type}(this);`
                         ],
@@ -1313,7 +1294,7 @@ function emit_struct(item){
                 ]),
 
                 // 编码器/raw_measure
-                'raw_measure(ctx?:any): BuckyResult<number>{',
+                'raw_measure(ctx?: any): BuckyResult<number> {',
                 [
                     `${tsClass.fields.length===0?'const':'let'} size = 0;`,
                     ...tsClass.fields.map(f=> `size += ${f.encoder}.raw_measure().unwrap();`),
@@ -1323,7 +1304,7 @@ function emit_struct(item){
                 '',
             
                 // 编码器/raw_encode
-                'raw_encode(buf: Uint8Array, ctx?:any): BuckyResult<Uint8Array>{',
+                'raw_encode(buf: Uint8Array, ctx?: any): BuckyResult<Uint8Array> {',
                 [
                     ...tsClass.fields.map(f=>`buf = ${f.encoder}.raw_encode(buf).unwrap();`),
                     'return Ok(buf);'
@@ -1337,15 +1318,15 @@ function emit_struct(item){
             `export class ${tsClass.name}Decoder implements RawDecode<${tsClass.name}> {`,
             [
                 // 编码器/raw_decode
-                `raw_decode(buf: Uint8Array, ctx?:any): BuckyResult<[${tsClass.name}, Uint8Array]>{`,
+                `raw_decode(buf: Uint8Array, ctx?: any): BuckyResult<[${tsClass.name}, Uint8Array]> {`,
                 [
-                    ...[].concat.apply([],tsClass.fields.map(f=>{
+                    ...[].concat.apply([],tsClass.fields.map(f=> {
                         return [
                             `let ${f.name};`,
                             '{',
                             [
                                 `const r = ${f.decoder}.raw_decode(buf);`,
-                                'if(r.err){',
+                                'if (r.err) {',
                                 [
                                     'return r;',
                                 ],
@@ -1356,7 +1337,7 @@ function emit_struct(item){
                             ''
                         ]
                     })),
-                    `const ret:[${tsClass.name}, Uint8Array] = [new ${tsClass.name}(${tsClass.fields.map(f=>`${as(f.ts_type, f.name)}`).join(', ')}), buf];`,
+                    `const ret: [${tsClass.name}, Uint8Array] = [new ${tsClass.name}(${tsClass.fields.map(f=>`${as(f.ts_type, f.name)}`).join(', ')}), buf];`,
                     'return Ok(ret);',
                 ],
                 '}',
@@ -1375,7 +1356,7 @@ function emit_struct(item){
     const tsCodes = indent(ts).join('\n');
     // console.log(tsCodes);
 
-    if(process.argv.length===3 && process.argv[2]==='-v'){
+    if (process.argv.length===3 && process.argv[2]==='-v') {
         // DO NOT write file
     }else{
         fs.ensureDirSync(path.dirname(item.output));
@@ -1390,17 +1371,17 @@ function emit_struct(item){
     };
 }
 
-function struct_2_ts(item){
+function struct_2_ts(item) {
     let r;
 
     r = parse_struct(item);
-    if(r.err){
+    if (r.err) {
         return r;
     }
     
     r = emit_struct(item);
 
-    if(r.err){
+    if (r.err) {
         return r;
     }
 
@@ -1409,9 +1390,9 @@ function struct_2_ts(item){
     };
 }
 
-function parse_enum(item){
+function parse_enum(item) {
     const codes = code_lines(item.rust);
-    if(codes.length<2){
+    if (codes.length<2) {
         console.error('not invalid struct');
         return {err: 1};
     }
@@ -1428,21 +1409,21 @@ function parse_enum(item){
             question(seq(pub(), spaces('*'))),  // 可选的至多一个 `pub\s*`
 
             enum_(),
-            spaces('+'), identity((r)=>{
+            spaces('+'), identity((r) => {
                 tsClass.name = r.id;
             }, ['{']),
             spaces("*"), left(),
             spaces('*') 
         ],
         fileds: [ 
-            spaces('*'), tuple((r)=>{
+            spaces('*'), tuple((r) => {
                 const field = {
                     id: r.tag_type,
                     name: r.tag.toLowerCase(),
                     enum_name: r.tag,
                 };
 
-                if(is_ts_keywords(field.name)){
+                if (is_ts_keywords(field.name)) {
                     field.name = '_'+field.name;
                 }
                 
@@ -1451,7 +1432,7 @@ function parse_enum(item){
                 field.encoder = encoder(field.ts_type, field.name,'!');
                 field.decoder = decoder(field.ts_type);
 
-                if(field.type==='void'){
+                if (field.type==='void') {
                     field.name = field.enum_name.toLowerCase();
                 }
 
@@ -1469,10 +1450,10 @@ function parse_enum(item){
     console.log("@parse class name...");
     {
         let code = codes[0];
-        for(const s of schema.start){
+        for(const s of schema.start) {
             const r = s(code);
             console.log(` -> match ${r.name} ${r.err?'failed':'sucess'}, code: '${code}'`);
-            if(r.err){
+            if (r.err) {
                 return r;
             }
             code = r.code;
@@ -1480,14 +1461,14 @@ function parse_enum(item){
     }
 
     // fileds
-    for(let i=1;i<codes.length-1;i++){
+    for(let i=1;i<codes.length-1;i++) {
         console.log('');
         console.log("@parse fields...");
         let code = codes[i];
-        for(const s of schema.fileds){
+        for(const s of schema.fileds) {
             const r = s(code);
             console.log(` -> match ${r.name} ${r.err?'failed':'sucess'}, code:'${code}'`);
-            if(r.err){
+            if (r.err) {
                 return r;
             }
             code = r.code;
@@ -1499,10 +1480,10 @@ function parse_enum(item){
     console.log("@parse class end...");
     {
         let code = codes[codes.length-1];
-        for(const s of schema.end){
+        for(const s of schema.end) {
             const r = s(code);
             console.log(` -> match ${r.name} ${r.err?'failed':'sucess'}, code:'${code}'`);
-            if(r.err){
+            if (r.err) {
                 return r;
             }
             code = r.code;
@@ -1511,7 +1492,7 @@ function parse_enum(item){
 
     console.log(tsClass);
     item.tsClass = tsClass;
-    if(item.use_ext){
+    if (item.use_ext) {
         item.ext_type = `${item.tsClass.name}Ext`;
     }
 
@@ -1522,7 +1503,7 @@ function parse_enum(item){
     }
 }
 
-function emit_enum(item){
+function emit_enum(item) {
     // emit typescript code
     const tsClass = item.tsClass;
     const ts = [
@@ -1530,7 +1511,6 @@ function emit_enum(item){
         ` * This code is auto generated from auto.js`,
         ` * Please DO NOT MODIFY this file`,
         ` * author: ${author()}`,
-        ` * date: ${new Date()}`,
         ` *****************************************************/`,
         ``,
         // 引用
@@ -1544,10 +1524,10 @@ function emit_enum(item){
             // 构造函数
             `private constructor(`,
                 tsClass.fields.map(f=>`private ${f.name}?: ${f.type==='void'? 'number' : f.type},`),
-            `){`,
+            `) {`,
             [
-                ...[].concat.apply([],tsClass.fields.map((f,index)=>[
-                    `${index===0?'':'} else '}if(${f.name}) {`,
+                ...[].concat.apply([],tsClass.fields.map((f,index) => [
+                    `${index===0?'':'} else '}if (${f.name}) {`,
                     [
                         `this.tag = ${index};`
                     ],
@@ -1562,13 +1542,13 @@ function emit_enum(item){
             '',
 
             // 枚举构造器
-            ...[].concat.apply([],tsClass.fields.map((f,index)=>{
+            ...[].concat.apply([],tsClass.fields.map((f,index) => {
                 let argv = [];
-                for(let i=0;i<index;i++){
+                for(let i=0;i<index;i++) {
                     argv.push('undefined');
                 }
 
-                if(f.type!=='void'){
+                if (f.type!=='void') {
                     argv.push(f.name);
                 }else{
                     argv.push('1');
@@ -1586,12 +1566,12 @@ function emit_enum(item){
 
             // 枚举访问者模式
             `match<T>(visitor: {`,
-                tsClass.fields.map((f,index)=>`${f.enum_name}?: (${f.type==='void' ? '' : `${f.name}: ${f.type}` })=>T,`),
+                tsClass.fields.map((f,index) => `${f.enum_name}?: (${f.type==='void' ? '' : `${f.name}: ${f.type}` }) => T,`),
             `}):T|undefined{`,
             [
-                `switch(this.tag){`,
+                `switch(this.tag) {`,
                 [
-                    ...tsClass.fields.map((f,index)=>`case ${index}: return visitor.${f.enum_name}?.(${f.type==='void' ? ``:`this.${f.name}!`});`),
+                    ...tsClass.fields.map((f,index) => `case ${index}: return visitor.${f.enum_name}?.(${f.type==='void' ? ``:`this.${f.name}!`});`),
                     `default: break;`,
                 ],
                 '}',
@@ -1600,7 +1580,7 @@ function emit_enum(item){
             '',
 
             // 枚举比较
-            `eq_type(rhs: ${tsClass.name}):boolean{`,
+            `eq_type(rhs: ${tsClass.name}): boolean {`,
             [
                 `return this.tag===rhs.tag;`,
             ],
@@ -1610,7 +1590,7 @@ function emit_enum(item){
                 ``,
                 `ext():${item.ext_type}{`,
                 [
-                    `if(this.m_ext==null){`,
+                    `if (this.m_ext==null) {`,
                     [
                         `this.m_ext = new ${item.ext_type}(this);`
                     ],
@@ -1624,12 +1604,12 @@ function emit_enum(item){
             ]),
 
             // 编码器/raw_measure
-            'raw_measure(ctx?:any): BuckyResult<number>{',
+            'raw_measure(ctx?: any): BuckyResult<number> {',
             [
                 'let size = 0;',
                 'size += 1; // tag',
                 `size += this.match({`,
-                    tsClass.fields.map((f,index)=>`${f.enum_name}:(${f.type==='void' ? "" : f.name})=>{ return ${ f.type!=='void' ? `${f.encoder}.raw_measure().unwrap();` : `0;`}},`),
+                    tsClass.fields.map((f,index) => `${f.enum_name}:(${f.type==='void' ? "" : f.name}) => { return ${ f.type!=='void' ? `${f.encoder}.raw_measure().unwrap();` : `0;`}},`),
                 `})!;`,
                 'return Ok(size);',
             ],
@@ -1637,11 +1617,11 @@ function emit_enum(item){
             '',
         
             // 编码器/raw_encode
-            'raw_encode(buf: Uint8Array, ctx?:any): BuckyResult<Uint8Array>{',
+            'raw_encode(buf: Uint8Array, ctx?: any): BuckyResult<Uint8Array> {',
             [
                 `buf = new BuckyNumber('u8', this.tag).raw_encode(buf).unwrap(); // tag`,
                 `buf = this.match({`,
-                    tsClass.fields.map((f,index)=>`${f.enum_name}:(${f.type==='void' ? "" : f.name})=>{return ${ f.type!=='void' ? `${f.encoder}.raw_encode(buf).unwrap();` : 'buf;'}},`),
+                    tsClass.fields.map((f,index) => `${f.enum_name}:(${f.type==='void' ? "" : f.name}) => {return ${ f.type!=='void' ? `${f.encoder}.raw_encode(buf).unwrap();` : 'buf;'}},`),
                 `})!;`,
                 'return Ok(buf);',
             ],
@@ -1654,13 +1634,13 @@ function emit_enum(item){
         `export class ${tsClass.name}Decoder implements RawDecode<${tsClass.name}> {`,
         [
             // 编码器/raw_decode
-            `raw_decode(buf: Uint8Array, ctx?:any): BuckyResult<[${tsClass.name}, Uint8Array]>{`,
+            `raw_decode(buf: Uint8Array, ctx?: any): BuckyResult<[${tsClass.name}, Uint8Array]> {`,
             [
                 `let tag;`,
                 `{`,
                 [
                     `const r = new BuckyNumberDecoder('u8').raw_decode(buf);`,
-                    `if(r.err){`,
+                    `if (r.err) {`,
                     [
                         `return r;`,
                     ],
@@ -1669,14 +1649,14 @@ function emit_enum(item){
                 ],
                 `}`,
                 '',
-                `switch(tag.toNumber()){`,
+                `switch(tag.toNumber()) {`,
                 [
-                    ...[].concat.apply([],tsClass.fields.map((f,index)=> {
-                        if(f.type==='void'){
+                    ...[].concat.apply([],tsClass.fields.map((f,index) => {
+                        if (f.type==='void') {
                             return [
                                 `case ${index}:{`,
                                 [
-                                    `const ret:[${tsClass.name}, Uint8Array] =  [${tsClass.name}.${f.enum_name}(), buf];`,
+                                    `const ret: [${tsClass.name}, Uint8Array] =  [${tsClass.name}.${f.enum_name}(), buf];`,
                                     `return Ok(ret);`,
                                 ],
                                 `}`,
@@ -1686,14 +1666,14 @@ function emit_enum(item){
                                 `case ${index}:{`,
                                 [
                                     `const r = ${f.decoder}.raw_decode(buf);`,
-                                    `if(r.err){`,
+                                    `if (r.err) {`,
                                     [
                                         `return r;`
                                     ],
                                     `}`,
                                     `let ${f.name};`,
                                     `[${f.name}, buf] = r.unwrap();`,
-                                    `const ret:[${tsClass.name}, Uint8Array] =  [${tsClass.name}.${f.enum_name}(${as(f.ts_type, f.name)}), buf];`,
+                                    `const ret: [${tsClass.name}, Uint8Array] =  [${tsClass.name}.${f.enum_name}(${as(f.ts_type, f.name)}), buf];`,
                                     `return Ok(ret);`,
                                 ],
                                 `}`,
@@ -1718,7 +1698,7 @@ function emit_enum(item){
     const tsCodes = indent(ts).join('\n');
     // console.log(tsCodes);
     
-    if(process.argv.length===3 && process.argv[2]==='-v'){
+    if (process.argv.length===3 && process.argv[2]==='-v') {
         // DO NOT write file
     }else{
         fs.ensureDirSync(path.dirname(item.output));
@@ -1733,16 +1713,16 @@ function emit_enum(item){
     };
 }
 
-function enum_2_ts(item){
+function enum_2_ts(item) {
     let r;
 
     r = parse_enum(item);
-    if(r.err){
+    if (r.err) {
         return r;
     }
 
     r = emit_enum(item);
-    if(r.err){
+    if (r.err) {
         return r;
     }
 
@@ -1751,10 +1731,10 @@ function enum_2_ts(item){
     };
 }
 
-function parse_enum_pure(item){
+function parse_enum_pure(item) {
     const codes = code_lines(item.rust);
 
-    if(codes.length<2){
+    if (codes.length<2) {
         console.error('not invalid struct');
         return {err: 1};
     }
@@ -1768,14 +1748,14 @@ function parse_enum_pure(item){
         start: [ 
             spaces('*'), pub(), 
             spaces('+'), enum_(),
-            spaces('+'), identity((r)=>{
+            spaces('+'), identity((r) => {
                 tsClass.name = r.id;
             }), 
             spaces("*"), left(),
             spaces('*') 
         ],
         fileds: [ 
-            spaces('*'), identity((r)=>{
+            spaces('*'), identity((r) => {
                 const field = {
                     type: r.id
                 };
@@ -1793,10 +1773,10 @@ function parse_enum_pure(item){
     console.log("@parse class name...");
     {
         let code = codes[0];
-        for(const s of schema.start){
+        for(const s of schema.start) {
             const r = s(code);
             console.log(` -> match ${r.name} ${r.err?'failed':'sucess'}, code: '${code}'`);
-            if(r.err){
+            if (r.err) {
                 return r;
             }
             code = r.code;
@@ -1804,14 +1784,14 @@ function parse_enum_pure(item){
     }
 
     // fileds
-    for(let i=1;i<codes.length-1;i++){
+    for(let i=1;i<codes.length-1;i++) {
         console.log('');
         console.log("@parse fields...");
         let code = codes[i];
-        for(const s of schema.fileds){
+        for(const s of schema.fileds) {
             const r = s(code);
             console.log(` -> match ${r.name} ${r.err?'failed':'sucess'}, code:'${code}'`);
-            if(r.err){
+            if (r.err) {
                 return r;
             }
             code = r.code;
@@ -1823,10 +1803,10 @@ function parse_enum_pure(item){
     console.log("@parse class end...");
     {
         let code = codes[codes.length-1];
-        for(const s of schema.end){
+        for(const s of schema.end) {
             const r = s(code);
             console.log(` -> match ${r.name} ${r.err?'failed':'sucess'}, code:'${code}'`);
-            if(r.err){
+            if (r.err) {
                 return r;
             }
             code = r.code;
@@ -1835,7 +1815,7 @@ function parse_enum_pure(item){
 
     console.log(tsClass);
     item.tsClass = tsClass;
-    if(item.use_ext){
+    if (item.use_ext) {
         item.ext_type = `${item.tsClass.name}Ext`;
     }
 
@@ -1846,7 +1826,7 @@ function parse_enum_pure(item){
     };
 }
 
-function emit_enum_pure(item){
+function emit_enum_pure(item) {
     // emit typescript code
     const tsClass = item.tsClass;
     const ts = [
@@ -1854,7 +1834,6 @@ function emit_enum_pure(item){
         ` * This code is auto generated from auto.js`,
         ` * Please DO NOT MODIFY this file`,
         ` * author: ${author()}`,
-        ` * date: ${new Date()}`,
         ` *****************************************************/`,
         ``,
         // 引用
@@ -1863,7 +1842,7 @@ function emit_enum_pure(item){
         // 对象+编码
         `export enum ${tsClass.name} {`,
         [
-            ...tsClass.fields.map((f,index)=>`${f.type},`)
+            ...tsClass.fields.map((f,index) => `${f.type},`)
         ],
         `}`,
         '',
@@ -1876,7 +1855,7 @@ function emit_enum_pure(item){
     const tsCodes = indent(ts).join('\n');
     // console.log(tsCodes);
 
-    if(process.argv.length===3 && process.argv[2]==='-v'){
+    if (process.argv.length===3 && process.argv[2]==='-v') {
         // DO NOT write file
     }else{
         fs.ensureDirSync(path.dirname(item.output));
@@ -1890,16 +1869,16 @@ function emit_enum_pure(item){
     };
 }
 
-function enum_pure_2_ts(item){
+function enum_pure_2_ts(item) {
     let r;
 
     r = parse_enum_pure(item);
-    if(r.err){
+    if (r.err) {
         return r;
     }
 
     r = emit_enum_pure(item);
-    if(r.err){
+    if (r.err) {
         return r;
     }
 
@@ -1908,23 +1887,23 @@ function enum_pure_2_ts(item){
     };
 }
 
-function parse_obj(item){
+function parse_obj(item) {
     const desc_codes = code_lines(item.desc_content);
     const body_codes = code_lines(item.body_content);
-    if(desc_codes.length<2 || body_codes.length<2){
+    if (desc_codes.length<2 || body_codes.length<2) {
         console.error('not invalid struct');
         return {err: 1};
     }
 
     let r;
     r = parse_struct_codes(desc_codes);
-    if(r.err){
+    if (r.err) {
         return r;
     }
     const desc_content = r.tsClass;
 
     r = parse_struct_codes(body_codes);
-    if(r.err){
+    if (r.err) {
         return r;
     }
     const body_content = r.tsClass;
@@ -1932,10 +1911,10 @@ function parse_obj(item){
     // unique field name
     let fields = {};
     const all_fileds = [...desc_content.fields, ...body_content.fields];
-    for(const f of all_fileds){
+    for(const f of all_fileds) {
         let record = fields[f.name];
-        if(record){
-            if(record.count===0){
+        if (record) {
+            if (record.count===0) {
                 record.first.arg_name = `${f.name}_${record.count}`
             }
             record.count ++;
@@ -1953,7 +1932,7 @@ function parse_obj(item){
     let create_argv = [];
     const build_chains = [];
     const ts_sub_desc_type = {};
-    switch(item.sub_desc_type.owner_type){
+    switch(item.sub_desc_type.owner_type) {
         case 'option':{
             create_argv.push({
                 arg_name: 'owner',
@@ -1977,7 +1956,7 @@ function parse_obj(item){
         }
     }
 
-    switch(item.sub_desc_type.author_type){
+    switch(item.sub_desc_type.author_type) {
         case 'option':{
             create_argv.push({
                 arg_name: 'author',
@@ -2001,7 +1980,7 @@ function parse_obj(item){
         }
     }
 
-    switch(item.sub_desc_type.area_type){
+    switch(item.sub_desc_type.area_type) {
         case 'option':{
             create_argv.push({
                 arg_name: 'author',
@@ -2025,7 +2004,7 @@ function parse_obj(item){
         }
     }
 
-    switch(item.sub_desc_type.key_type){
+    switch(item.sub_desc_type.key_type) {
         case 'single_key':{
             create_argv.push({
                 arg_name: 'public_key',
@@ -2054,7 +2033,7 @@ function parse_obj(item){
     item.create_argv = create_argv;
     item.build_chains = build_chains;
 
-    if(item.use_ext){
+    if (item.use_ext) {
         item.ext_type = `${item.obj_name}Ext`;
     }
 
@@ -2067,7 +2046,7 @@ function parse_obj(item){
     };
 }
 
-function emit_obj(item){
+function emit_obj(item) {
 
     const desc_content = item.desc_content;
     const body_content = item.body_content;
@@ -2077,7 +2056,6 @@ function emit_obj(item){
         ` * This code is auto generated from auto.js`,
         ` * Please DO NOT MODIFY this file`,
         ` * author: ${author()}`,
-        ` * date: ${new Date()}`,
         ` *****************************************************/`,
         ``,
         // 引用
@@ -2085,11 +2063,11 @@ function emit_obj(item){
 
         `// 定义App对象的类型信息`,
         `import { ${item.obj_type} } from "${item.obj_type_def}";`,
-        `export class ${item.obj_name}DescTypeInfo extends DescTypeInfo{`,
+        `export class ${item.obj_name}DescTypeInfo extends DescTypeInfo {`,
         [
             ``,
             `// 每个对象需要一个应用App唯一的编号`,
-            `obj_type() : number{`,
+            `obj_type(): number {`,
             [
                 `return ${item.obj_type}.${item.obj_name};`,
             ],
@@ -2097,7 +2075,7 @@ function emit_obj(item){
             ``,
 
             `// 配置该对象具有哪些能力`,
-            `sub_desc_type(): SubDescType{`,
+            `sub_desc_type(): SubDescType {`,
             [        
                 `return {`,
                 [   
@@ -2125,7 +2103,7 @@ function emit_obj(item){
             ``,
             `constructor(`,
                 desc_content.fields.map(f=>`public ${f.name}: ${f.type},`),
-            `){`,
+            `) {`,
             [        
                 `super();`,
             ],
@@ -2133,7 +2111,7 @@ function emit_obj(item){
             ``,
 
             `// 类型信息`,
-            `type_info(): DescTypeInfo{`,
+            `type_info(): DescTypeInfo {`,
             [        
                 `return ${item.obj_name.toUpperCase()}_DESC_TYPE_INFO;`,
             ],
@@ -2141,7 +2119,7 @@ function emit_obj(item){
             ``,
 
             `// 编码需要的字节`,
-            `raw_measure(): BuckyResult<number>{`,
+            `raw_measure(): BuckyResult<number> {`,
             [        
                 `${desc_content.fields.length===0?'const':'let'} size = 0;`,
                 ...desc_content.fields.map(f=> `size += ${f.encoder}.raw_measure().unwrap();`),
@@ -2151,7 +2129,7 @@ function emit_obj(item){
             ``,
 
             `// 编码`,
-            `raw_encode(buf: Uint8Array): BuckyResult<Uint8Array>{`,
+            `raw_encode(buf: Uint8Array): BuckyResult<Uint8Array> {`,
             [        
                 ...desc_content.fields.map(f=>`buf = ${f.encoder}.raw_encode(buf).unwrap();`),
                 'return Ok(buf);',
@@ -2163,10 +2141,10 @@ function emit_obj(item){
         ``,
 
         `// 同时需要提供DescContent和BodyContent对应的解码器`,
-        `export class ${item.obj_name}DescContentDecoder extends DescContentDecoder<${item.obj_name}DescContent>{`,
+        `export class ${item.obj_name}DescContentDecoder extends DescContentDecoder<${item.obj_name}DescContent> {`,
         [
             `// 类型信息`,
-            `type_info(): DescTypeInfo{`,
+            `type_info(): DescTypeInfo {`,
             [        
                 `return ${item.obj_name.toUpperCase()}_DESC_TYPE_INFO;`,
             ],
@@ -2174,15 +2152,15 @@ function emit_obj(item){
             ``,
 
             `// 解码`,
-            `raw_decode(buf: Uint8Array): BuckyResult<[${item.obj_name}DescContent, Uint8Array]>{`,
+            `raw_decode(buf: Uint8Array): BuckyResult<[${item.obj_name}DescContent, Uint8Array]> {`,
             [        
-                ...[].concat.apply([],desc_content.fields.map(f=>{
+                ...[].concat.apply([],desc_content.fields.map(f=> {
                     return [
                         `let ${f.name};`,
                         '{',
                         [
                             `const r = ${f.decoder}.raw_decode(buf);`,
-                            'if(r.err){',
+                            'if (r.err) {',
                             [
                                 'return r;',
                             ],
@@ -2193,7 +2171,7 @@ function emit_obj(item){
                         ''
                     ]
                 })),
-                `const ret:[${item.obj_name}DescContent, Uint8Array] = [new ${item.obj_name}DescContent(${desc_content.fields.map(f=>`${as(f.ts_type, f.name)}`).join(', ')}), buf];`,
+                `const ret: [${item.obj_name}DescContent, Uint8Array] = [new ${item.obj_name}DescContent(${desc_content.fields.map(f=>`${as(f.ts_type, f.name)}`).join(', ')}), buf];`,
                 'return Ok(ret);',
             ],
             `}`,
@@ -2203,18 +2181,18 @@ function emit_obj(item){
         ``,
 
         `// 自定义BodyContent`,
-        `export class ${item.obj_name}BodyContent extends BodyContent{`,
+        `export class ${item.obj_name}BodyContent extends BodyContent {`,
         [    
             `constructor(`,
                 body_content.fields.map(f=>`public ${f.name}: ${f.type},`),
-            `){`,
+            `) {`,
             [        
                 `super();`,
             ],
             `}`,
             ``,
 
-            `raw_measure(): BuckyResult<number>{`,
+            `raw_measure(): BuckyResult<number> {`,
             [        
                 `${body_content.fields.length===0?'const':'let'} size = 0;`,
                 ...body_content.fields.map(f=> `size += ${f.encoder}.raw_measure().unwrap();`),
@@ -2223,7 +2201,7 @@ function emit_obj(item){
             `}`,
             ``,
 
-            `raw_encode(buf: Uint8Array): BuckyResult<Uint8Array>{`,
+            `raw_encode(buf: Uint8Array): BuckyResult<Uint8Array> {`,
             [        
                 ...body_content.fields.map(f=>`buf = ${f.encoder}.raw_encode(buf).unwrap();`),
                 'return Ok(buf);',
@@ -2235,17 +2213,17 @@ function emit_obj(item){
         ``,
 
         `// 自定义BodyContent的解码器`,
-        `export class ${item.obj_name}BodyContentDecoder extends BodyContentDecoder<${item.obj_name}BodyContent>{`,
+        `export class ${item.obj_name}BodyContentDecoder extends BodyContentDecoder<${item.obj_name}BodyContent> {`,
         [    
-            `raw_decode(buf: Uint8Array): BuckyResult<[${item.obj_name}BodyContent, Uint8Array]>{`,
+            `raw_decode(buf: Uint8Array): BuckyResult<[${item.obj_name}BodyContent, Uint8Array]> {`,
             [
-                ...[].concat.apply([],body_content.fields.map(f=>{
+                ...[].concat.apply([],body_content.fields.map(f=> {
                     return [
                         `let ${f.name};`,
                         '{',
                         [
                             `const r = ${f.decoder}.raw_decode(buf);`,
-                            'if(r.err){',
+                            'if (r.err) {',
                             [
                                 'return r;',
                             ],
@@ -2256,7 +2234,7 @@ function emit_obj(item){
                         ''
                     ]
                 })),
-                `const ret:[${item.obj_name}BodyContent, Uint8Array] = [new ${item.obj_name}BodyContent(${body_content.fields.map(f=>`${as(f.ts_type, f.name)}`).join(', ')}), buf];`,
+                `const ret: [${item.obj_name}BodyContent, Uint8Array] = [new ${item.obj_name}BodyContent(${body_content.fields.map(f=>`${as(f.ts_type, f.name)}`).join(', ')}), buf];`,
                 'return Ok(ret);',
             ],
             `}`,
@@ -2266,7 +2244,7 @@ function emit_obj(item){
         ``,
 
         `// 使用自定义的DescCotent对象，通过命名对象构造器来定义对象的Desc`,
-        `export class ${item.obj_name}Desc extends NamedObjectDesc<${item.obj_name}DescContent>{`,
+        `export class ${item.obj_name}Desc extends NamedObjectDesc<${item.obj_name}DescContent> {`,
         [    
             `// ignore`,
         ],
@@ -2274,9 +2252,9 @@ function emit_obj(item){
         ``,
 
         `// 定义Desc的解码器`,
-        `export  class ${item.obj_name}DescDecoder extends NamedObjectDescDecoder<${item.obj_name}DescContent>{`,
+        `export class ${item.obj_name}DescDecoder extends NamedObjectDescDecoder<${item.obj_name}DescContent> {`,
         [    
-            `constructor(){`,
+            `constructor() {`,
             [
                 `super(new ${item.obj_name}DescContentDecoder());`
             ],
@@ -2287,7 +2265,7 @@ function emit_obj(item){
         ``,
 
         `// 定义一个对象的Builder`,
-        `export class ${item.obj_name}Builder extends NamedObjectBuilder<${item.obj_name}DescContent, ${item.obj_name}BodyContent>{`,
+        `export class ${item.obj_name}Builder extends NamedObjectBuilder<${item.obj_name}DescContent, ${item.obj_name}BodyContent> {`,
         [    
             `// ignore`,
         ],
@@ -2295,16 +2273,16 @@ function emit_obj(item){
         ``,
 
         `// 定义对象的Id，对象的Id是从Desc提供的calc_id方法计算，Desc发生改变，则Id发生改变`,
-        `export class ${item.obj_name}Id extends NamedObjectId<${item.obj_name}DescContent, ${item.obj_name}BodyContent>{`,
+        `export class ${item.obj_name}Id extends NamedObjectId<${item.obj_name}DescContent, ${item.obj_name}BodyContent> {`,
         [    
-            `constructor(id: ObjectId){`,
+            `constructor(id: ObjectId) {`,
             [        
                 `super(${item.obj_type}.${item.obj_name}, id);`,
             ],
             `}`,
             ``,
 
-            `static default(): ${item.obj_name}Id{`,
+            `static default(): ${item.obj_name}Id {`,
             [        
                 `return named_id_gen_default(${item.obj_type}.${item.obj_name});`,
             ],
@@ -2318,7 +2296,7 @@ function emit_obj(item){
             `}`,
             ``,
 
-            `static try_from_object_id(id: ObjectId): BuckyResult<${item.obj_name}Id>{`,
+            `static try_from_object_id(id: ObjectId): BuckyResult<${item.obj_name}Id> {`,
             [        
                 `return named_id_try_from_object_id(${item.obj_type}.${item.obj_name}, id);`,
             ],
@@ -2329,9 +2307,9 @@ function emit_obj(item){
         ``,
 
         `// 定义Id的解码器`,
-        `export class ${item.obj_name}IdDecoder extends NamedObjectIdDecoder<${item.obj_name}DescContent, ${item.obj_name}BodyContent>{`,
+        `export class ${item.obj_name}IdDecoder extends NamedObjectIdDecoder<${item.obj_name}DescContent, ${item.obj_name}BodyContent> {`,
         [    
-            `constructor(){`,
+            `constructor() {`,
             [        
                 `super(${item.obj_type}.${item.obj_name});`,
             ],
@@ -2342,12 +2320,12 @@ function emit_obj(item){
         ``,
 
         `// 现在，我们完成对象的定义`,
-        `export class ${item.obj_name} extends NamedObject<${item.obj_name}DescContent, ${item.obj_name}BodyContent>{`,
+        `export class ${item.obj_name} extends NamedObject<${item.obj_name}DescContent, ${item.obj_name}BodyContent> {`,
         [
             ...(item.ext_type ? [`private m_ext?: ${item.ext_type};`,'']: ''),
 
             `// 提供一个静态的创建方法`,
-            `static create(${item.create_argv.map(f=>`${f.arg_name}: ${f.type}`).join(', ')}): ${item.obj_name}{`,
+            `static create(${item.create_argv.map(f=>`${f.arg_name}: ${f.type}`).join(', ')}): ${item.obj_name} {`,
             [        
                 `// 创建DescContent部分`,
                 `const desc_content = new ${item.obj_name}DescContent(${desc_content.fields.map(f=>`${f.arg_name}`).join(', ')});`,
@@ -2372,9 +2350,9 @@ function emit_obj(item){
             `}`,
             ...(item.ext_type? [
                 ``,
-                `ext():${item.ext_type}{`,
+                `ext():${item.ext_type} {`,
                 [
-                    `if(this.m_ext==null){`,
+                    `if (this.m_ext==null) {`,
                     [
                         `this.m_ext = new ${item.ext_type}(this);`
                     ],
@@ -2391,18 +2369,18 @@ function emit_obj(item){
         ``,
 
         `// 同时，我们为对象提供对应的解码器`,
-        `export class ${item.obj_name}Decoder extends NamedObjectDecoder<${item.obj_name}DescContent, ${item.obj_name}BodyContent, ${item.obj_name}>{`,
+        `export class ${item.obj_name}Decoder extends NamedObjectDecoder<${item.obj_name}DescContent, ${item.obj_name}BodyContent, ${item.obj_name}> {`,
         [    
-            `constructor(){`,
+            `constructor() {`,
             [        
                 `super(new ${item.obj_name}DescContentDecoder(), new ${item.obj_name}BodyContentDecoder(), ${item.obj_name});`,
             ],
             `}`,
             ``,
 
-            `raw_decode(buf: Uint8Array): BuckyResult<[${item.obj_name}, Uint8Array]>{`,
+            `raw_decode(buf: Uint8Array): BuckyResult<[${item.obj_name}, Uint8Array]> {`,
             [        
-                `return super.raw_decode(buf).map(r=>{`,
+                `return super.raw_decode(buf).map(r=> {`,
                 [            
                     `const [obj, _buf] = r;`,
                     `const sub_obj = new ${item.obj_name}(obj.desc(),obj.body(), obj.signs(), obj.nonce());`,
@@ -2417,7 +2395,7 @@ function emit_obj(item){
     ];
 
     const tsCodes = indent(ts).join('\n');
-    if(process.argv.length===3 && process.argv[2]==='-v'){
+    if (process.argv.length===3 && process.argv[2]==='-v') {
         // DO NOT write file
     }else{
         fs.ensureDirSync(path.dirname(item.output));
@@ -2430,16 +2408,16 @@ function emit_obj(item){
     };
 }
 
-function obj_2_ts(item){
+function obj_2_ts(item) {
     let r;
 
     r = parse_obj(item);
-    if(r.err){
+    if (r.err) {
         return r;
     }
 
     r = emit_obj(item);
-    if(r.err){
+    if (r.err) {
         return r;
     }
 
@@ -2448,15 +2426,15 @@ function obj_2_ts(item){
     };
 }
 
-function ext_module(item){
+function ext_module(item) {
     const dir = path.dirname(item.output);
     const base_name = path.basename(item.output,'.ts');
     const ext_file_name = `${base_name}_ext`;
     return ext_file_name;
 }
 
-function ext(item){
-    if(item.ext_type==null){
+function ext(item) {
+    if (item.ext_type==null) {
         return {
             err: 0
         }
@@ -2465,7 +2443,7 @@ function ext(item){
     const dir = path.dirname(item.output);
     const base_name = path.basename(item.output,'.ts');
     const ext_file_name = path.join(dir, base_name+'_ext.ts');
-    if(!fs.existsSync(ext_file_name)){
+    if (!fs.existsSync(ext_file_name)) {
         const ts_ext = [
             `//`,
             `// 在此添加对象的扩展方法，该文件只会生成一次，不会被 auto.js 覆盖`,
@@ -2475,7 +2453,7 @@ function ext(item){
             ``,
             `export class ${item.obj_name}Ext {`,
             [
-                `constructor(public obj: ${item.obj_name}){`,
+                `constructor(public obj: ${item.obj_name}) {`,
                 [
                     `// TODO:`,
                 ],
@@ -2492,7 +2470,7 @@ function ext(item){
 
         console.log(ext_codes);
 
-        if(process.argv.length===3 && process.argv[2]==='-v'){
+        if (process.argv.length===3 && process.argv[2]==='-v') {
             // DO NOT write file
         }else{
             fs.writeFileSync(ext_file_name, ext_codes);
@@ -2503,18 +2481,18 @@ function ext(item){
     }
 }
 
-function check_unique_rust(src){
+function check_unique_rust(src) {
     let uniques=['output','name','obj_name'];
     let dict = {};
-    for(const item of src){
-        for(const unique_key of uniques){
+    for(const item of src) {
+        for(const unique_key of uniques) {
             let set = dict[unique_key];
-            if(set==null){
+            if (set==null) {
                 set = [];
                 dict[unique_key] = set;
             }
-            if(item[unique_key]!=null){
-                if(set.indexOf(item[unique_key])>=0){
+            if (item[unique_key]!=null) {
+                if (set.indexOf(item[unique_key])>=0) {
                     console.log(item);
                     console.error(`duplicate ${unique_key} value: ${item[unique_key]}.`);
                     process.exit(0);
@@ -2525,35 +2503,35 @@ function check_unique_rust(src){
     }
 }
 
-function rust_2_ts(src){
+function rust_2_ts(src) {
     check_unique_rust(src);
 
-    for(const item of src){
-        switch(item.type){
+    for(const item of src) {
+        switch(item.type) {
             case 'enum': {
                 const r = parse_enum(item); 
-                if(r.err){
+                if (r.err) {
                     return r;
                 }
                 break;
             }
             case 'enum_pure': {
                 const r = parse_enum_pure(item); 
-                if(r.err){
+                if (r.err) {
                     return r;
                 }
                 break;
             }
             case 'struct': {
                 const r = parse_struct(item); 
-                if(r.err){
+                if (r.err) {
                     return r;
                 }
                 break;
             }
             case 'obj': {
                 const r = parse_obj(item); 
-                if(r.err){
+                if (r.err) {
                     return r;
                 }
                 break;
@@ -2562,36 +2540,36 @@ function rust_2_ts(src){
     }
 
     const ret = parse_depends(src);
-    if(ret.err){
+    if (ret.err) {
         return ret;
     }
 
-    for(const item of src){
-        switch(item.type){
+    for(const item of src) {
+        switch(item.type) {
             case 'enum': {
                 const r = emit_enum(item); 
-                if(r.err){
+                if (r.err) {
                     return r;
                 }
                 break;
             }
             case 'enum_pure': {
                 const r = emit_enum_pure(item); 
-                if(r.err){
+                if (r.err) {
                     return r;
                 }
                 break;
             }
             case 'struct': {
                 const r = emit_struct(item); 
-                if(r.err){
+                if (r.err) {
                     return r;
                 }
                 break;
             }
             case 'obj': {
                 const r = emit_obj(item); 
-                if(r.err){
+                if (r.err) {
                     return r;
                 }
                 break;
@@ -2603,11 +2581,11 @@ function rust_2_ts(src){
     };
 }
 
-function copyleft(rust){
+function copyleft(rust) {
     console.log('');
     console.log('-------------------');
     console.log('...');
-    console.log('auto generate files count: ', rust.reduce((a,b)=>(a + (b.use_ext?2:1)), 0));
+    console.log('auto generate files count: ', rust.reduce((a,b) => (a + (b.use_ext?2:1)), 0));
     console.log(`author: ${author_public()}`);
     console.log('mission complate.');
     console.log('...');
@@ -2615,15 +2593,15 @@ function copyleft(rust){
     console.log('');
 }
 
-function rust_module_2_ts(src){
+function rust_module_2_ts(src) {
     let rust = [];
-    for(const def of src){
+    for(const def of src) {
         const code = require(def).code();
         rust = [...rust, ...code];
     }
 
     const r = rust_2_ts(rust);
-    if(r.err){
+    if (r.err) {
         return r;
     }
 
@@ -2633,7 +2611,7 @@ function rust_module_2_ts(src){
     };
 }
 
-function test_ts_type(){
+function test_ts_type() {
     const codes = [
         'String',
         'i32',
@@ -2646,9 +2624,9 @@ function test_ts_type(){
     ];
 
     const ts_types = [];
-    for(const code of codes){
+    for(const code of codes) {
         const r = ts_type(code);
-        if(r.err){
+        if (r.err) {
             console.error('parse rust type to typescript type failed, code:', code, ', result:', r);
             return r;
         }else{
@@ -2659,13 +2637,13 @@ function test_ts_type(){
     console.log(JSON.stringify(ts_types, null, 2));
 }
 
-function test_star(){
+function test_star() {
     const code = " pub pub pub ";
     const r = seq(
         spaces('+'), 
         star(
             seq(
-                pub((r)=>{
+                pub((r) => {
                     console.log(r);
                 }),
                 spaces('*')
@@ -2675,7 +2653,7 @@ function test_star(){
     r(code);
 }
 
-function test_question(){
+function test_question() {
     const codes = [
         "pub",
         "pub ",
@@ -2683,10 +2661,10 @@ function test_question(){
         "pub pub ",
     ];
 
-    for(const code of codes){
+    for(const code of codes) {
         const re = question(seq(pub(), spaces('*')));
         const r = re(code);
-        if(r.err){
+        if (r.err) {
             console.error("[Error] test failed, code:`", code, '`');
         }else{
             console.log("[OK] test success, code:`", code, "`, rest: `", r.code, '`', ', group:', r.group);
@@ -2694,7 +2672,7 @@ function test_question(){
     }
 }
 
-function sub_desc_type_config_doc(){
+function sub_desc_type_config_doc() {
     const doc = `
         // 是否有主，
         // "disable": 禁用，
@@ -2724,18 +2702,18 @@ function sub_desc_type_config_doc(){
     return doc;
 }
 
-function main(){
+function main() {
     // 转换
     rust_module_2_ts([
-        './auto_cyfs_base.def.js',
+        // './auto_cyfs_base.def.js',
         './auto_cyfs_base_meta.def.js',
     ]);
 
     // 生成导出接口索引
-    if(process.argv.length===3&&process.argv[2]==='-v'){
+    if (process.argv.length===3&&process.argv[2]==='-v') {
         // DO NOT write file
     }else {
-        child_process.execSync('node index.g.js');
+        // child_process.execSync('node index.g.js');
     }
 }
 

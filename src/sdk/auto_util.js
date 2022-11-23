@@ -26,6 +26,7 @@ import { Vec, VecDecoder } from "${relative_path}base/vec";
 import { RawDecode, RawEncode } from "${relative_path}base/raw_encode";
 import { HashValue, HashValueDecoder } from "${relative_path}crypto/hash";
 import { ObjectId, ObjectIdDecoder } from "${relative_path}objects/object_id";
+import JSBI from 'jsbi';
 `;
 }
 
