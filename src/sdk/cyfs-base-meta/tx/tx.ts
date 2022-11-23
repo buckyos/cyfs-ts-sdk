@@ -8,20 +8,18 @@
 import {
     SubDescType,
     DescTypeInfo, DescContent, DescContentDecoder,
-    BodyContent, BodyContentDecoder,
+    BodyContentDecoder,
     NamedObjectId, NamedObjectIdDecoder,
-    NamedObjectDesc, NamedObjectDescDecoder,
-    NamedObject, NamedObjectBuilder, NamedObjectDecoder,
+    NamedObjectDesc, NamedObject, NamedObjectBuilder, NamedObjectDecoder,
     named_id_gen_default,
     named_id_from_base_58,
     named_id_try_from_object_id,
-    ContentCodecInfo,
 } from "../../cyfs-base/objects/object"
 
 import { Ok, BuckyResult } from "../../cyfs-base/base/results";
-import { Option, OptionEncoder, OptionDecoder, } from "../../cyfs-base/base/option";
+import { Option, OptionDecoder, OptionEncoder, } from "../../cyfs-base/base/option";
 import { BuckyNumber, BuckyNumberDecoder } from "../../cyfs-base/base/bucky_number";
-import { BuckyBuffer, BuckyBufferDecoder } from "../../cyfs-base/base/bucky_buffer";
+import { BuckyBufferDecoder } from "../../cyfs-base/base/bucky_buffer";
 import { Vec, VecDecoder } from "../../cyfs-base/base/vec";
 import { ObjectId } from "../../cyfs-base/objects/object_id";
 
@@ -37,7 +35,7 @@ import { RawDecode, RawEncode } from "../../cyfs-base/base/raw_encode";
 import { TypeBuffer, TypeBufferDecoder } from "../../cyfs-base/base/type_buffer";
 import { MetaTxBody, MetaTxBodyDecoder } from "./meta_tx_body";
 import JSBI from 'jsbi';
-import { OBJECT_CONTENT_CODEC_FORMAT_PROTOBUF, ProtobufBodyContent } from "../../cyfs-base/codec";
+import { ProtobufBodyContent } from "../../cyfs-base/codec";
 import { protos } from "../../cyfs-base/codec";
 
 

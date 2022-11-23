@@ -1,5 +1,5 @@
-import { Err, Ok, BuckyResult, BuckyError, BuckyErrorCode } from "../base/results";
-import { Option, OptionEncoder, OptionDecoder, Some, None } from "../base/option";
+import { Ok, BuckyResult } from "../base/results";
+import { Option, OptionDecoder, Some, None, OptionEncoder } from "../base/option";
 import { RawEncode, RawDecode, Compareable } from "../base/raw_encode";
 import { } from "../base/buffer";
 import { HashValue } from "../crypto/hash";

@@ -8,7 +8,6 @@ import {
     RawEncode,
     RawEncodePurpose
 } from "../../../cyfs-base";
-import {CoinTokenIdDecoder} from "../../tx/coin_token_id";
 
 export class ViewNFTBuyList implements RawEncode {
     constructor(
