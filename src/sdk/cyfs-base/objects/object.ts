@@ -1907,26 +1907,6 @@ export class NamedObjectDescBuilder<T extends DescContent> {
     }
 
     build(): NamedObjectDesc<T> {
-
-        const get = (o: any) => {
-            if (o) {
-                const obj = o.unwrap();
-                if (obj) {
-                    return obj;
-                } else {
-                    return undefined;
-                }
-            } else {
-                return undefined;
-            }
-        }
-
-        const owner: ObjectId | undefined = get(this.m_owner);
-
-        const area: Area | undefined = get(this.m_area);
-
-        const author: ObjectId | undefined = get(this.m_author);
-
         return new NamedObjectDesc(
             this.m_dec_id,
             this.m_ref_objects,
@@ -1935,9 +1915,9 @@ export class NamedObjectDescBuilder<T extends DescContent> {
             this.m_create_time,
             this.m_expired_time,
             this.m_desc_content,
-            owner,
-            area,
-            author,
+            this.m_owner,
+            this.m_area,
+            this.m_author,
             this.m_public_key,
         );
     }
