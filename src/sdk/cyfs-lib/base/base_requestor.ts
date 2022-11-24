@@ -1,6 +1,6 @@
 
 import { HttpRequest } from './http_request'
-import { BuckyError, BuckyErrorCode, BuckyResult, CYFS_DEVICE_ID, None, Option, Some, Err, Ok } from "../../cyfs-base";
+import { BuckyError, BuckyErrorCode, BuckyResult, CYFS_DEVICE_ID, Err, Ok } from "../../cyfs-base";
 import { DeviceId } from "../../cyfs-base/objects/device";
 import { WebSocketRequestHandler, WebSocketRequestManager } from '../ws/request';
 import { WebSocketSession } from '../ws/session';
@@ -60,17 +60,17 @@ class WSHttpRequestorHandler extends WebSocketRequestHandler {
 
     async on_request(requestor: WebSocketRequestManager,
         cmd: number,
-        content: Uint8Array): Promise<BuckyResult<Option<Uint8Array>>> {
+        content: Uint8Array): Promise<BuckyResult<Uint8Array|undefined>> {
         console.error(`ws requestor should not recv any request!`);
         return Err(BuckyError.from(BuckyErrorCode.NotImplement));
     }
 
     async on_session_begin(session: WebSocketSession) {
-
+        //
     }
 
     async on_session_end(session: WebSocketSession) {
-
+        //
     }
 
     clone_handler(): WebSocketRequestHandler {

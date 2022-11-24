@@ -11,7 +11,6 @@ import { ObjectTypeCode } from "./object_type_info";
 import {
     Area,
     BuckyResult,
-    Option,
     PublicKey} from "..";
 import { Ok } from "../base/results";
 import {
@@ -202,7 +201,7 @@ export class PeopleIdDecoder extends NamedObjectIdDecoder<DeviceDescContent, Dev
 // 继承自NamedObject<PeopleDescContent, PeopleBodyContent>
 // 提供创建方法和其他自定义方法
 export class People extends NamedObject<PeopleDescContent, PeopleBodyContent>{
-    static create(owner: Option<ObjectId>, ood_list: DeviceId[], public_key: PublicKey, area: Option<Area>, name?: string, icon?: FileId, build?: (builder: PeopleBuilder) => void): People {
+    static create(owner: ObjectId|undefined, ood_list: DeviceId[], public_key: PublicKey, area?: Area, name?: string, icon?: FileId, build?: (builder: PeopleBuilder) => void): People {
         const desc_content = new PeopleDescContent();
         const body_content = new PeopleBodyContent(ood_list, name, icon);
 

@@ -3,16 +3,14 @@ import {
     BuckyResult,
     BuckyString,
     DeviceId,
-    error,
     js_time_to_bucky_time,
     ObjectId,
-    Ok,
-    Some
+    Ok
 } from "../../cyfs-base";
 
 import JSBI from "jsbi";
 import {NONAPILevel, NONObjectInfo, SharedCyfsStack} from "../../cyfs-lib";
-import {CoreObjectType, DecAppId} from "../../cyfs-core";
+import {DecAppId} from "../../cyfs-core";
 import {
     PerfAccumulation,
     PerfAction,
@@ -23,7 +21,7 @@ import {
     PerfRequestIsolate,
     PerfTimeRange
 } from "../base";
-import {Perf, PerfDecoder} from "../base/perf";
+import {Perf} from "../base/perf";
 // import {sha256} from "js-sha256";
 import {md, util} from 'node-forge'
 import {perf_acc, perf_action, perf_begin, perf_end, perf_record} from './stat';
@@ -68,7 +66,7 @@ export class PerfClient {
         await stack.online();
         const device_id = stack.local_device_id();
         const device = stack.local_device();
-        const people_id = device.desc().owner()!.unwrap(); // object_id
+        const people_id = device.desc().owner()!; // object_id
 
         // const dec_id = DecApp.generate_id(people_id, "perf");
 
@@ -267,7 +265,7 @@ export class PerfClient {
 
         const list = new PerfIsolateEntityList(time_range, all);
 
-        const perfObj = Perf.create(this.device_id, this.owner, Some(this.dec_app_id.object_id), this.id, this.version, list);
+        const perfObj = Perf.create(this.device_id, this.owner, this.dec_app_id.object_id, this.id, this.version, list);
 
         const buf = perfObj.to_vec().unwrap();
         const hash = md.sha256.create();

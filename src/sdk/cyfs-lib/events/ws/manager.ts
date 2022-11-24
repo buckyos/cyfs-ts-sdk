@@ -1,4 +1,4 @@
-import { BuckyError, BuckyErrorCode, BuckyResult, Err, EventListenerAsyncRoutineT, ObjectId, Ok, Option, Some } from "../../../cyfs-base";
+import { BuckyError, BuckyErrorCode, BuckyResult, Err, EventListenerAsyncRoutineT, ObjectId, Ok} from "../../../cyfs-base";
 import { JsonCodec } from "../../base/codec";
 import { ROUTER_WS_EVENT_CMD_ADD, ROUTER_WS_EVENT_CMD_EVENT, ROUTER_WS_EVENT_CMD_REMOVE } from "../../base/protocol";
 import { RouterWSHandlerResponseJsonCodec } from "../../router_handler/ws/request";
@@ -200,7 +200,7 @@ class RouterWSEventManagerImpl {
     static async on_event(
         manager: RouterWSEventManagerImpl,
         content: string,
-    ): Promise<BuckyResult<Option<string>>> {
+    ): Promise<BuckyResult<string|undefined>> {
         const event_r = new RouterWSEventEmitParamJsonCodec().decode_string(content);
         if (event_r.err) {
             return event_r;
@@ -226,7 +226,7 @@ class RouterWSEventManagerImpl {
             return resp;
         }
 
-        return Ok(Some(resp.unwrap()))
+        return Ok(resp.unwrap())
     }
 
     static async emit(event: RouterEventItem, param: string): Promise<BuckyResult<string>> {
@@ -303,7 +303,7 @@ class RouterWSEventRequestEvent extends WebSocketRequestHandler {
         requestor: WebSocketRequestManager,
         cmd: number,
         content: string,
-    ): Promise<BuckyResult<Option<string>>> {
+    ): Promise<BuckyResult<string|undefined>> {
         if (cmd === ROUTER_WS_EVENT_CMD_EVENT) {
             return await RouterWSEventManagerImpl.on_event(this.owner, content)
         } else {

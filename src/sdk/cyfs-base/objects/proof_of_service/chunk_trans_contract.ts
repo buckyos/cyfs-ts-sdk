@@ -7,7 +7,7 @@
 
 
 import { Ok, BuckyResult } from "../../base/results";
-import { Option, OptionDecoder, OptionEncoder, } from "../../base/option";
+import { OptionDecoder, OptionEncoder, } from "../../base/option";
 import { BuckyNumber, BuckyNumberDecoder } from "../../base/bucky_number";
 import { Vec, VecDecoder } from "../../base/vec";
 import { RawDecode, RawEncode } from "../../base/raw_encode";
@@ -18,11 +18,11 @@ import JSBI from 'jsbi';
 export class ChunkTransContract implements RawEncode {
     constructor(
         public price_per_kbytes: number,
-        public obj_list: Option<ObjectId[]>,
-        public min_speed: Option<number>,
-        public max_speed: Option<number>,
-        public avg_speed: Option<number>,
-        public max_bytes: Option<JSBI>,
+        public obj_list?: ObjectId[],
+        public min_speed?: number,
+        public max_speed?: number,
+        public avg_speed?: number,
+        public max_bytes?: JSBI,
     ) {
         // ignore
     }
@@ -30,21 +30,21 @@ export class ChunkTransContract implements RawEncode {
     raw_measure(ctx?: any): BuckyResult<number> {
         let size = 0;
         size += new BuckyNumber('u32', this.price_per_kbytes).raw_measure().unwrap();
-        size += OptionEncoder.from(this.obj_list, (v: ObjectId[]) => new Vec(v)).raw_measure().unwrap();
-        size += OptionEncoder.from(this.min_speed, (v: number) => new BuckyNumber('u32', v)).raw_measure().unwrap();
-        size += OptionEncoder.from(this.max_speed, (v: number) => new BuckyNumber('u32', v)).raw_measure().unwrap();
-        size += OptionEncoder.from(this.avg_speed, (v: number) => new BuckyNumber('u32', v)).raw_measure().unwrap();
-        size += OptionEncoder.from(this.max_bytes, (v: JSBI) => new BuckyNumber('u64', v)).raw_measure().unwrap();
+        size += OptionEncoder.from(this.obj_list).raw_measure().unwrap();
+        size += OptionEncoder.from(this.min_speed, 'u32').raw_measure().unwrap();
+        size += OptionEncoder.from(this.max_speed, 'u32').raw_measure().unwrap();
+        size += OptionEncoder.from(this.avg_speed, 'u32').raw_measure().unwrap();
+        size += OptionEncoder.from(this.max_bytes, 'u64').raw_measure().unwrap();
         return Ok(size);
     }
 
     raw_encode(buf: Uint8Array, ctx?: any): BuckyResult<Uint8Array> {
         buf = new BuckyNumber('u32', this.price_per_kbytes).raw_encode(buf).unwrap();
-        buf = OptionEncoder.from(this.obj_list, (v: ObjectId[]) => new Vec(v)).raw_encode(buf).unwrap();
-        buf = OptionEncoder.from(this.min_speed, (v: number) => new BuckyNumber('u32', v)).raw_encode(buf).unwrap();
-        buf = OptionEncoder.from(this.max_speed, (v: number) => new BuckyNumber('u32', v)).raw_encode(buf).unwrap();
-        buf = OptionEncoder.from(this.avg_speed, (v: number) => new BuckyNumber('u32', v)).raw_encode(buf).unwrap();
-        buf = OptionEncoder.from(this.max_bytes, (v: JSBI) => new BuckyNumber('u64', v)).raw_encode(buf).unwrap();
+        buf = OptionEncoder.from(this.obj_list).raw_encode(buf).unwrap();
+        buf = OptionEncoder.from(this.min_speed, 'u32').raw_encode(buf).unwrap();
+        buf = OptionEncoder.from(this.max_speed, 'u32').raw_encode(buf).unwrap();
+        buf = OptionEncoder.from(this.avg_speed, 'u32').raw_encode(buf).unwrap();
+        buf = OptionEncoder.from(this.max_bytes, 'u64').raw_encode(buf).unwrap();
         return Ok(buf);
     }
 }
@@ -106,11 +106,11 @@ export class ChunkTransContractDecoder implements RawDecode<ChunkTransContract> 
         }
 
         const ret: [ChunkTransContract, Uint8Array] = [new ChunkTransContract(price_per_kbytes.toNumber()
-            , obj_list.to((v: Vec<ObjectId>) => v.value())
-            , min_speed.to((v) => v.toNumber())
-            , max_speed.to((v) => v.toNumber())
-            , avg_speed.to((v) => v.toNumber())
-            , max_bytes.to((v) => v.toBigInt())), buf];
+            , obj_list.value()?.value()
+            , min_speed.value()?.toNumber()
+            , max_speed.value()?.toNumber()
+            , avg_speed.value()?.toNumber()
+            , max_bytes.value()?.toBigInt()), buf];
         return Ok(ret);
     }
 

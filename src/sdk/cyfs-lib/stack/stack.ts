@@ -14,7 +14,6 @@ import {
     Err,
     Ok,
     sleep,
-    Option,
     ObjectId,
     ObjectMapSimpleContentType,
 } from "../../cyfs-base";

@@ -7,7 +7,7 @@
 
 
 import { Ok, BuckyResult } from "../../cyfs-base/base/results";
-import { Option, OptionDecoder, OptionEncoder, } from "../../cyfs-base/base/option";
+import { OptionDecoder, OptionEncoder, } from "../../cyfs-base/base/option";
 import { BuckyNumber, BuckyNumberDecoder } from "../../cyfs-base/base/bucky_number";
 import { RawDecode, RawEncode } from "../../cyfs-base/base/raw_encode";
 import { HashValue, HashValueDecoder } from "../../cyfs-base/crypto/hash";
@@ -19,7 +19,7 @@ import { MetaPriceDecoder } from './meta_price';
 export class UpdateDescTx implements RawEncode {
     constructor(
         public write_flag: number,
-        public price: Option<MetaPrice>,
+        public price: MetaPrice|undefined,
         public desc_hash: HashValue,
     ){
         // ignore
@@ -28,14 +28,14 @@ export class UpdateDescTx implements RawEncode {
     raw_measure(ctx?:any): BuckyResult<number>{
         let size = 0;
         size += new BuckyNumber('u8', this.write_flag).raw_measure().unwrap();
-        size += OptionEncoder.from(this.price, (v:MetaPrice)=>v).raw_measure().unwrap();
+        size += OptionEncoder.from(this.price).raw_measure().unwrap();
         size += this.desc_hash.raw_measure().unwrap();
         return Ok(size);
     }
 
     raw_encode(buf: Uint8Array, ctx?:any): BuckyResult<Uint8Array>{
         buf = new BuckyNumber('u8', this.write_flag).raw_encode(buf).unwrap();
-        buf = OptionEncoder.from(this.price, (v:MetaPrice)=>v).raw_encode(buf).unwrap();
+        buf = OptionEncoder.from(this.price).raw_encode(buf).unwrap();
         buf = this.desc_hash.raw_encode(buf).unwrap();
         return Ok(buf);
     }
@@ -70,7 +70,7 @@ export class UpdateDescTxDecoder implements RawDecode<UpdateDescTx> {
             [desc_hash, buf] = r.unwrap();
         }
 
-        const ret:[UpdateDescTx, Uint8Array] = [new UpdateDescTx(write_flag.toNumber(), price.to((v:MetaPrice)=>v), desc_hash), buf];
+        const ret:[UpdateDescTx, Uint8Array] = [new UpdateDescTx(write_flag.toNumber(), price.value(), desc_hash), buf];
         return Ok(ret);
     }
 

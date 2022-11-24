@@ -1,5 +1,4 @@
 import { Err, Ok, BuckyResult, BuckyError, BuckyErrorCode } from "../base/results";
-import { Option } from "../base/option";
 import { } from "../base/buffer";
 import { UniqueId, UniqueIdDecoder } from "./unique_id";
 import { Endpoint, EndPointDecoder } from "../base/endpoint";
@@ -282,7 +281,7 @@ export class DeviceIdDecoder extends NamedObjectIdDecoder<DeviceDescContent, Dev
 // 继承自NamedObject<DeviceDescContent, DeviceBodyContent>
 // 提供创建方法和其他自定义方法
 export class Device extends NamedObject<DeviceDescContent, DeviceBodyContent>{
-    static create(owner: Option<ObjectId>, unique_id: UniqueId, endpoints: Endpoint[], sn_list: DeviceId[], passive_sn_list: DeviceId[], public_key: PublicKey, area: Area, category: DeviceCategory, build?: (builder: DeviceBuilder) => void): Device {
+    static create(owner: ObjectId|undefined, unique_id: UniqueId, endpoints: Endpoint[], sn_list: DeviceId[], passive_sn_list: DeviceId[], public_key: PublicKey, area: Area, category: DeviceCategory, build?: (builder: DeviceBuilder) => void): Device {
         const desc_content = new DeviceDescContent(unique_id);
         const body_content = new DeviceBodyContent(endpoints, sn_list, passive_sn_list);
 
@@ -322,7 +321,7 @@ export class Device extends NamedObject<DeviceDescContent, DeviceBodyContent>{
     }
 
     category(): BuckyResult<DeviceCategory> {
-        const inner = this.desc().area()?.unwrap().inner;
+        const inner = this.desc().area()?.inner;
         if (inner !== undefined) {
             return Ok(number_2_devicecategory(inner));
         } else {

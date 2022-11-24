@@ -1,5 +1,5 @@
 import { BidNameTx, ChainStatus, CoinTokenId, CreateDescTx, MetaPrice, MetaTxBody, Receipt, ReceiptDecoder, SavedMetaObject, SPVTx, TransBalanceTx, TransBalanceTxItem, Tx, TxCaller, TxId, TxIdDecoder, UpdateDescTx, UpdateNameTx, ViewBalanceMethod, ViewBlockEnum, ViewDescMethod, ViewMethodEnum, ViewNameMethod, ViewNameResultItem, ViewRawMethod, ViewRequest, ViewResponse, ViewResponseDecoder } from "../cyfs-base-meta";
-import { BuckyError, BuckyErrorCode, BuckyNumber, BuckyNumberDecoder, BuckyResult, Err, ObjectId, Ok, to_hex, Option, OptionDecoder, OptionWrapper, StandardObject, PrivateKey, None, to_buf, SignatureRefIndex, get_channel, CyfsChannel, NameInfo } from "../cyfs-base";
+import { BuckyError, BuckyErrorCode, BuckyNumber, BuckyNumberDecoder, BuckyResult, Err, ObjectId, Ok, to_hex, OptionDecoder, StandardObject, PrivateKey, to_buf, SignatureRefIndex, get_channel, CyfsChannel, NameInfo, OptionEncoder } from "../cyfs-base";
 import { HttpRequest, HttpRequestor } from "../cyfs-lib";
 import { BuckyResultDecoder } from "../cyfs-base/base/bucky_result";
 import { BuckyTuple, BuckyTupleDecoder } from "../cyfs-base/base/bucky_tuple";
@@ -688,7 +688,7 @@ export class MetaClient {
         }
     }
     */
-    async getName(name: string): Promise<BuckyResult<Option<ViewNameResultItem>>> {
+    async getName(name: string): Promise<BuckyResult<ViewNameResultItem|undefined>> {
         const view = new ViewRequest(
             ViewBlockEnum.Tip(),
             ViewMethodEnum.ViewName(new ViewNameMethod(name))
@@ -714,7 +714,7 @@ export class MetaClient {
         }
     }
 
-    async getReceipt(id: TxId): Promise<BuckyResult<Option<[Receipt, number]>>> {
+    async getReceipt(id: TxId): Promise<BuckyResult<[Receipt, number]|undefined>> {
         const resp = await this.getHex(`${this.meta_url}/receipt?tx=${id.to_base_58()}`);
         if (resp.err) {
             return Err(new BuckyError(BuckyErrorCode.HttpError, "view request failed"));
@@ -728,11 +728,12 @@ export class MetaClient {
         if (ret.err) {
             return Err(new BuckyError(BuckyErrorCode.CodeError, "MetaError", `MetaErrCode: ${(ret.val as BuckyNumber).toNumber()}`))
         }
-        const new_ret = (ret.unwrap() as OptionWrapper<BuckyTuple>).to((v) => {
-            const [receipt, number] = v.members as [Receipt, BuckyNumber];
-            return [receipt, number.toNumber()] as [Receipt, number];
-        })
-        return Ok(new_ret);
+        const ret_members = (ret.unwrap() as OptionEncoder<BuckyTuple>).value()?.members;
+        if (!ret_members) {
+            return Ok(ret_members)
+        }
+        const [receipt, number] = ret_members as [Receipt, BuckyNumber];
+        return Ok([receipt, number.toNumber()] as [Receipt, number]);
     }
 
     async get_nonce(id: ObjectId): Promise<BuckyResult<JSBI>> {
@@ -763,7 +764,7 @@ export class MetaClient {
         }
         const nonce = JSBI.add(nonce_r.unwrap(), JSBI.BigInt(1));
 
-        const tx = Tx.create_with_multi_body(nonce, caller, 0, gas_price, max_fee, None, bodys, tx_data);
+        const tx = Tx.create_with_multi_body(nonce, caller, 0, gas_price, max_fee, undefined, bodys, tx_data);
 
         return Ok(tx)
     }
@@ -807,11 +808,14 @@ export class MetaClient {
     }
 
     async create_desc(owner: StandardObject, desc: SavedMetaObject, v: JSBI, price: number, coin_id: number, secret: PrivateKey): Promise<BuckyResult<TxId>> {
-        return await this.put_tx(owner, secret, MetaTxBody.CreateDesc(new CreateDescTx(coin_id, None, v, desc.hash().unwrap(), price)), 10, 10, to_buf(desc).unwrap());
+        return await this.put_tx(owner, secret, MetaTxBody.CreateDesc(new CreateDescTx(coin_id, undefined, v, desc.hash().unwrap(), price)), 10, 10, to_buf(desc).unwrap());
     }
 
-    async update_desc(owner: StandardObject, desc: SavedMetaObject, price: Option<number>, coin_id: Option<number>, secret: PrivateKey): Promise<BuckyResult<TxId>> {
-        const meta_price = price.to((v) => new MetaPrice(coin_id.unwrap(), v) );
+    async update_desc(owner: StandardObject, desc: SavedMetaObject, price: number|undefined, coin_id: number|undefined, secret: PrivateKey): Promise<BuckyResult<TxId>> {
+        let meta_price = undefined;
+        if (price !== undefined && coin_id !== undefined) {
+            meta_price = new MetaPrice(coin_id, price)
+        }
         return await this.put_tx(owner, secret, MetaTxBody.UpdateDesc(new UpdateDescTx(0, meta_price, desc.hash().unwrap())), 10, 10, to_buf(desc).unwrap());
     }
 
@@ -823,7 +827,7 @@ export class MetaClient {
         return await this.put_tx(caller, secret, MetaTxBody.WithdrawToOwner(new WithdrawToOwner(CoinTokenId.Coin(coin_id), file_id, v)));
     }
 
-    async bid_name(caller: StandardObject, owner: Option<ObjectId>, name: string, price: JSBI, rent: number,secret: PrivateKey): Promise<BuckyResult<TxId>>{
+    async bid_name(caller: StandardObject, owner: ObjectId|undefined, name: string, price: JSBI, rent: number,secret: PrivateKey): Promise<BuckyResult<TxId>>{
         return await this.put_tx(caller, secret, MetaTxBody.BidName(new BidNameTx(name, owner, price, rent)));
     }
 

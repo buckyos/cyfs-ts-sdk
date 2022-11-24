@@ -7,7 +7,7 @@
 
 
 import { Ok, BuckyResult } from "../../cyfs-base/base/results";
-import { Option, OptionDecoder, OptionEncoder, } from "../../cyfs-base/base/option";
+import { OptionDecoder, OptionEncoder, } from "../../cyfs-base/base/option";
 import { BuckyNumber, BuckyNumberDecoder } from "../../cyfs-base/base/bucky_number";
 import { BuckyString, BuckyStringDecoder } from "../../cyfs-base/base/bucky_string";
 import { RawDecode, RawEncode } from "../../cyfs-base/base/raw_encode";
@@ -18,7 +18,7 @@ import JSBI from 'jsbi';
 export class BidNameTx implements RawEncode {
     constructor(
         public name: string,
-        public owner: Option<ObjectId>,
+        public owner: ObjectId|undefined,
         public name_price: JSBI,
         public price: number,
     ) {
@@ -28,7 +28,7 @@ export class BidNameTx implements RawEncode {
     raw_measure(ctx?: any): BuckyResult<number> {
         let size = 0;
         size += new BuckyString(this.name).raw_measure().unwrap();
-        size += OptionEncoder.from(this.owner, (v: ObjectId) => v).raw_measure().unwrap();
+        size += OptionEncoder.from(this.owner).raw_measure().unwrap();
         size += new BuckyNumber('u64', this.name_price).raw_measure().unwrap();
         size += new BuckyNumber('u32', this.price).raw_measure().unwrap();
         return Ok(size);
@@ -36,7 +36,7 @@ export class BidNameTx implements RawEncode {
 
     raw_encode(buf: Uint8Array, ctx?: any): BuckyResult<Uint8Array> {
         buf = new BuckyString(this.name).raw_encode(buf).unwrap();
-        buf = OptionEncoder.from(this.owner, (v: ObjectId) => v).raw_encode(buf).unwrap();
+        buf = OptionEncoder.from(this.owner).raw_encode(buf).unwrap();
         buf = new BuckyNumber('u64', this.name_price).raw_encode(buf).unwrap();
         buf = new BuckyNumber('u32', this.price).raw_encode(buf).unwrap();
         return Ok(buf);
@@ -81,7 +81,7 @@ export class BidNameTxDecoder implements RawDecode<BidNameTx> {
             [price, buf] = r.unwrap();
         }
 
-        const ret: [BidNameTx, Uint8Array] = [new BidNameTx(name.value(), owner.to((v: ObjectId) => v), name_price.toBigInt(), price.toNumber()), buf];
+        const ret: [BidNameTx, Uint8Array] = [new BidNameTx(name.value(), owner.value(), name_price.toBigInt(), price.toNumber()), buf];
         return Ok(ret);
     }
 

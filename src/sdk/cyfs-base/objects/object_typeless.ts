@@ -1,10 +1,9 @@
 import { Ok, BuckyResult, } from "../base/results";
-import { RawEncode, RawDecode, ContentRawDecodeContext, } from "../base/raw_encode";
-import { Option, Some, None } from "../base/option";
+import { ContentRawDecodeContext, } from "../base/raw_encode";
 import { } from "../base/buffer";
 import {
     OBJECT_TYPE_ANY, SubDescType, DescTypeInfo, DescContent, DescContentDecoder, BodyContent,
-    BodyContentDecoder, NamedObject, NamedObjectBuilder, NamedObjectDecoder, named_id_gen_default, named_id_from_base_58, named_id_try_from_object_id, NamedObjectIdDecoder, NamedObjectDescBuilder, ContentCodecInfo
+    BodyContentDecoder, NamedObject, NamedObjectDecoder, ContentCodecInfo
 } from "./object";
 import { base_trace } from "../base/log";
 
@@ -199,9 +198,9 @@ export class TypelessAnyObject extends NamedObject<TypelessDescContent, Typeless
         }
         const desc = desc_ret.unwrap();
 
-        let body;
-        if (this.body().is_some()) {
-            const body_ret = this.body().unwrap().convert_to<BC>(body_content => {
+        let body = undefined;
+        if (this.body()) {
+            const body_ret = this.body()!.convert_to<BC>(body_content => {
                 // body
                 let new_body;
                 {
@@ -219,9 +218,7 @@ export class TypelessAnyObject extends NamedObject<TypelessDescContent, Typeless
             if (body_ret.err) {
                 return body_ret;
             }
-            body = Some(body_ret.unwrap());
-        } else {
-            body = None;
+            body = body_ret.unwrap();
         }
 
         return Ok(new NamedObject(desc, body, this.signs(), this.nonce()));

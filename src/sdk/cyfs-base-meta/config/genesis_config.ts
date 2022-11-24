@@ -7,7 +7,7 @@
 
 
 import { Ok, BuckyResult } from "../../cyfs-base/base/results";
-import { Option, OptionDecoder, OptionEncoder, } from "../../cyfs-base/base/option";
+import { OptionDecoder, OptionEncoder, } from "../../cyfs-base/base/option";
 import { BuckyNumber, BuckyNumberDecoder } from "../../cyfs-base/base/bucky_number";
 import { BuckyString, BuckyStringDecoder } from "../../cyfs-base/base/bucky_string";
 import { Vec, VecDecoder } from "../../cyfs-base/base/vec";
@@ -22,46 +22,46 @@ import { GenesisPriceConfigDecoder } from './genesis_price_config';
 
 export class GenesisConfig implements RawEncode {
     constructor(
-        public chain_type: Option<string>,
+        public chain_type: string|undefined,
         public coinbase: ObjectId,
         public interval: number,
         public bfc_spv_node: string,
         public coins: GenesisCoinConfig[],
         public price: GenesisPriceConfig,
-        public miner_key_path: Option<string>,
-        public mg_path: Option<string>,
-        public miner_desc_path: Option<string>,
-        public sub_chain_tx: Option<string>,
+        public miner_key_path?: string,
+        public mg_path?: string,
+        public miner_desc_path?: string,
+        public sub_chain_tx?: string,
     ){
         // ignore
     }
 
     raw_measure(ctx?:any): BuckyResult<number>{
         let size = 0;
-        size += OptionEncoder.from(this.chain_type, (v:string)=>new BuckyString(v)).raw_measure().unwrap();
+        size += OptionEncoder.from(this.chain_type).raw_measure().unwrap();
         size += this.coinbase.raw_measure().unwrap();
         size += new BuckyNumber('u32', this.interval).raw_measure().unwrap();
         size += new BuckyString(this.bfc_spv_node).raw_measure().unwrap();
         size += Vec.from(this.coins, (v:GenesisCoinConfig)=>v).raw_measure().unwrap();
         size += this.price.raw_measure().unwrap();
-        size += OptionEncoder.from(this.miner_key_path, (v:string)=>new BuckyString(v)).raw_measure().unwrap();
-        size += OptionEncoder.from(this.mg_path, (v:string)=>new BuckyString(v)).raw_measure().unwrap();
-        size += OptionEncoder.from(this.miner_desc_path, (v:string)=>new BuckyString(v)).raw_measure().unwrap();
-        size += OptionEncoder.from(this.sub_chain_tx, (v:string)=>new BuckyString(v)).raw_measure().unwrap();
+        size += OptionEncoder.from(this.miner_key_path).raw_measure().unwrap();
+        size += OptionEncoder.from(this.mg_path).raw_measure().unwrap();
+        size += OptionEncoder.from(this.miner_desc_path).raw_measure().unwrap();
+        size += OptionEncoder.from(this.sub_chain_tx).raw_measure().unwrap();
         return Ok(size);
     }
 
     raw_encode(buf: Uint8Array, ctx?:any): BuckyResult<Uint8Array>{
-        buf = OptionEncoder.from(this.chain_type, (v:string)=>new BuckyString(v)).raw_encode(buf).unwrap();
+        buf = OptionEncoder.from(this.chain_type).raw_encode(buf).unwrap();
         buf = this.coinbase.raw_encode(buf).unwrap();
         buf = new BuckyNumber('u32', this.interval).raw_encode(buf).unwrap();
         buf = new BuckyString(this.bfc_spv_node).raw_encode(buf).unwrap();
         buf = Vec.from(this.coins, (v:GenesisCoinConfig)=>v).raw_encode(buf).unwrap();
         buf = this.price.raw_encode(buf).unwrap();
-        buf = OptionEncoder.from(this.miner_key_path, (v:string)=>new BuckyString(v)).raw_encode(buf).unwrap();
-        buf = OptionEncoder.from(this.mg_path, (v:string)=>new BuckyString(v)).raw_encode(buf).unwrap();
-        buf = OptionEncoder.from(this.miner_desc_path, (v:string)=>new BuckyString(v)).raw_encode(buf).unwrap();
-        buf = OptionEncoder.from(this.sub_chain_tx, (v:string)=>new BuckyString(v)).raw_encode(buf).unwrap();
+        buf = OptionEncoder.from(this.miner_key_path).raw_encode(buf).unwrap();
+        buf = OptionEncoder.from(this.mg_path).raw_encode(buf).unwrap();
+        buf = OptionEncoder.from(this.miner_desc_path).raw_encode(buf).unwrap();
+        buf = OptionEncoder.from(this.sub_chain_tx).raw_encode(buf).unwrap();
         return Ok(buf);
     }
 }
@@ -158,7 +158,7 @@ export class GenesisConfigDecoder implements RawDecode<GenesisConfig> {
             [sub_chain_tx, buf] = r.unwrap();
         }
 
-        const ret:[GenesisConfig, Uint8Array] = [new GenesisConfig(chain_type.to((v:BuckyString)=>v.value()), coinbase, interval.toNumber(), bfc_spv_node.value(), coins.to((v:GenesisCoinConfig)=>v), price, miner_key_path.to((v:BuckyString)=>v.value()), mg_path.to((v:BuckyString)=>v.value()), miner_desc_path.to((v:BuckyString)=>v.value()), sub_chain_tx.to((v:BuckyString)=>v.value())), buf];
+        const ret:[GenesisConfig, Uint8Array] = [new GenesisConfig(chain_type.value()?.value(), coinbase, interval.toNumber(), bfc_spv_node.value(), coins.to((v:GenesisCoinConfig)=>v), price, miner_key_path.value()?.value(), mg_path.value()?.value(), miner_desc_path.value()?.value(), sub_chain_tx.value()?.value()), buf];
         return Ok(ret);
     }
 

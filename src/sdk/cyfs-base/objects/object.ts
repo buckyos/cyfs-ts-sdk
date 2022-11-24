@@ -4,10 +4,9 @@ import { } from "../base/buffer";
 import { RawEncode, RawDecode, RawHexDecode, Compareable, RawEncodePurpose, ContentRawDecodeContext, } from "../base/raw_encode";
 import { raw_hash_encode } from "../base/raw_encode_util";
 import { BuckyNumber, BuckyNumberDecoder } from "../base/bucky_number";
-import { Option, OptionDecoder, Some, None, OptionWrapper } from "../base/option";
 import { Vec, VecDecoder } from "../base/vec";
 import { HashValue, HashValueDecoder } from "../crypto/hash";
-import { PublicKeyValue, PublicKey, PublicKeyDecoder, MNPublicKey, MNPublicKeyDecoder, Signature, SignatureDecoder } from "../crypto/public_key";
+import { PublicKey, PublicKeyDecoder, MNPublicKey, MNPublicKeyDecoder, Signature, SignatureDecoder } from "../crypto/public_key";
 import { Area, AreaDecoder } from "./area";
 import { ObjectTypeCode, number_2_obj_type_code } from "./object_type_info";
 import { ObjectId, ObjectIdDecoder, ObjectLink, ObjectLinkDecoder, } from "./object_id";
@@ -15,11 +14,12 @@ import { base_trace } from "../base/log";
 import JSBI from 'jsbi';
 import { OBJECT_CONTENT_CODEC_FORMAT_RAW } from '../codec';
 import { BuckySize, BuckySizeDecoder } from '../base/bucky_usize';
+import { OptionEncoder } from "../base";
 
 export class ObjectIdBuilder<T extends RawEncode & ObjectDesc> {
     m_t: T;
     m_obj_type_code: ObjectTypeCode;
-    m_area: Option<Area>;
+    m_area?:Area;
     m_has_owner: boolean;
     m_has_single_key: boolean;
     m_has_mn_key: boolean;
@@ -27,13 +27,13 @@ export class ObjectIdBuilder<T extends RawEncode & ObjectDesc> {
     constructor(t: T, obj_type_code: ObjectTypeCode) {
         this.m_t = t;
         this.m_obj_type_code = obj_type_code;
-        this.m_area = None;
+        this.m_area = undefined;
         this.m_has_owner = false;
         this.m_has_single_key = false;
         this.m_has_mn_key = false;
     }
 
-    area(area: Option<Area>): ObjectIdBuilder<T> {
+    area(area?:Area): ObjectIdBuilder<T> {
         this.m_area = area;
         return this;
     }
@@ -82,7 +82,7 @@ export class ObjectIdBuilder<T extends RawEncode & ObjectDesc> {
             }
 
             // | 是否有area_code | 是否有public_key | 是否是多Key对象 | 是否有owner |
-            if (this.m_area.is_some()) {
+            if (this.m_area) {
                 type_code = type_code | parseInt("00001000", 2);
             }
 
@@ -98,8 +98,8 @@ export class ObjectIdBuilder<T extends RawEncode & ObjectDesc> {
                 type_code = type_code | parseInt("00000001", 2);
             }
 
-            if (this.m_area.is_some()) {
-                const area = this.m_area.unwrap();
+            if (this.m_area) {
+                const area = this.m_area;
                 // --------------------------------------------
                 // (2bit)(4bit)(国家编码8bits)+(运营商编码4bits)+城市编码(14bits)+inner(8bits) = 40 bit
                 // --------------------------------------------
@@ -126,7 +126,7 @@ export class ObjectIdBuilder<T extends RawEncode & ObjectDesc> {
             // 6bits的类型(高2bits固定为01，4bits的内置对象类型）+ option<34bits>的区域编码构成
             const type_code = this.m_obj_type_code;
 
-            if (this.m_area.is_some()) {
+            if (this.m_area) {
                 // --------------------------------------------
                 // (2bit)(4bit)(国家编码8bits)+(运营商编码4bits)+城市编码(14bits)+inner(8bits) = 40 bit
                 // --------------------------------------------
@@ -135,7 +135,7 @@ export class ObjectIdBuilder<T extends RawEncode & ObjectDesc> {
                 // 2 carrier[. .]city[0][x x . . . . . . ]
                 // 3 city[1][. . . . . . . . ]
                 // 4 inner[. . . . . . . . ]
-                const area = this.m_area.unwrap();
+                const area = this.m_area;
                 hash_value[0] = parseInt("01000000", 2) | (type_code << 4 >> 2) | (area.country << 7 >> 14);
                 hash_value[1] = (area.country << 1) | (area.carrier << 4 >> 7);
                 hash_value[2] = (area.carrier << 5) | (area.city >> 8);
@@ -275,25 +275,25 @@ export abstract class ObjectDesc {
     abstract calculate_id(): ObjectId;
 
     // 获取所属 DECApp 的 id
-    abstract dec_id(): Option<ObjectId>;
+    abstract dec_id(): ObjectId | undefined;
 
     // 链接对象列表
-    abstract ref_objs(): Option<Vec<ObjectLink>>;
+    abstract ref_objs(): Vec<ObjectLink> | undefined;
 
     // 前一个版本号
-    abstract prev(): Option<ObjectId>;
+    abstract prev(): ObjectId | undefined;
 
     // 创建时的 BTC Hash
-    abstract create_timestamp(): Option<HashValue>;
+    abstract create_timestamp(): HashValue | undefined;
 
     // 创建时间戳，如果不存在，则返回0
     abstract create_time(): JSBI;
 
     // 过期时间戳
-    abstract expired_time(): Option<JSBI>;
+    abstract expired_time(): JSBI | undefined;
 
     // 所有者
-    abstract owner(): Option<ObjectId> | undefined;
+    abstract owner(): ObjectId | undefined;
 }
 
 export class NamedObjectBodyContext {
@@ -598,17 +598,15 @@ export class ObjectMutBodyBuilder<
     DC extends DescContent,
     BC extends BodyContent
     >{
-    private m_prev_version: Option<HashValue>;   // 上个版本的MutBody Hash
+    private m_prev_version?:HashValue;   // 上个版本的MutBody Hash
     private m_update_time: JSBI;               // 时间戳
     private m_content: BC;                       // 根据不同的类型，可以有不同的MutBody
-    private m_user_data: Option<Uint8Array>;     // 可以嵌入任意数据。（比如json?)
+    private m_user_data?:Uint8Array;     // 可以嵌入任意数据。（比如json?)
     private m_obj_type: number;
 
     constructor(obj_type: number, content: BC) {
-        this.m_prev_version = None;
         this.m_update_time = bucky_time_now();
         this.m_content = content;
-        this.m_user_data = None;
         this.m_obj_type = obj_type;
     }
 
@@ -617,29 +615,29 @@ export class ObjectMutBodyBuilder<
         return this;
     }
 
-    option_update_time(value: Option<JSBI>): ObjectMutBodyBuilder<DC, BC> {
-        if (value.is_some()) {
-            this.m_update_time = value.unwrap();
+    option_update_time(value?:JSBI): ObjectMutBodyBuilder<DC, BC> {
+        if (value !== undefined) {
+            this.m_update_time = value;
         }
         return this;
     }
 
     prev_version(value: HashValue): ObjectMutBodyBuilder<DC, BC> {
-        this.m_prev_version = Some(value);
+        this.m_prev_version = value;
         return this;
     }
 
-    option_prev_version(value: Option<HashValue>): ObjectMutBodyBuilder<DC, BC> {
+    option_prev_version(value?:HashValue): ObjectMutBodyBuilder<DC, BC> {
         this.m_prev_version = value;
         return this;
     }
 
     user_data(value: Uint8Array): ObjectMutBodyBuilder<DC, BC> {
-        this.m_user_data = Some(value);
+        this.m_user_data = value;
         return this;
     }
 
-    option_user_data(value: Option<Uint8Array>): ObjectMutBodyBuilder<DC, BC> {
+    option_user_data(value?:Uint8Array): ObjectMutBodyBuilder<DC, BC> {
         this.m_user_data = value;
         return this;
     }
@@ -662,10 +660,10 @@ export class ObjectMutBody<
     DC extends DescContent,
     BC extends BodyContent
     > implements RawEncode {
-    private m_prev_version: Option<HashValue>;   // 上个版本的MutBody Hash
+    private m_prev_version?:HashValue;   // 上个版本的MutBody Hash
     private m_update_time: JSBI;               // 时间戳
     private m_content: BC;              // 根据不同的类型，可以有不同的MutBody
-    private m_user_data: Option<Uint8Array>;     // 可以嵌入任意数据。（比如json?)
+    private m_user_data?:Uint8Array;     // 可以嵌入任意数据。（比如json?)
     private m_obj_type: number;
     private m_trace?: number;
 
@@ -673,7 +671,7 @@ export class ObjectMutBody<
         return `ObjectMutBody:{{ prev_version:${this.prev_version}, update_time:${this.update_time}, content:${this.content}, user_data: ... }}`;
     }
 
-    constructor(obj_type: number, prev_version: Option<HashValue>, update_time: JSBI, content: BC, user_data: Option<Uint8Array>) {
+    constructor(obj_type: number, prev_version:HashValue|undefined, update_time: JSBI, content: BC, user_data?:Uint8Array) {
         this.m_obj_type = obj_type;
         this.m_prev_version = prev_version;
         this.m_update_time = update_time;
@@ -705,7 +703,7 @@ export class ObjectMutBody<
             .build());
     }
 
-    prev_version(): Option<HashValue> {
+    prev_version(): HashValue | undefined {
         return this.m_prev_version;
     }
 
@@ -717,7 +715,7 @@ export class ObjectMutBody<
         return this.m_content
     }
 
-    user_data(): Option<Uint8Array> {
+    user_data(): Uint8Array | undefined {
         return this.m_user_data;
     }
 
@@ -736,7 +734,7 @@ export class ObjectMutBody<
     }
 
     set_userdata(user_data: Uint8Array) {
-        this.m_user_data = Some(user_data);
+        this.m_user_data = user_data;
         this.m_update_time = bucky_time_now();
     }
 
@@ -745,8 +743,8 @@ export class ObjectMutBody<
         let bytes = 1;
 
         // prev_version
-        if (this.m_prev_version.is_some()) {
-            const r = this.m_prev_version.unwrap().raw_measure();
+        if (this.m_prev_version) {
+            const r = this.m_prev_version.raw_measure();
             if (r.err) {
                 console.error("ObjectMutBody<B, O>::raw_measure/prev_version error:", r.val);
                 return r;
@@ -778,8 +776,8 @@ export class ObjectMutBody<
         ctx.cache_body_content_size(body_size);
 
         // user_data(len+buffer)
-        if (this.m_user_data.is_some()) {
-            const user_data = this.m_user_data.unwrap();
+        if (this.m_user_data) {
+            const user_data = this.m_user_data;
             const len = user_data.length;
 
             bytes += 8; // u64
@@ -795,11 +793,11 @@ export class ObjectMutBody<
         // body_flags
         {
             let body_flags = 0;
-            if (this.m_prev_version.is_some()) {
+            if (this.m_prev_version) {
                 body_flags = body_flags | OBJECT_BODY_FLAG_PREV;
             }
 
-            if (this.m_user_data.is_some()) {
+            if (this.m_user_data) {
                 body_flags = body_flags | OBJECT_BODY_FLAG_USER_DATA;
             }
 
@@ -809,8 +807,8 @@ export class ObjectMutBody<
         base_trace(`[body(${this.trace_id()})] raw_encode, body_flags, buf len:`, buf.length);
 
         // prev_version
-        if (this.m_prev_version.is_some()) {
-            const r = this.m_prev_version.unwrap().raw_encode(buf);
+        if (this.m_prev_version) {
+            const r = this.m_prev_version.raw_encode(buf);
             if (r.err) {
                 console.error("ObjectMutBody<B, O>::raw_encode/prev_version error:", r.val);
                 return r;
@@ -887,8 +885,8 @@ export class ObjectMutBody<
 
 
         // user_data
-        if (this.m_user_data.is_some()) {
-            const user_data = this.m_user_data.unwrap();
+        if (this.m_user_data) {
+            const user_data = this.m_user_data;
             const len = user_data.length;
 
             // user_data_len: u64
@@ -972,7 +970,7 @@ export class ObjectMutBodyDecoder<
         base_trace(`[body(${this.trace_id()})] raw_decode, body_flags, buf len:`, buf.length);
 
         // prev_version
-        let prev_version: Option<HashValue>;
+        let prev_version = undefined;
         if ((body_flags & OBJECT_BODY_FLAG_PREV) === OBJECT_BODY_FLAG_PREV) {
             const r = new HashValueDecoder().raw_decode(buf);
             if (r.err) {
@@ -981,9 +979,7 @@ export class ObjectMutBodyDecoder<
             }
             let _prev_version;
             [_prev_version, buf] = r.unwrap();
-            prev_version = Some(_prev_version);
-        } else {
-            prev_version = None;
+            prev_version = _prev_version;
         }
         base_trace(`[body(${this.trace_id()})] raw_decode, prev_version, buf len:`, buf.length);
 
@@ -1076,7 +1072,7 @@ export class ObjectMutBodyDecoder<
         base_trace(`[body(${this.trace_id()})] raw_decode, BodyContentFormat.Typed, content, buf len:`, buf.length);
 
         // user_data
-        let user_data;
+        let user_data = undefined;
         if ((body_flags & OBJECT_BODY_FLAG_USER_DATA) === OBJECT_BODY_FLAG_USER_DATA) {
             // user_data_len
             let user_data_len;
@@ -1088,10 +1084,8 @@ export class ObjectMutBodyDecoder<
             [user_data_len, buf] = len_ret.unwrap();
 
             // user_data
-            user_data = Some(buf.slice(0, user_data_len.toNumber()));
+            user_data = buf.slice(0, user_data_len.toNumber());
             buf = buf.offset(user_data_len.toNumber());
-        } else {
-            user_data = None;
         }
         base_trace(`[body(${this.trace_id()})] raw_decode, BodyContentFormat.Typed, user_data, buf len=${buf.byteLength}`,);
 
@@ -1113,48 +1107,37 @@ export class ObjectMutBodyDecoder<
  * NamedObject 的签名建构器
  */
 export class ObjectSignsBuilder {
-    private desc_signs: Option<Vec<Signature>>;
-    private body_signs: Option<Vec<Signature>>;
-
-    constructor() {
-        this.desc_signs = None;
-        this.body_signs = None;
+    constructor(private desc_signs?: Vec<Signature>, private body_signs?: Vec<Signature>) {
     }
 
     // 重置desc签名
     reset_desc_sign(sign: Signature): ObjectSignsBuilder {
-        this.desc_signs = Some(new Vec([sign]));
+        this.desc_signs = new Vec([sign]);
         return this;
     }
 
     // 重置body签名
     reset_body_sign(sign: Signature): ObjectSignsBuilder {
-        this.desc_signs = Some(new Vec([sign]));
+        this.desc_signs = new Vec([sign]);
         return this;
     }
 
     // 追加desc签名
     push_desc_sign(sign: Signature): ObjectSignsBuilder {
-        if (this.desc_signs.is_some()) {
-            this.desc_signs.map(signs => {
-                signs.value().push(sign);
-                return signs;
-            });
+        if (this.desc_signs) {
+            this.desc_signs.value().push(sign)
         } else {
-            this.desc_signs = Some(new Vec([sign]));
+            this.desc_signs = new Vec([sign]);
         }
         return this;
     }
 
     // 追加body签名
     push_body_sign(sign: Signature): ObjectSignsBuilder {
-        if (this.body_signs.is_some()) {
-            this.body_signs.map(signs => {
-                signs.value().push(sign);
-                return signs;
-            });
+        if (this.body_signs) {
+            this.body_signs.value().push(sign)
         } else {
-            this.body_signs = Some(new Vec([sign]));
+            this.body_signs = new Vec([sign]);
         }
         return this;
     }
@@ -1170,72 +1153,59 @@ export class ObjectSignsBuilder {
 export class ObjectSigns implements RawEncode {
     // 对Desc部分的签名，可以是多个，sign结构有的时候需要说明是“谁的签名”
     // 表示对Desc内容的认可。
-    private m_desc_signs: Option<Vec<Signature>>;
-
     // 对MutBody部分的签名，可以是多个。依赖MutBody的稳定编码
-    private m_body_signs: Option<Vec<Signature>>;
-
-    constructor(desc_signs: Option<Vec<Signature>>, body_signs: Option<Vec<Signature>>) {
-        this.m_desc_signs = desc_signs;
-        this.m_body_signs = body_signs;
+    constructor(private m_desc_signs?: Vec<Signature>, private m_body_signs?: Vec<Signature>) {
     }
 
-    desc_signs(): Option<Signature[]> {
-        if (this.m_desc_signs.is_some()) {
-            return Some(this.m_desc_signs.unwrap().value());
+    desc_signs(): Signature[]|undefined {
+        if (this.m_desc_signs) {
+            return this.m_desc_signs.value();
         } else {
-            return None;
+            return undefined;
         }
     }
 
-    body_signs(): Option<Signature[]> {
-        if (this.m_body_signs.is_some()) {
-            return Some(this.m_body_signs.unwrap().value());
+    body_signs(): Signature[]|undefined {
+        if (this.m_body_signs) {
+            return this.m_body_signs.value();
         } else {
-            return None;
+            return undefined;
         }
     }
 
     // 重置desc签名
     reset_desc_sign(sign: Signature) {
-        this.m_desc_signs = Some(new Vec([sign]));
+        this.m_desc_signs = new Vec([sign]);
     }
 
     // 重置body签名
     reset_body_sign(sign: Signature) {
-        this.m_body_signs = Some(new Vec([sign]));
+        this.m_body_signs = new Vec([sign]);
     }
 
     // 追加desc签名
     push_desc_sign(sign: Signature) {
-        if (this.m_desc_signs.is_some()) {
-            this.m_desc_signs.map(signs => {
-                signs.value().push(sign);
-                return signs;
-            });
+        if (this.m_desc_signs) {
+            this.m_desc_signs.value().push(sign)
         } else {
-            this.m_desc_signs = Some(new Vec([sign]));
+            this.m_desc_signs = new Vec([sign]);
         }
     }
 
     // 追加body签名
     push_body_sign(sign: Signature) {
-        if (this.m_body_signs.is_some()) {
-            this.m_body_signs.map(signs => {
-                signs.value().push(sign);
-                return signs;
-            });
+        if (this.m_body_signs) {
+            this.m_body_signs.value().push(sign);
         } else {
-            this.m_body_signs = Some(new Vec([sign]));
+            this.m_body_signs = new Vec([sign]);
         }
     }
 
     // 最后的desc签名时间
     latest_desc_sign_time(): JSBI {
         let latest_time = JSBI.BigInt(0);
-        if (this.m_desc_signs.is_some()) {
-            const signs = this.m_desc_signs.unwrap();
-            for (const sign of signs.value()) {
+        if (this.m_desc_signs) {
+            for (const sign of this.m_desc_signs.value()) {
                 if (JSBI.lessThan(latest_time, sign.sign_time)) {
                     latest_time = sign.sign_time;
                 }
@@ -1247,9 +1217,8 @@ export class ObjectSigns implements RawEncode {
     // 最后的body签名时间
     latest_body_sign_time(): JSBI {
         let latest_time = JSBI.BigInt(0);
-        if (this.m_body_signs.is_some()) {
-            const signs = this.m_body_signs.unwrap();
-            for (const sign of signs.value()) {
+        if (this.m_body_signs) {
+            for (const sign of this.m_body_signs.value()) {
                 if (JSBI.lessThan(latest_time, sign.sign_time)) {
                     latest_time = sign.sign_time;
                 }
@@ -1261,9 +1230,9 @@ export class ObjectSigns implements RawEncode {
     raw_measure(ctx: NamedObjectContext): BuckyResult<number> {
         let bytes = 0;
 
-        if (this.m_desc_signs.is_some()) {
+        if (this.m_desc_signs) {
             ctx.with_desc_signs();
-            const r = this.m_desc_signs.unwrap().raw_measure();
+            const r = this.m_desc_signs.raw_measure();
             if (r.err) {
                 console.error("ObjectSigns::raw_measure_with_context/desc_signs error:", r.val);
                 return r;
@@ -1271,9 +1240,9 @@ export class ObjectSigns implements RawEncode {
             bytes += r.unwrap();
         }
 
-        if (this.m_body_signs.is_some()) {
+        if (this.m_body_signs) {
             ctx.with_body_signs();
-            const r = this.m_body_signs.unwrap().raw_measure();
+            const r = this.m_body_signs.raw_measure();
             if (r.err) {
                 console.error("ObjectSigns::raw_measure_with_context/desc_signs error:", r.val);
                 return r;
@@ -1285,8 +1254,8 @@ export class ObjectSigns implements RawEncode {
     }
 
     raw_encode(buf: Uint8Array): BuckyResult<Uint8Array> {
-        if (this.m_desc_signs.is_some()) {
-            const r = this.m_desc_signs.unwrap().raw_encode(buf);
+        if (this.m_desc_signs) {
+            const r = this.m_desc_signs.raw_encode(buf);
             if (r.err) {
                 console.error("ObjectSigns::raw_measure_with_context/desc_signs error:", r.val);
                 return r;
@@ -1294,8 +1263,8 @@ export class ObjectSigns implements RawEncode {
             buf = r.unwrap();
         }
 
-        if (this.m_body_signs.is_some()) {
-            const r = this.m_body_signs.unwrap().raw_encode(buf);
+        if (this.m_body_signs) {
+            const r = this.m_body_signs.raw_encode(buf);
             if (r.err) {
                 console.error("ObjectSigns::raw_measure_with_context/desc_signs error:", r.val);
                 return r;
@@ -1307,7 +1276,7 @@ export class ObjectSigns implements RawEncode {
     }
 
     static default(): ObjectSigns {
-        return new ObjectSigns(None, None);
+        return new ObjectSigns();
     }
 }
 
@@ -1316,7 +1285,7 @@ export class ObjectSigns implements RawEncode {
  */
 export class ObjectSignsDecoder implements RawDecode<ObjectSigns> {
     raw_decode(buf: Uint8Array, ctx: NamedObjectContext): BuckyResult<[ObjectSigns, Uint8Array]> {
-        let desc_signs;
+        let desc_signs = undefined;
         if (ctx.has_desc_signs()) {
             const r = new VecDecoder<Signature>(new SignatureDecoder()).raw_decode(buf);
             if (r.err) {
@@ -1325,12 +1294,10 @@ export class ObjectSignsDecoder implements RawDecode<ObjectSigns> {
             }
             let _desc_signs;
             [_desc_signs, buf] = r.unwrap();
-            desc_signs = Some(_desc_signs);
-        } else {
-            desc_signs = None;
+            desc_signs = _desc_signs;
         }
 
-        let body_signs;
+        let body_signs = undefined;
         if (ctx.has_body_signs()) {
             const r = new VecDecoder<Signature>(new SignatureDecoder()).raw_decode(buf);
             if (r.err) {
@@ -1339,9 +1306,7 @@ export class ObjectSignsDecoder implements RawDecode<ObjectSigns> {
             }
             let _body_signs;
             [_body_signs, buf] = r.unwrap();
-            body_signs = Some(_body_signs);
-        } else {
-            body_signs = None;
+            body_signs = _body_signs;
         }
 
         const signs = new ObjectSigns(desc_signs, body_signs);
@@ -1737,132 +1702,83 @@ export abstract class BodyContentDecoder<T extends BodyContent> implements RawDe
 }
 
 export class NamedObjectDescBuilder<T extends DescContent> {
-    private m_dec_id: Option<ObjectId>;
-    private m_ref_objects: Option<Vec<ObjectLink>>;
-    private m_prev: Option<ObjectId>;
-    private m_create_timestamp: Option<HashValue>;
-    private m_create_time: Option<JSBI>;
-    private m_expired_time: Option<JSBI>;
-    private m_owner: Option<ObjectId | undefined>;
-    private m_area: Option<Area | undefined>;
-    private m_author: Option<ObjectId | undefined>;
-    private m_public_key: Option<PublicKey | MNPublicKey | undefined>;
+    private m_dec_id?: ObjectId;
+    private m_ref_objects?: Vec<ObjectLink>;
+    private m_prev?: ObjectId;
+    private m_create_timestamp?: HashValue;
+    private m_create_time?: JSBI;
+    private m_expired_time?: JSBI;
+    private m_owner?: ObjectId;
+    private m_area?: Area;
+    private m_author?: ObjectId;
+    private m_public_key?: PublicKey | MNPublicKey;
     private m_desc_content: T;
 
     constructor(obj_type: number, desc_content: T) {
-        this.m_dec_id = None;
-        this.m_ref_objects = None;
-        this.m_prev = None;
-        this.m_create_timestamp = None;
-        this.m_create_time = Some(bucky_time_now());
-        this.m_expired_time = None;
+        this.m_create_time = bucky_time_now();
 
         this.m_desc_content = desc_content;
         const sub_desc_type = desc_content.type_info().sub_desc_type();
-
-        switch (sub_desc_type.owner_type) {
-            case "option": {
-                this.m_owner = None;
-                break;
-            }
-            default: {
-                this.m_owner = Some(undefined);
-            }
-        }
-
-        switch (sub_desc_type.area_type) {
-            case "option": {
-                this.m_area = None;
-                break;
-            }
-            default: {
-                this.m_area = Some(undefined);
-            }
-        }
-
-        switch (sub_desc_type.author_type) {
-            case "option": {
-                this.m_author = None;
-                break;
-            }
-            default: {
-                this.m_author = Some(undefined);
-            }
-        }
-
-        switch (sub_desc_type.key_type) {
-            case "single_key": {
-                this.m_public_key = None;
-                break;
-            }
-            case "mn_key": {
-                this.m_public_key = None;
-                break;
-            }
-            default: {
-                this.m_public_key = Some(undefined);
-            }
-        }
     }
 
     // ObjectDesc
 
     dec_id(value: ObjectId): NamedObjectDescBuilder<T> {
-        this.m_dec_id = Some(value);
+        this.m_dec_id = value;
         return this;
     }
 
-    option_dec_id(value: Option<ObjectId>): NamedObjectDescBuilder<T> {
+    option_dec_id(value?: ObjectId): NamedObjectDescBuilder<T> {
         this.m_dec_id = value;
         return this;
     }
 
     ref_objects(value: Vec<ObjectLink>): NamedObjectDescBuilder<T> {
-        this.m_ref_objects = Some(value);
+        this.m_ref_objects = value;
         return this;
     }
 
-    option_ref_objects(value: Option<Vec<ObjectLink>>): NamedObjectDescBuilder<T> {
+    option_ref_objects(value?: Vec<ObjectLink>): NamedObjectDescBuilder<T> {
         this.m_ref_objects = value;
         return this;
     }
 
     prev(value: ObjectId): NamedObjectDescBuilder<T> {
-        this.m_prev = Some(value);
+        this.m_prev = value;
         return this;
     }
 
-    option_prev(value: Option<ObjectId>): NamedObjectDescBuilder<T> {
+    option_prev(value?: ObjectId): NamedObjectDescBuilder<T> {
         this.m_prev = value;
         return this;
     }
 
     create_timestamp(value: HashValue): NamedObjectDescBuilder<T> {
-        this.m_create_timestamp = Some(value);
+        this.m_create_timestamp = value;
         return this;
     }
 
-    option_create_timestamp(value: Option<HashValue>): NamedObjectDescBuilder<T> {
+    option_create_timestamp(value?: HashValue): NamedObjectDescBuilder<T> {
         this.m_create_timestamp = value;
         return this;
     }
 
     create_time(value: JSBI): NamedObjectDescBuilder<T> {
-        this.m_create_time = Some(value);
+        this.m_create_time = value;
         return this;
     }
 
-    option_create_time(value: Option<JSBI>): NamedObjectDescBuilder<T> {
+    option_create_time(value?: JSBI): NamedObjectDescBuilder<T> {
         this.m_create_time = value;
         return this;
     }
 
     expired_time(value: JSBI): NamedObjectDescBuilder<T> {
-        this.m_expired_time = Some(value);
+        this.m_expired_time = value;
         return this;
     }
 
-    option_expired_time(value: Option<JSBI>): NamedObjectDescBuilder<T> {
+    option_expired_time(value?: JSBI): NamedObjectDescBuilder<T> {
         this.m_expired_time = value;
         return this;
     }
@@ -1871,14 +1787,14 @@ export class NamedObjectDescBuilder<T extends DescContent> {
     owner(value: ObjectId): NamedObjectDescBuilder<T> {
         switch (this.m_desc_content.type_info().sub_desc_type().owner_type) {
             case "option": {
-                this.m_owner = Some(value);
+                this.m_owner = value;
                 break;
             }
         }
         return this;
     }
 
-    option_owner(value: Option<ObjectId>): NamedObjectDescBuilder<T> {
+    option_owner(value?: ObjectId): NamedObjectDescBuilder<T> {
         switch (this.m_desc_content.type_info().sub_desc_type().owner_type) {
             case "option": {
                 this.m_owner = value;
@@ -1891,14 +1807,14 @@ export class NamedObjectDescBuilder<T extends DescContent> {
     area(value: Area): NamedObjectDescBuilder<T> {
         switch (this.m_desc_content.type_info().sub_desc_type().area_type) {
             case "option": {
-                this.m_area = Some(value);
+                this.m_area = value;
                 break;
             }
         }
         return this;
     }
 
-    option_area(value: Option<Area>): NamedObjectDescBuilder<T> {
+    option_area(value?: Area): NamedObjectDescBuilder<T> {
         switch (this.m_desc_content.type_info().sub_desc_type().area_type) {
             case "option": {
                 this.m_area = value;
@@ -1911,14 +1827,14 @@ export class NamedObjectDescBuilder<T extends DescContent> {
     author(value: ObjectId): NamedObjectDescBuilder<T> {
         switch (this.m_desc_content.type_info().sub_desc_type().author_type) {
             case "option": {
-                this.m_author = Some(value);
+                this.m_author = value;
                 break;
             }
         }
         return this;
     }
 
-    option_author(value: Option<ObjectId>): NamedObjectDescBuilder<T> {
+    option_author(value?: ObjectId): NamedObjectDescBuilder<T> {
         switch (this.m_desc_content.type_info().sub_desc_type().author_type) {
             case "option": {
                 this.m_author = value;
@@ -1931,14 +1847,14 @@ export class NamedObjectDescBuilder<T extends DescContent> {
     single_key(value: PublicKey): NamedObjectDescBuilder<T> {
         switch (this.m_desc_content.type_info().sub_desc_type().key_type) {
             case "single_key": {
-                this.m_public_key = Some(value);
+                this.m_public_key = value;
                 break;
             }
         }
         return this;
     }
 
-    option_single_key(value: Option<PublicKey>): NamedObjectDescBuilder<T> {
+    option_single_key(value?: PublicKey): NamedObjectDescBuilder<T> {
         switch (this.m_desc_content.type_info().sub_desc_type().key_type) {
             case "single_key": {
                 this.m_public_key = value;
@@ -1951,14 +1867,14 @@ export class NamedObjectDescBuilder<T extends DescContent> {
     mn_key(value: MNPublicKey): NamedObjectDescBuilder<T> {
         switch (this.m_desc_content.type_info().sub_desc_type().key_type) {
             case "mn_key": {
-                this.m_public_key = Some(value);
+                this.m_public_key = value;
                 break;
             }
         }
         return this;
     }
 
-    option_mn_key(value: Option<MNPublicKey>): NamedObjectDescBuilder<T> {
+    option_mn_key(value?: MNPublicKey): NamedObjectDescBuilder<T> {
         switch (this.m_desc_content.type_info().sub_desc_type().key_type) {
             case "mn_key": {
                 this.m_public_key = value;
@@ -1968,7 +1884,7 @@ export class NamedObjectDescBuilder<T extends DescContent> {
         return this;
     }
 
-    option_key(value: Option<PublicKey | MNPublicKey | undefined>): NamedObjectDescBuilder<T> {
+    option_key(value?: PublicKey | MNPublicKey): NamedObjectDescBuilder<T> {
         switch (this.m_desc_content.type_info().sub_desc_type().key_type) {
             case "single_key":
             case "mn_key": {
@@ -1979,11 +1895,11 @@ export class NamedObjectDescBuilder<T extends DescContent> {
         return this;
     }
 
-    key(value: PublicKey | MNPublicKey | undefined): NamedObjectDescBuilder<T> {
+    key(value: PublicKey | MNPublicKey): NamedObjectDescBuilder<T> {
         switch (this.m_desc_content.type_info().sub_desc_type().key_type) {
             case "single_key":
             case "mn_key": {
-                this.m_public_key = Some(value);
+                this.m_public_key = value;
                 break;
             }
         }
@@ -1993,10 +1909,10 @@ export class NamedObjectDescBuilder<T extends DescContent> {
     build(): NamedObjectDesc<T> {
 
         const get = (o: any) => {
-            if (o.is_some()) {
+            if (o) {
                 const obj = o.unwrap();
                 if (obj) {
-                    return Some(obj);
+                    return obj;
                 } else {
                     return undefined;
                 }
@@ -2005,11 +1921,11 @@ export class NamedObjectDescBuilder<T extends DescContent> {
             }
         }
 
-        const owner: Option<ObjectId> | undefined = get(this.m_owner);
+        const owner: ObjectId | undefined = get(this.m_owner);
 
-        const area: Option<Area> | undefined = get(this.m_area);
+        const area: Area | undefined = get(this.m_area);
 
-        const author: Option<ObjectId> | undefined = get(this.m_author);
+        const author: ObjectId | undefined = get(this.m_author);
 
         return new NamedObjectDesc(
             this.m_dec_id,
@@ -2022,41 +1938,41 @@ export class NamedObjectDescBuilder<T extends DescContent> {
             owner,
             area,
             author,
-            this.m_public_key.unwrap(),
+            this.m_public_key,
         );
     }
 }
 
 export class NamedObjectDesc<T extends DescContent> extends ObjectDesc implements RawEncode {
     // 基本部分 ObjectDesc
-    private m_dec_id: Option<ObjectId>;
-    private m_ref_objects: Option<Vec<ObjectLink>>;
-    private m_prev: Option<ObjectId>;
-    private m_create_timestamp: Option<HashValue>;
-    private m_create_time: Option<JSBI>;
-    private m_expired_time: Option<JSBI>;
-    private m_owner?: Option<ObjectId>;
-    private m_area?: Option<Area>;
-    private m_author?: Option<ObjectId>;
+    private m_dec_id?: ObjectId;
+    private m_ref_objects?: Vec<ObjectLink>;
+    private m_prev?: ObjectId;
+    private m_create_timestamp?: HashValue;
+    private m_create_time?: JSBI;
+    private m_expired_time?: JSBI;
+    private m_owner?: ObjectId;
+    private m_area?: Area;
+    private m_author?: ObjectId;
     private m_public_key?: PublicKey | MNPublicKey;
     private m_desc_content: T;
     private m_trace: number;
 
     constructor(
-        dec_id: Option<ObjectId>,
-        ref_objects: Option<Vec<ObjectLink>>,
-        prev: Option<ObjectId>,
-        create_timestamp: Option<HashValue>,
-        create_time: Option<JSBI>,
-        expired_time: Option<JSBI>,
+        dec_id: ObjectId|undefined,
+        ref_objects: Vec<ObjectLink>|undefined,
+        prev: ObjectId|undefined,
+        create_timestamp: HashValue|undefined,
+        create_time: JSBI|undefined,
+        expired_time: JSBI|undefined,
 
         // desc content
         desc_content: T,
 
         // sub desc
-        owner?: Option<ObjectId>,
-        area?: Option<Area>,
-        author?: Option<ObjectId>,
+        owner?: ObjectId,
+        area?: Area,
+        author?: ObjectId,
         public_key?: PublicKey | MNPublicKey,
     ) {
         super(desc_content.type_info().get_sub_obj_type());
@@ -2137,10 +2053,10 @@ export class NamedObjectDesc<T extends DescContent> extends ObjectDesc implement
             .option_create_timestamp(this.create_timestamp())
             .create_time(this.create_time())
             .option_expired_time(this.expired_time())
-            .option_owner(this.owner() ?? None)
-            .option_area(this.area() ?? None)
-            .option_author(this.author() ?? None)
-            .key(this.m_public_key)
+            .option_owner(this.owner())
+            .option_area(this.area())
+            .option_author(this.author())
+            .option_key(this.m_public_key)
             .build());
     }
 
@@ -2156,31 +2072,31 @@ export class NamedObjectDesc<T extends DescContent> extends ObjectDesc implement
     // ObjectDesc
     //
 
-    dec_id(): Option<ObjectId> {
+    dec_id(): ObjectId|undefined {
         return this.m_dec_id;
     }
 
-    ref_objs(): Option<Vec<ObjectLink>> {
-        return this.m_ref_objects;
+    ref_objs(): Vec<ObjectLink>|undefined {
+        return this.m_ref_objects
     }
 
-    prev(): Option<ObjectId> {
+    prev(): ObjectId|undefined {
         return this.m_prev;
     }
 
-    create_timestamp(): Option<HashValue> {
+    create_timestamp(): HashValue|undefined {
         return this.m_create_timestamp;
     }
 
     create_time(): JSBI {
-        if (this.m_create_time.is_some()) {
-            return this.m_create_time.unwrap();
+        if (this.m_create_time) {
+            return this.m_create_time;
         } else {
             return JSBI.BigInt(0);
         }
     }
 
-    expired_time(): Option<JSBI> {
+    expired_time(): JSBI|undefined {
         return this.m_expired_time;
     }
 
@@ -2189,19 +2105,12 @@ export class NamedObjectDesc<T extends DescContent> extends ObjectDesc implement
     }
 
     calculate_id(): ObjectId {
-        let area;
-        if (this.m_area != null) {
-            area = this.m_area!;
-        } else {
-            area = None;
-        }
-
-        const has_single_key = this.public_key() != null;
-        const has_mn_key = this.mn_key() != null;
-        const has_owner = this.owner() == null ? false : this.owner()!.is_some();
+        const has_single_key = !!this.public_key();
+        const has_mn_key = !!this.mn_key();
+        const has_owner = !!this.owner();
 
         return new ObjectIdBuilder(this, this.obj_type_code())
-            .area(area)
+            .area(this.m_area)
             .single_key(has_single_key)
             .mn_key(has_mn_key)
             .owner(has_owner)
@@ -2212,15 +2121,15 @@ export class NamedObjectDesc<T extends DescContent> extends ObjectDesc implement
     // other Desc
     //
 
-    owner(): Option<ObjectId> | undefined {
+    owner(): ObjectId | undefined {
         return this.m_owner;
     }
 
-    area(): Option<Area> | undefined {
+    area(): Area | undefined {
         return this.m_area;
     }
 
-    author(): Option<ObjectId> | undefined {
+    author(): ObjectId | undefined {
         return this.m_author;
     }
 
@@ -2269,9 +2178,9 @@ export class NamedObjectDesc<T extends DescContent> extends ObjectDesc implement
         //
         // ObjectDesc
         //
-        if (this.m_dec_id.is_some()) {
+        if (this.m_dec_id) {
             ctx.with_dec_id();
-            const r = this.m_dec_id.unwrap().raw_measure();
+            const r = this.m_dec_id.raw_measure();
             if (r.err) {
                 console.error(`NamedObjectDesc::raw_measure/dec_id error! obj_type=${this.obj_type()}, obj_type_code=${this.obj_type_code()},`,
                     r.val);
@@ -2280,9 +2189,9 @@ export class NamedObjectDesc<T extends DescContent> extends ObjectDesc implement
             size += r.unwrap();
         }
 
-        if (this.m_ref_objects.is_some()) {
+        if (this.m_ref_objects) {
             ctx.with_ref_objects();
-            const r = this.m_ref_objects.unwrap().raw_measure();
+            const r = this.m_ref_objects.raw_measure();
             if (r.err) {
                 console.error(`NamedObjectDesc::raw_measure/ref_objects error! obj_type=${this.obj_type()}, obj_type_code=${this.obj_type_code()},`,
                     r.val);
@@ -2291,9 +2200,9 @@ export class NamedObjectDesc<T extends DescContent> extends ObjectDesc implement
             size += r.unwrap();
         }
 
-        if (this.m_prev.is_some()) {
+        if (this.m_prev) {
             ctx.with_prev();
-            const r = this.m_prev.unwrap().raw_measure();
+            const r = this.m_prev.raw_measure();
             if (r.err) {
                 console.error(`NamedObjectDesc::raw_measure/m_prev error! obj_type=${this.obj_type()}, obj_type_code=${this.obj_type_code()},`,
                     r.val);
@@ -2302,9 +2211,9 @@ export class NamedObjectDesc<T extends DescContent> extends ObjectDesc implement
             size += r.unwrap();
         }
 
-        if (this.m_create_timestamp.is_some()) {
+        if (this.m_create_timestamp) {
             ctx.with_create_timestamp();
-            const r = this.m_create_timestamp.unwrap().raw_measure();
+            const r = this.m_create_timestamp.raw_measure();
             if (r.err) {
                 console.error(`NamedObjectDesc::raw_measure/m_create_timestamp error! obj_type=${this.obj_type()}, obj_type_code=${this.obj_type_code()},`,
                     r.val);
@@ -2313,12 +2222,12 @@ export class NamedObjectDesc<T extends DescContent> extends ObjectDesc implement
             size += r.unwrap();
         }
 
-        if (this.m_create_time.is_some()) {
+        if (this.m_create_time) {
             ctx.with_create_time();
             size += 8; // u64
         }
 
-        if (this.m_expired_time.is_some()) {
+        if (this.m_expired_time) {
             ctx.with_expired_time(); // u64
             size += 8;
         }
@@ -2326,9 +2235,9 @@ export class NamedObjectDesc<T extends DescContent> extends ObjectDesc implement
         //
         // OwnderObjectDesc/AreaObjectDesc/AuthorObjectDesc/PublicKeyObjectDesc
         //
-        if (this.m_owner && this.m_owner!.is_some()) {
+        if (this.m_owner) {
             ctx.with_owner();
-            const r = this.m_owner!.unwrap().raw_measure();
+            const r = this.m_owner.raw_measure();
             if (r.err) {
                 console.error(`NamedObjectDesc::raw_measure/m_owner error! obj_type=${this.obj_type()}, obj_type_code=${this.obj_type_code()},`,
                     r.val);
@@ -2337,9 +2246,9 @@ export class NamedObjectDesc<T extends DescContent> extends ObjectDesc implement
             size += r.unwrap();
         }
 
-        if (this.m_area && this.m_area!.is_some()) {
+        if (this.m_area) {
             ctx.with_area();
-            const r = this.m_area!.unwrap().raw_measure();
+            const r = this.m_area.raw_measure();
             if (r.err) {
                 console.error(`NamedObjectDesc::raw_measure/m_area error! obj_type=${this.obj_type()}, obj_type_code=${this.obj_type_code()},`,
                     r.val);
@@ -2348,9 +2257,9 @@ export class NamedObjectDesc<T extends DescContent> extends ObjectDesc implement
             size += r.unwrap();
         }
 
-        if (this.m_author && this.m_author!.is_some()) {
+        if (this.m_author) {
             ctx.with_author();
-            const r = this.m_author!.unwrap().raw_measure();
+            const r = this.m_author.raw_measure();
             if (r.err) {
                 console.error(`NamedObjectDesc::raw_measure/m_author error! obj_type=${this.obj_type()}, obj_type_code=${this.obj_type_code()},`,
                     r.val);
@@ -2432,8 +2341,8 @@ export class NamedObjectDesc<T extends DescContent> extends ObjectDesc implement
         //
         // ObjectDesc
         //
-        if (this.m_dec_id.is_some()) {
-            const r = this.m_dec_id.unwrap().raw_encode(buf);
+        if (this.m_dec_id) {
+            const r = this.m_dec_id.raw_encode(buf);
             if (r.err) {
                 console.error(`NamedObjectDesc::raw_encode/dec_id error! obj_type=${this.obj_type()}, obj_type_code=${this.obj_type_code()},`,
                     r.val);
@@ -2443,8 +2352,8 @@ export class NamedObjectDesc<T extends DescContent> extends ObjectDesc implement
         }
         base_trace(`[desc(${this.trace_id()})] raw_encode, buffer len m_dec_id :`, buf.length);
 
-        if (this.m_ref_objects.is_some()) {
-            const r = this.m_ref_objects.unwrap().raw_encode(buf);
+        if (this.m_ref_objects) {
+            const r = this.m_ref_objects.raw_encode(buf);
             if (r.err) {
                 console.error(`NamedObjectDesc::raw_encode/ref_objects error! obj_type=${this.obj_type()}, obj_type_code=${this.obj_type_code()},`,
                     r.val);
@@ -2454,8 +2363,8 @@ export class NamedObjectDesc<T extends DescContent> extends ObjectDesc implement
         }
         base_trace(`[desc(${this.trace_id()})] raw_encode, buffer len m_ref_objects :`, buf.length);
 
-        if (this.m_prev.is_some()) {
-            const r = this.m_prev.unwrap().raw_encode(buf);
+        if (this.m_prev) {
+            const r = this.m_prev.raw_encode(buf);
             if (r.err) {
                 console.error(`NamedObjectDesc::raw_encode/prev error! obj_type=${this.obj_type()}, obj_type_code=${this.obj_type_code()},`,
                     r.val);
@@ -2465,8 +2374,8 @@ export class NamedObjectDesc<T extends DescContent> extends ObjectDesc implement
         }
         base_trace(`[desc(${this.trace_id()})] raw_encode, buffer len m_prev :`, buf.length);
 
-        if (this.m_create_timestamp.is_some()) {
-            const r = this.m_create_timestamp.unwrap().raw_encode(buf);
+        if (this.m_create_timestamp) {
+            const r = this.m_create_timestamp.raw_encode(buf);
             if (r.err) {
                 console.error(`NamedObjectDesc::raw_encode/create_timestamp error! obj_type=${this.obj_type()}, obj_type_code=${this.obj_type_code()},`,
                     r.val);
@@ -2476,8 +2385,8 @@ export class NamedObjectDesc<T extends DescContent> extends ObjectDesc implement
         }
         base_trace(`[desc(${this.trace_id()})] raw_encode, buffer len m_create_timestamp :`, buf.length);
 
-        if (this.m_create_time.is_some()) {
-            const r = new BuckyNumber("u64", this.m_create_time.unwrap()).raw_encode(buf);
+        if (this.m_create_time) {
+            const r = new BuckyNumber("u64", this.m_create_time).raw_encode(buf);
             if (r.err) {
                 console.error(`NamedObjectDesc::raw_encode/create_time error! obj_type=${this.obj_type()}, obj_type_code=${this.obj_type_code()},`,
                     r.val);
@@ -2487,8 +2396,8 @@ export class NamedObjectDesc<T extends DescContent> extends ObjectDesc implement
         }
         base_trace("[desc] raw_encode, buffer len m_create_time :", buf.length);
 
-        if (this.m_expired_time.is_some()) {
-            const r = new BuckyNumber("u64", this.m_expired_time.unwrap()).raw_encode(buf);
+        if (this.m_expired_time) {
+            const r = new BuckyNumber("u64", this.m_expired_time).raw_encode(buf);
             if (r.err) {
                 console.error(`NamedObjectDesc::raw_encode/expired_time error! obj_type=${this.obj_type()}, obj_type_code=${this.obj_type_code()},`,
                     r.val);
@@ -2501,8 +2410,8 @@ export class NamedObjectDesc<T extends DescContent> extends ObjectDesc implement
         //
         // OwnderObjectDesc/AreaObjectDesc/AuthorObjectDesc/PublicKeyObjectDesc
         //
-        if (this.m_owner && this.m_owner!.is_some()) {
-            const r = this.m_owner!.unwrap().raw_encode(buf);
+        if (this.m_owner) {
+            const r = this.m_owner.raw_encode(buf);
             if (r.err) {
                 console.error(`NamedObjectDesc::raw_encode/owner error! obj_type=${this.obj_type()}, obj_type_code=${this.obj_type_code()},`,
                     r.val);
@@ -2512,8 +2421,8 @@ export class NamedObjectDesc<T extends DescContent> extends ObjectDesc implement
         }
         base_trace(`[desc(${this.trace_id()})] raw_encode, buffer len m_owner :`, buf.length);
 
-        if (this.m_area && this.m_area!.is_some()) {
-            const r = this.m_area!.unwrap().raw_encode(buf);
+        if (this.m_area) {
+            const r = this.m_area.raw_encode(buf);
             if (r.err) {
                 console.error(`NamedObjectDesc::raw_encode/area error! obj_type=${this.obj_type()}, obj_type_code=${this.obj_type_code()},`,
                     r.val);
@@ -2523,8 +2432,8 @@ export class NamedObjectDesc<T extends DescContent> extends ObjectDesc implement
         }
         base_trace(`[desc(${this.trace_id()})] raw_encode, buffer len m_area :`, buf.length);
 
-        if (this.m_author && this.m_author!.is_some()) {
-            const r = this.m_author!.unwrap().raw_encode(buf);
+        if (this.m_author) {
+            const r = this.m_author.raw_encode(buf);
             if (r.err) {
                 console.error(`NamedObjectDesc::raw_encode/author error! obj_type=${this.obj_type()}, obj_type_code=${this.obj_type_code()},`,
                     r.val);
@@ -2694,7 +2603,7 @@ export class NamedObjectDescDecoder<T extends DescContent> implements RawDecode<
         //
         // ObjectDesc
         //
-        let dec_id: Option<ObjectId>;
+        let dec_id = undefined;
         if (ctx.has_dec_id()) {
             const r = new ObjectIdDecoder().raw_decode(buf);
             if (r.err) {
@@ -2702,13 +2611,11 @@ export class NamedObjectDescDecoder<T extends DescContent> implements RawDecode<
                 return r;
             }
             const [_value, _buf] = r.unwrap();
-            [dec_id, buf] = [Some(_value), _buf];
-        } else {
-            dec_id = None;
+            [dec_id, buf] = [_value, _buf];
         }
         base_trace(`[desc(${this.trace_id()})]  raw_decode, buffer len dec_id : `, buf.length);
 
-        let ref_objects: Option<Vec<ObjectLink>>;
+        let ref_objects = undefined;
         if (ctx.has_ref_objects()) {
             const d = new VecDecoder(new ObjectLinkDecoder());
             const r = d.raw_decode(buf);
@@ -2717,14 +2624,12 @@ export class NamedObjectDescDecoder<T extends DescContent> implements RawDecode<
                 return r;
             }
             const [ref_objects1, buf1] = r.unwrap();
-            ref_objects = Some(ref_objects1);
+            ref_objects = ref_objects1;
             buf = buf1;
-        } else {
-            ref_objects = None;
         }
         base_trace(`[desc(${this.trace_id()})] raw_decode, buffer ref_objects :`, buf.length);
 
-        let prev: Option<ObjectId>;
+        let prev = undefined;
         if (ctx.has_prev()) {
             const r = new ObjectIdDecoder().raw_decode(buf);
             if (r.err) {
@@ -2732,13 +2637,11 @@ export class NamedObjectDescDecoder<T extends DescContent> implements RawDecode<
                 return r;
             }
             const [_value, _buf] = r.unwrap();
-            [prev, buf] = [Some(_value), _buf];
-        } else {
-            prev = None;
+            [prev, buf] = [_value, _buf];
         }
         base_trace(`[desc(${this.trace_id()})] raw_decode, buffer prev : `, buf.length);
 
-        let create_timestamp: Option<HashValue>;
+        let create_timestamp = undefined;
         if (ctx.has_create_time_stamp()) {
             const r = new HashValueDecoder().raw_decode(buf);
             if (r.err) {
@@ -2746,13 +2649,11 @@ export class NamedObjectDescDecoder<T extends DescContent> implements RawDecode<
                 return r;
             }
             const [_value, _buf] = r.unwrap();
-            [create_timestamp, buf] = [Some(_value), _buf];
-        } else {
-            create_timestamp = None;
+            [create_timestamp, buf] = [_value, _buf];
         }
         base_trace(`[desc(${this.trace_id()})] raw_decode, buffer create_timestamp :`, buf.length);
 
-        let create_time: Option<JSBI>;
+        let create_time = undefined;
         if (ctx.has_create_time()) {
             const r = new BuckyNumberDecoder("u64").raw_decode(buf);
             if (r.err) {
@@ -2760,13 +2661,11 @@ export class NamedObjectDescDecoder<T extends DescContent> implements RawDecode<
                 return r;
             }
             const [_value, _buf] = r.unwrap();
-            [create_time, buf] = [Some(_value.toBigInt()), _buf];
-        } else {
-            create_time = None;
+            [create_time, buf] = [_value.toBigInt(), _buf];
         }
         base_trace(`[desc(${this.trace_id()})] raw_decode, buffer create_time : `, buf.length);
 
-        let expired_time: Option<JSBI>;
+        let expired_time = undefined;
         if (ctx.has_expired_time()) {
             const r = new BuckyNumberDecoder("u64").raw_decode(buf);
             if (r.err) {
@@ -2774,16 +2673,14 @@ export class NamedObjectDescDecoder<T extends DescContent> implements RawDecode<
                 return r;
             }
             const [_value, _buf] = r.unwrap();
-            [expired_time, buf] = [Some(_value.toBigInt()), _buf];
-        } else {
-            expired_time = None;
+            [expired_time, buf] = [_value.toBigInt(), _buf];
         }
         base_trace(`[desc(${this.trace_id()})] raw_decode, buffer expired_time :`, buf.length);
 
         //
         // OwnderObjectDesc/AreaObjectDesc/AuthorObjectDesc/PublicKeyObjectDesc
         //
-        let owner: Option<ObjectId> | undefined;
+        let owner = undefined
         if (ctx.has_owner()) {
             const r = new ObjectIdDecoder().raw_decode(buf);
             if (r.err) {
@@ -2792,13 +2689,11 @@ export class NamedObjectDescDecoder<T extends DescContent> implements RawDecode<
             }
             let _owner;
             [_owner, buf] = r.unwrap();
-            owner = Some(_owner);
-        } else {
-            owner = undefined;
+            owner = _owner;
         }
         base_trace(`[desc(${this.trace_id()})] raw_decode, buffer owner : `, buf.length);
 
-        let area: Option<Area> | undefined;
+        let area = undefined;
         if (ctx.has_area()) {
             const r = new AreaDecoder().raw_decode(buf);
             if (r.err) {
@@ -2807,13 +2702,11 @@ export class NamedObjectDescDecoder<T extends DescContent> implements RawDecode<
             }
             let _area;
             [_area, buf] = r.unwrap();
-            area = Some(_area);
-        } else {
-            area = undefined;
+            area = _area;
         }
         base_trace(`[desc(${this.trace_id()})] raw_decode, buffer area :`, buf.length);
 
-        let author: Option<ObjectId> | undefined;
+        let author = undefined
         if (ctx.has_author()) {
             const r = new ObjectIdDecoder().raw_decode(buf);
             if (r.err) {
@@ -2822,9 +2715,7 @@ export class NamedObjectDescDecoder<T extends DescContent> implements RawDecode<
             }
             let _author;
             [_author, buf] = r.unwrap();
-            author = Some(_author);
-        } else {
-            author = undefined;
+            author = _author;
         }
         base_trace(`[desc(${this.trace_id()})] raw_decode, buffer author: `, buf.length);
 
@@ -2973,17 +2864,17 @@ export class NamedObject<
     BC extends BodyContent,
     > implements RawEncode {
     private m_desc: NamedObjectDesc<DC>;
-    private m_body: Option<ObjectMutBody<DC, BC>>;
+    private m_body?: ObjectMutBody<DC, BC>;
     private m_signs: ObjectSigns;
-    private m_nonce: Option<JSBI>; // u128
+    private m_nonce?: JSBI; // u128
     private m_obj_type: number;
     private m_obj_type_code: ObjectTypeCode;
 
     constructor(
         desc: NamedObjectDesc<DC>,
-        body: Option<ObjectMutBody<DC, BC>>,
+        body: ObjectMutBody<DC, BC> | undefined,
         signs: ObjectSigns,
-        nonce: Option<JSBI>
+        nonce?: JSBI
     ) {
         this.m_desc = desc;
         this.m_body = body;
@@ -2995,8 +2886,8 @@ export class NamedObject<
         // 不再缓存id
         // this.m_object_id = this.desc().calculate_id();
 
-        if (this.m_body.is_some()) {
-            this.m_body.unwrap().set_trace_id(this.m_desc.trace_id());
+        if (this.m_body) {
+            this.m_body.set_trace_id(this.m_desc.trace_id());
         }
     }
 
@@ -3042,9 +2933,9 @@ export class NamedObject<
         }
 
         // body
-        if (this.m_body.is_some()) {
+        if (this.m_body) {
             ctx.with_mut_body();
-            const r = this.m_body.unwrap().raw_measure(ctx.body_context(), purpose);
+            const r = this.m_body.raw_measure(ctx.body_context(), purpose);
             if (r.err) {
                 console.error(`NamedObject::raw_measure_ex/body error! obj_type=${this.obj_type()}, obj_type_code=${this.obj_type_code()},`,
                    r.val);
@@ -3065,11 +2956,11 @@ export class NamedObject<
         }
 
         // nonce
-        if (this.m_nonce.is_some()) {
+        if (this.m_nonce) {
             ctx.with_nonce();
 
             // TODO: u128
-            const r = new BuckyNumber("u128", this.m_nonce.unwrap()).raw_measure();
+            const r = new BuckyNumber("u128", this.m_nonce).raw_measure();
             if (r.err) {
                 console.error(`NamedObject::raw_measure_ex/nonce error! obj_type=${this.obj_type()}, obj_type_code=${this.obj_type_code()},`,
                    r.val);
@@ -3120,23 +3011,23 @@ export class NamedObject<
         return this.m_desc;
     }
 
-    body(): Option<ObjectMutBody<DC, BC>> {
+    body(): ObjectMutBody<DC, BC>|undefined {
         return this.m_body;
     }
 
-    set_body(body: Option<ObjectMutBody<DC, BC>>) {
+    set_body(body?: ObjectMutBody<DC, BC>) {
         this.m_body = body;
     }
 
     body_expect(): ObjectMutBody<DC, BC> {
-        return this.m_body.unwrap();
+        return this.m_body!;
     }
 
     signs(): ObjectSigns {
         return this.m_signs;
     }
 
-    nonce(): Option<JSBI> {
+    nonce(): JSBI|undefined {
         return this.m_nonce;
     }
 
@@ -3194,8 +3085,8 @@ export class NamedObject<
         base_trace(`[named_object(${this.m_desc.trace_id()})] raw_encode, desc`);
 
         // body
-        if (this.m_body.is_some()) {
-            const r = this.m_body.unwrap().raw_encode(buf, ctx.body_context(), purpose);
+        if (this.m_body) {
+            const r = this.m_body.raw_encode(buf, ctx.body_context(), purpose);
             if (r.err) {
                 console.error(`NamedObject::raw_encode/body error! obj_type=${this.obj_type()}, obj_type_code=${this.obj_type_code()},`,
                    r.val);
@@ -3218,9 +3109,9 @@ export class NamedObject<
         base_trace(`[named_object(${this.m_desc.trace_id()})] raw_encode, signs`);
 
         // nonce
-        if (this.m_nonce.is_some()) {
+        if (this.m_nonce) {
             // TODO: u128
-            const r = new BuckyNumber("u128", this.m_nonce.unwrap()).raw_encode(buf);
+            const r = new BuckyNumber("u128", this.m_nonce).raw_encode(buf);
             if (r.err) {
                 console.error(`NamedObject::raw_encode/nonce error! obj_type=${this.obj_type()}, obj_type_code=${this.obj_type_code()},`,
                    r.val);
@@ -3326,7 +3217,7 @@ export class NamedObjectDecoder<
         base_trace(`[named_object(${this.m_desc_decoder.trace_id()})] raw_decode, desc`);
 
         // body
-        let body;
+        let body = undefined;
         if (ctx.has_mut_body()) {
             const r = this.m_body_decoder.raw_decode(buf);
             if (r.err) {
@@ -3335,9 +3226,7 @@ export class NamedObjectDecoder<
             }
             let _body;
             [_body, buf] = r.unwrap();
-            body = Some(_body);
-        } else {
-            body = None;
+            body = _body;
         }
         base_trace(`[named_object(${this.m_desc_decoder.trace_id()})] raw_decode, body`);
 
@@ -3354,7 +3243,7 @@ export class NamedObjectDecoder<
         base_trace(`[named_object(${this.m_desc_decoder.trace_id()})] raw_decode, signs`);
 
         // nonce
-        let nonce;
+        let nonce = undefined;
         if (ctx.has_nonce()) {
             const r = new BuckyNumberDecoder("u128").raw_decode(buf);
             if (r.err) {
@@ -3362,9 +3251,7 @@ export class NamedObjectDecoder<
             }
             let _nonce;
             [_nonce, buf] = r.unwrap();
-            nonce = Some(_nonce.toBigInt());
-        } else {
-            nonce = None;
+            nonce = _nonce.toBigInt();
         }
         base_trace(`[named_object(${this.m_desc_decoder.trace_id()})] raw_decode, nonce`);
 
@@ -3403,14 +3290,13 @@ export class NamedObjectBuilder<
     private m_desc_builder: NamedObjectDescBuilder<DC>;
     private m_body_builder: ObjectMutBodyBuilder<DC, BC>;
     private m_signs_builder: ObjectSignsBuilder;
-    private m_nonce: Option<JSBI>;
+    private m_nonce?: JSBI;
     private m_nobody: boolean;
 
     constructor(desc_content: DC, body_content: BC) {
         this.m_desc_builder = new NamedObjectDescBuilder(desc_content.type_info().obj_type(), desc_content);
         this.m_body_builder = new ObjectMutBodyBuilder<DC, BC>(desc_content.type_info().obj_type(), body_content);
         this.m_signs_builder = new ObjectSignsBuilder();
-        this.m_nonce = None;
         this.m_nobody = false;
     }
 
@@ -3421,7 +3307,7 @@ export class NamedObjectBuilder<
         return this;
     }
 
-    option_dec_id(dec_id: Option<ObjectId>): NamedObjectBuilder<DC, BC> {
+    option_dec_id(dec_id?: ObjectId): NamedObjectBuilder<DC, BC> {
         this.m_desc_builder.option_dec_id(dec_id);
         return this;
     }
@@ -3431,7 +3317,7 @@ export class NamedObjectBuilder<
         return this;
     }
 
-    option_ref_objects(ref_objects: Option<Vec<ObjectLink>>): NamedObjectBuilder<DC, BC> {
+    option_ref_objects(ref_objects?: Vec<ObjectLink>): NamedObjectBuilder<DC, BC> {
         this.m_desc_builder.option_ref_objects(ref_objects);
         return this;
     }
@@ -3441,7 +3327,7 @@ export class NamedObjectBuilder<
         return this;
     }
 
-    option_prev(prev: Option<ObjectId>): NamedObjectBuilder<DC, BC> {
+    option_prev(prev?: ObjectId): NamedObjectBuilder<DC, BC> {
         this.m_desc_builder.option_prev(prev);
         return this;
     }
@@ -3451,13 +3337,13 @@ export class NamedObjectBuilder<
         return this;
     }
 
-    option_create_timestamp(create_timestamp: Option<HashValue>): NamedObjectBuilder<DC, BC> {
+    option_create_timestamp(create_timestamp?: HashValue): NamedObjectBuilder<DC, BC> {
         this.m_desc_builder.option_create_timestamp(create_timestamp);
         return this;
     }
 
     no_create_time(): NamedObjectBuilder<DC, BC> {
-        this.m_desc_builder.option_create_time(None);
+        this.m_desc_builder.option_create_time();
         return this;
     }
 
@@ -3467,9 +3353,9 @@ export class NamedObjectBuilder<
     }
 
     // 传入None，表示自动取当前时间，传入Some(x)，表示设置为具体时间
-    option_create_time(create_time: Option<JSBI>): NamedObjectBuilder<DC, BC> {
-        if (create_time.is_some()) {
-            this.m_desc_builder.create_time(create_time.unwrap());
+    option_create_time(create_time?: JSBI): NamedObjectBuilder<DC, BC> {
+        if (create_time) {
+            this.m_desc_builder.create_time(create_time);
         }
         return this;
     }
@@ -3479,7 +3365,7 @@ export class NamedObjectBuilder<
         return this;
     }
 
-    option_expired_time(expired_time: Option<JSBI>): NamedObjectBuilder<DC, BC> {
+    option_expired_time(expired_time?: JSBI): NamedObjectBuilder<DC, BC> {
         this.m_desc_builder.option_expired_time(expired_time);
         return this;
     }
@@ -3491,7 +3377,7 @@ export class NamedObjectBuilder<
         return this;
     }
 
-    option_owner(value: Option<ObjectId>): NamedObjectBuilder<DC, BC> {
+    option_owner(value?: ObjectId): NamedObjectBuilder<DC, BC> {
         this.m_desc_builder = this.m_desc_builder.option_owner(value);
         return this;
     }
@@ -3501,7 +3387,7 @@ export class NamedObjectBuilder<
         return this;
     }
 
-    option_area(value: Option<Area>): NamedObjectBuilder<DC, BC> {
+    option_area(value?: Area): NamedObjectBuilder<DC, BC> {
         this.m_desc_builder = this.m_desc_builder.option_area(value);
         return this;
     }
@@ -3511,7 +3397,7 @@ export class NamedObjectBuilder<
         return this;
     }
 
-    option_author(value: Option<ObjectId>): NamedObjectBuilder<DC, BC> {
+    option_author(value?: ObjectId): NamedObjectBuilder<DC, BC> {
         this.m_desc_builder = this.m_desc_builder.option_author(value);
         return this;
     }
@@ -3521,7 +3407,7 @@ export class NamedObjectBuilder<
         return this;
     }
 
-    option_single_key(value: Option<PublicKey>): NamedObjectBuilder<DC, BC> {
+    option_single_key(value?: PublicKey): NamedObjectBuilder<DC, BC> {
         this.m_desc_builder = this.m_desc_builder.option_single_key(value);
         return this;
     }
@@ -3531,7 +3417,7 @@ export class NamedObjectBuilder<
         return this;
     }
 
-    option_mn_key(value: Option<MNPublicKey>): NamedObjectBuilder<DC, BC> {
+    option_mn_key(value?: MNPublicKey): NamedObjectBuilder<DC, BC> {
         this.m_desc_builder = this.m_desc_builder.option_mn_key(value);
         return this;
     }
@@ -3581,19 +3467,19 @@ export class NamedObjectBuilder<
 
     // nonce
     nonce(nonce: JSBI): NamedObjectBuilder<DC, BC> {
-        this.m_nonce = Some(nonce);
+        this.m_nonce = nonce;
         return this;
     }
 
     // build
     build_ex(): [
         NamedObjectDesc<DC>,
-        Option<ObjectMutBody<DC, BC>>,
+        ObjectMutBody<DC, BC>|undefined,
         ObjectSigns,
-        Option<JSBI>
+        JSBI|undefined
     ] {
         const desc = this.m_desc_builder.build();
-        const body = this.m_nobody ? None : Some(this.m_body_builder.build());
+        const body = this.m_nobody ? undefined : this.m_body_builder.build();
         const signs = this.m_signs_builder.build();
         const nonce = this.m_nonce;
 
@@ -3603,9 +3489,9 @@ export class NamedObjectBuilder<
     build<T extends NamedObject<DC, BC>>(
         obj_constructor: new (
             desc: NamedObjectDesc<DC>,
-            body: Option<ObjectMutBody<DC, BC>>,
+            body: ObjectMutBody<DC, BC>|undefined,
             signs: ObjectSigns,
-            nonce: Option<JSBI>
+            nonce?: JSBI
         ) => T): T {
         return new obj_constructor(...this.build_ex());
     }

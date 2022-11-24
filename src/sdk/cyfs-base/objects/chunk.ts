@@ -1,16 +1,15 @@
-import { Err, Ok, BuckyResult, BuckyError, BuckyErrorCode } from "../base/results";
+import { Ok, BuckyResult } from "../base/results";
 import { RawEncode, RawDecode } from "../base/raw_encode";
 import { } from "../base/buffer";
 import { ObjectTypeCode } from "./object_type_info";
 import { ObjectId, ObjectLink } from "./object_id";
 import { ObjectDesc, ObjectMutBody, ObjectSigns, DescContent, DescTypeInfo, SubDescType, BodyContent } from "./object";
-import { None, Option } from "../base/option";
-import { Vec } from "../base/vec";
 import { HashValue } from "../crypto/hash";
 import { Area } from "./area";
 import { PublicKey, MNPublicKey } from "../crypto/public_key";
 import JSBI from 'jsbi';
 import * as basex from "../base/basex";
+import { Vec } from "../base/vec";
 
 export const CHUNK_ID_LEN = 32;
 
@@ -32,25 +31,25 @@ export class ChunkIdDesc extends ObjectDesc {
     }
 
     // 获取所属 DECApp 的 id
-    dec_id(): Option<ObjectId> {
-        return None;
+    dec_id(): ObjectId | undefined {
+        return undefined;
     }
 
 
     // 链接对象列表
-    ref_objs(): Option<Vec<ObjectLink>> {
-        return None;
+    ref_objs(): Vec<ObjectLink>|undefined {
+        return undefined;
     }
 
     // 前一个版本号
-    prev(): Option<ObjectId> {
-        return None;
+    prev(): ObjectId|undefined {
+        return undefined;
     }
 
 
     // 创建时的 BTC Hash
-    create_timestamp(): Option<HashValue> {
-        return None;
+    create_timestamp(): HashValue|undefined {
+        return undefined;
     }
 
 
@@ -61,19 +60,19 @@ export class ChunkIdDesc extends ObjectDesc {
 
 
     // 过期时间戳
-    expired_time(): Option<JSBI> {
-        return None;
-    }
-
-    owner(): Option<ObjectId> | undefined {
+    expired_time(): JSBI|undefined {
         return undefined;
     }
 
-    area(): Option<Area> | undefined {
+    owner(): ObjectId | undefined {
         return undefined;
     }
 
-    author(): Option<ObjectId> | undefined {
+    area(): Area | undefined {
+        return undefined;
+    }
+
+    author(): ObjectId | undefined {
         return undefined;
     }
 
@@ -215,15 +214,15 @@ export class ChunkId implements RawEncode {
     encode_to_buf(): BuckyResult<Uint8Array> {
         let buf_len;
         {
-            let r = this.raw_measure();
+            const r = this.raw_measure();
             if (r.err) {
                 return r;
             }
             buf_len = r.unwrap();
         }
 
-        let buf = new Uint8Array(buf_len);
-        let r = this.raw_encode(buf);
+        const buf = new Uint8Array(buf_len);
+        const r = this.raw_encode(buf);
         if (r.err) {
             return r;
         }
@@ -235,16 +234,16 @@ export class ChunkId implements RawEncode {
         return new ChunkIdDesc(this);
     }
 
-    body(): Option<ObjectMutBody<ChunkDescContent, ChunkBodyContent>> {
-        return None;
+    body(): ObjectMutBody<ChunkDescContent, ChunkBodyContent>|undefined {
+        return undefined;
     }
 
     signs(): ObjectSigns {
-        return new ObjectSigns(None, None);
+        return new ObjectSigns();
     }
 
-    nonce(): Option<JSBI> {
-        return None;
+    nonce(): JSBI|undefined {
+        return undefined;
     }
 
     static calculate(data: Uint8Array): BuckyResult<ChunkId> {

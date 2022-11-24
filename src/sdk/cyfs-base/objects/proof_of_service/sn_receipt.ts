@@ -7,7 +7,7 @@
 
 
 import { Ok, BuckyResult } from "../../base/results";
-import { Option, OptionDecoder, OptionEncoder, } from "../../base/option";
+import { OptionDecoder, OptionEncoder, } from "../../base/option";
 import { BuckyNumber, BuckyNumberDecoder } from "../../base/bucky_number";
 import { RawDecode, RawEncode } from "../../base/raw_encode";
 
@@ -15,25 +15,25 @@ import { RawDecode, RawEncode } from "../../base/raw_encode";
 
 export class SNReceipt implements RawEncode {
     constructor(
-        public ping_count: Option<number>,
-        public called_count: Option<number>,
-        public success_called_count: Option<number>,
+        public ping_count?: number,
+        public called_count?: number,
+        public success_called_count?: number,
     ){
         // ignore
     }
 
     raw_measure(ctx?:any): BuckyResult<number>{
         let size = 0;
-        size += OptionEncoder.from(this.ping_count, (v:number)=>new BuckyNumber('u32', v)).raw_measure().unwrap();
-        size += OptionEncoder.from(this.called_count, (v:number)=>new BuckyNumber('u32', v)).raw_measure().unwrap();
-        size += OptionEncoder.from(this.success_called_count, (v:number)=>new BuckyNumber('u32', v)).raw_measure().unwrap();
+        size += OptionEncoder.from(this.ping_count, 'u32').raw_measure().unwrap();
+        size += OptionEncoder.from(this.called_count, 'u32').raw_measure().unwrap();
+        size += OptionEncoder.from(this.success_called_count, 'u32').raw_measure().unwrap();
         return Ok(size);
     }
 
     raw_encode(buf: Uint8Array, ctx?:any): BuckyResult<Uint8Array>{
-        buf = OptionEncoder.from(this.ping_count, (v:number)=>new BuckyNumber('u32', v)).raw_encode(buf).unwrap();
-        buf = OptionEncoder.from(this.called_count, (v:number)=>new BuckyNumber('u32', v)).raw_encode(buf).unwrap();
-        buf = OptionEncoder.from(this.success_called_count, (v:number)=>new BuckyNumber('u32', v)).raw_encode(buf).unwrap();
+        buf = OptionEncoder.from(this.ping_count, 'u32').raw_encode(buf).unwrap();
+        buf = OptionEncoder.from(this.called_count, 'u32').raw_encode(buf).unwrap();
+        buf = OptionEncoder.from(this.success_called_count, 'u32').raw_encode(buf).unwrap();
         return Ok(buf);
     }
 }
@@ -67,7 +67,7 @@ export class SNReceiptDecoder implements RawDecode<SNReceipt> {
             [success_called_count, buf] = r.unwrap();
         }
 
-        const ret:[SNReceipt, Uint8Array] = [new SNReceipt(ping_count.to((v)=>v.toNumber()), called_count.to((v)=>v.toNumber()), success_called_count.to((v)=>v.toNumber())), buf];
+        const ret:[SNReceipt, Uint8Array] = [new SNReceipt(ping_count.value()?.toNumber(), called_count.value()?.toNumber(), success_called_count.value()?.toNumber()), buf];
         return Ok(ret);
     }
 

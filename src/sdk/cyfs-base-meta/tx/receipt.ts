@@ -6,7 +6,7 @@
  *****************************************************/
 
 import { Ok, BuckyResult, BuckyError, BuckyErrorCode, Err } from "../../cyfs-base/base/results";
-import { Option, OptionEncoder, OptionDecoder, } from "../../cyfs-base/base/option";
+import { OptionEncoder, OptionDecoder, } from "../../cyfs-base/base/option";
 import { BuckyNumber, BuckyNumberDecoder } from "../../cyfs-base/base/bucky_number";
 import { BuckyBuffer, BuckyBufferDecoder, BuckyFixedBuffer, BuckyFixedBufferDecoder } from "../../cyfs-base/base/bucky_buffer";
 import { Vec, VecDecoder } from "../../cyfs-base/base/vec";
@@ -147,8 +147,8 @@ export class Receipt implements RawEncode {
         public result: number,
         public fee_used: number,
         public logs: TxLog[],
-        public address: Option<ObjectId>,
-        public return_value: Option<Uint8Array>
+        public address?: ObjectId,
+        public return_value?: Uint8Array
     ){
         // ignore
     }
@@ -158,8 +158,8 @@ export class Receipt implements RawEncode {
         size += new BuckyNumber('u32', this.result).raw_measure().unwrap();
         size += new BuckyNumber('u32', this.fee_used).raw_measure().unwrap();
         size += new Vec(this.logs).raw_measure().unwrap();
-        size += new OptionEncoder(this.address).raw_measure().unwrap();
-        size += OptionEncoder.from(this.return_value, (v) => new BuckyBuffer(v)).raw_measure().unwrap();
+        size += OptionEncoder.from(this.address).raw_measure().unwrap();
+        size += OptionEncoder.from(this.return_value).raw_measure().unwrap();
         return Ok(size);
     }
 
@@ -167,8 +167,8 @@ export class Receipt implements RawEncode {
         buf = new BuckyNumber('u32', this.result).raw_encode(buf).unwrap();
         buf = new BuckyNumber('u32', this.fee_used).raw_encode(buf).unwrap();
         buf = new Vec(this.logs).raw_encode(buf).unwrap();
-        buf = new OptionEncoder(this.address).raw_encode(buf).unwrap();
-        buf = OptionEncoder.from(this.return_value, (v) => new BuckyBuffer(v)).raw_encode(buf).unwrap();
+        buf = OptionEncoder.from(this.address).raw_encode(buf).unwrap();
+        buf = OptionEncoder.from(this.return_value).raw_encode(buf).unwrap();
         return Ok(buf);
     }
 }
@@ -220,7 +220,7 @@ export class ReceiptDecoder implements RawDecode<Receipt> {
             [return_value, buf] = r.unwrap();
         }
 
-        const ret:[Receipt, Uint8Array] = [new Receipt(result.toNumber(), fee_used.toNumber(), logs.value(), address.value(), return_value.to((v) => v.value())), buf];
+        const ret:[Receipt, Uint8Array] = [new Receipt(result.toNumber(), fee_used.toNumber(), logs.value(), address.value(), return_value.value()?.buffer), buf];
         return Ok(ret);
     }
 
