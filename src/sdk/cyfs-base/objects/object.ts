@@ -2999,7 +2999,10 @@ export class NamedObject<
         this.m_body = body;
     }
 
-    body_expect(): ObjectMutBody<DC, BC> {
+    body_expect(msg?: string): ObjectMutBody<DC, BC> {
+        if (!this.m_body) {
+            throw new Error(`expect body but empty, ${msg}`)
+        }
         return this.m_body!;
     }
 

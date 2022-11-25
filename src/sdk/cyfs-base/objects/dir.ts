@@ -710,7 +710,7 @@ export class Dir extends NamedObject<DirDescContent, DirBodyContent>{
         return DirId.try_from_object_id(this.desc().calculate_id()).unwrap();
     }
 
-    get_data_from_body(id: & ObjectId): Uint8Array|undefined {
+    get_data_from_body(id: ObjectId): Uint8Array|undefined {
         if (this.body()) {
             return this.body_expect().content().match({
                 Chunk: (chunk) => {

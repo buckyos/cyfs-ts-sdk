@@ -23,8 +23,8 @@ async function get_objid_from_str(client: cyfs.MetaClient, str: string): Promise
 
     console.warn(`${str} is not a valid id, try search as name`);
     const name_status = await client.getName(str);
-    if (name_status.ok && name_status.unwrap().is_some()) {
-        return await name_status.unwrap().unwrap().name_info.record.link.match({
+    if (name_status.ok && name_status.unwrap()) {
+        return await name_status.unwrap()!.name_info.record.link.match({
             ObjectLink: async (link) => cyfs.Ok(link),
             OtherNameLink: async (name) => {return await get_objid_from_str(client, name)},
             IPLink: async() => {return cyfs.Err(new cyfs.BuckyError(cyfs.BuckyErrorCode.NotFound, `name ${str} is a ip link`))}
@@ -181,7 +181,7 @@ async function put_desc(client: cyfs.MetaClient, price: number, coinid: number, 
     }
 
     if (options.update) {
-        send_desc.body().unwrap().increase_update_time(cyfs.bucky_time_now());
+        send_desc.body()!.increase_update_time(cyfs.bucky_time_now());
     }
 
     const desc_id = send_desc.desc().calculate_id();
@@ -199,13 +199,11 @@ async function put_desc(client: cyfs.MetaClient, price: number, coinid: number, 
     }
 
     const update = (await client.getDesc(desc_id)).ok;
-    const priceo = price?cyfs.Some(price):cyfs.None;
-    const coinido = coinid?cyfs.Some(coinid):cyfs.None;
     let r;
     if (update) {
-        r = await client.update_desc(caller, send_meta_desc, priceo, coinido, sec);
+        r = await client.update_desc(caller, send_meta_desc, price, coinid, sec);
     } else {
-        r = await client.create_desc(caller, send_meta_desc, options.value, priceo.is_some()?priceo.unwrap():0, coinido.is_some()?coinido.unwrap():0, sec);
+        r = await client.create_desc(caller, send_meta_desc, options.value, price, coinid, sec);
     }
 
     console.log("put desc success, TxId", r.unwrap().to_base_58());
@@ -218,16 +216,16 @@ async function get_receipt(client: cyfs.MetaClient, id: string) {
         console.error(`get receipt ${id} err ${ret.val}`);
     } else {
         const receipt_ret = ret.unwrap();
-        if (receipt_ret.is_none()) {
+        if (!receipt_ret) {
             console.error(`cannot get receipt ${id}`)
         } else {
-            const [receipt, height] = receipt_ret.unwrap();
+            const [receipt, height] = receipt_ret;
             console.log(`get receipt ${id} on height ${height}, ret ${receipt.result}`);
-            if (receipt.address.is_some()) {
-                console.log(`receipt return contract address ${receipt.address.unwrap().to_base_58()}`)
+            if (receipt.address) {
+                console.log(`receipt return contract address ${receipt.address.to_base_58()}`)
             }
-            if (receipt.return_value.is_some()) {
-                const value = receipt.return_value.unwrap();
+            if (receipt.return_value) {
+                const value = receipt.return_value;
                 console.log(`return value ${value.toHex()}`);
             }
         }
@@ -290,11 +288,11 @@ async function bidname(client: cyfs.MetaClient, name: string, bid_price: string,
     console.log(`use caller account file at ${options.caller}`);
     const [caller, sec] = load_desc_and_sec(options.caller);
 
-    let owner: cyfs.Option<cyfs.ObjectId> = cyfs.None;
+    let owner;
     if (options.owner) {
         const owner_ret = await get_objid_from_str(client, options.owner);
         if (owner_ret.ok) {
-            owner = cyfs.Some(owner_ret.unwrap())
+            owner = owner_ret.unwrap()
         }
     }
 
@@ -322,12 +320,12 @@ async function namelink(client: cyfs.MetaClient, name: string, obj: string, opti
         return;
     }
 
-    if (name_ret.unwrap().is_none()) {
+    if (!name_ret.unwrap()) {
         console.error(`not found name ${name} info from chain`)
         return;
     }
 
-    const info = name_ret.unwrap().unwrap().name_info;
+    const info = name_ret.unwrap()!.name_info;
 
     switch (options.type) {
         case "name":
@@ -360,14 +358,14 @@ async function getname(client: cyfs.MetaClient, name: string) {
         return;
     }
 
-    if (info_ret.unwrap().is_none()) {
+    if (!info_ret.unwrap()) {
         console.error(`cannot find name ${name} on meta chain`);
         return
     }
 
-    const info = info_ret.unwrap().unwrap()
+    const info = info_ret.unwrap()
 
-    console.info(`find name ${name}, state ${info.name_state}, owner ${info.name_info.owner.is_some()?info.name_info.owner.unwrap():"none"}, ${info.name_info.record.link}`);
+    console.info(`find name ${name}, state ${info!.name_state}, owner ${info!.name_info.owner}, ${info!.name_info.record.link}`);
 }
 
 async function getbalance(client: cyfs.MetaClient, account: string, coinid: number) {

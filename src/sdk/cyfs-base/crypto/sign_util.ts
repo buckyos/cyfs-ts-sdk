@@ -21,7 +21,7 @@ export function sign_named_object_desc<DC extends DescContent, BC extends BodyCo
 export function sign_named_object_body<DC extends DescContent, BC extends BodyContent>(private_key: PrivateKey, obj: NamedObject<DC, BC>, sign_source: SignatureSource): BuckyResult<Signature> {
     let hash;
     {
-        const r = raw_hash_encode(obj.body()!);
+        const r = raw_hash_encode(obj.body_expect());
         if (r.err) {
             return r;
         }

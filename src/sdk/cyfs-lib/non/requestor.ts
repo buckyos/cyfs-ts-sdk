@@ -141,7 +141,7 @@ export class NONRequestor {
     }
 
     async decode_put_object_response(
-        resp: & Response,
+        resp: Response,
     ): Promise<BuckyResult<NONPutObjectOutputResponse>> {
         let result;
         {
