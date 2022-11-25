@@ -24,18 +24,23 @@ export interface MetaResult<T> {
 }
 
 export interface RawTxInfo {
-    create_time: number;
-    nonce: number;
-    caller: string;
-    gas_coin_id: number;
-    gas_price: number;
-    max_fee: number;
-    result: number;
-    use_fee: number;
-    to: [string, number, number][];
-    block_number: number;
+    status: number;
+    tx: {
+        tx_hash: string;
+        create_time: string;
+        nonce: string;
+        caller: string;
+        gas_coin_id: number;
+        gas_price: number;
+        max_fee: number;
+        result: number;
+        use_fee: number;
+        to: [string, number, number][];
+    }
+    
+    block_number: string;
     block_hash: number;
-    block_create_time: number;
+    block_create_time: string;
 }
 /*
 export interface SPVTx {
