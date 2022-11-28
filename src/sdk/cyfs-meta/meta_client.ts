@@ -24,18 +24,23 @@ export interface MetaResult<T> {
 }
 
 export interface RawTxInfo {
-    create_time: number;
-    nonce: number;
-    caller: string;
-    gas_coin_id: number;
-    gas_price: number;
-    max_fee: number;
-    result: number;
-    use_fee: number;
-    to: [string, number, number][];
-    block_number: number;
+    status: number;
+    tx: {
+        tx_hash: string;
+        create_time: string;
+        nonce: string;
+        caller: string;
+        gas_coin_id: number;
+        gas_price: number;
+        max_fee: number;
+        result: number;
+        use_fee: number;
+        to: [string, number, number][];
+    }
+    
+    block_number: string;
     block_hash: number;
-    block_create_time: number;
+    block_create_time: string;
 }
 /*
 export interface SPVTx {
@@ -119,9 +124,9 @@ export enum MetaMinerTarget {
 
 export function get_meta_miner_host(target: MetaMinerTarget): string {
     if (target === MetaMinerTarget.Dev) {
-        return "http://nightly.meta.cyfs.com:1423";
+        return "https://nightly.meta.cyfs.com:11423";
     } else if (target === MetaMinerTarget.Test) {
-        return "http://beta.meta.cyfs.com:1423";
+        return "https://beta.meta.cyfs.com:11423";
     } else {
         return "";
     }
@@ -129,9 +134,9 @@ export function get_meta_miner_host(target: MetaMinerTarget): string {
 
 export function get_meta_spv_host(target: MetaMinerTarget): string {
     if (target === MetaMinerTarget.Dev) {
-        return "http://nightly.meta.cyfs.com:3516";
+        return "https://nightly.meta.cyfs.com:13516";
     } else if (target === MetaMinerTarget.Test) {
-        return "http://beta.meta.cyfs.com:3516";
+        return "https://beta.meta.cyfs.com:13516";
     } else {
         return "";
     }
