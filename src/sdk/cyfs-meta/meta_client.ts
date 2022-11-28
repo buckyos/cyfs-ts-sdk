@@ -124,9 +124,9 @@ export enum MetaMinerTarget {
 
 export function get_meta_miner_host(target: MetaMinerTarget): string {
     if (target === MetaMinerTarget.Dev) {
-        return "http://nightly.meta.cyfs.com:1423";
+        return "https://nightly.meta.cyfs.com:11423";
     } else if (target === MetaMinerTarget.Test) {
-        return "http://beta.meta.cyfs.com:1423";
+        return "https://beta.meta.cyfs.com:11423";
     } else {
         return "";
     }
@@ -134,9 +134,9 @@ export function get_meta_miner_host(target: MetaMinerTarget): string {
 
 export function get_meta_spv_host(target: MetaMinerTarget): string {
     if (target === MetaMinerTarget.Dev) {
-        return "http://nightly.meta.cyfs.com:3516";
+        return "https://nightly.meta.cyfs.com:13516";
     } else if (target === MetaMinerTarget.Test) {
-        return "http://beta.meta.cyfs.com:3516";
+        return "https://beta.meta.cyfs.com:13516";
     } else {
         return "";
     }
