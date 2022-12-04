@@ -30,16 +30,12 @@ export class NONRequestorHelper {
     }
 
     static async decode_option_object_info(req: Response): Promise<BuckyResult<Option<NONObjectInfo>>> {
-        const ret = RequestorHelper.decode_optional_header(req, CYFS_OBJECT_ID, (s) => s);
-        if (ret.err) {
-            return ret;
-        }
-        const id = ret.unwrap();
-        if (id.is_none()) {
+        const id = RequestorHelper.decode_optional_header(req, CYFS_OBJECT_ID, (s) => s);
+        if (id === undefined) {
             return Ok(None);
         }
 
-        const object_id = ObjectId.from_base_58(id.unwrap());
+        const object_id = ObjectId.from_base_58(id);
         if (object_id.err) {
             return object_id;
         }
@@ -71,18 +67,18 @@ export class NONRequestorHelper {
             return r;
         }
 
-        const attr = RequestorHelper.decode_optional_header(resp, CYFS_ATTRIBUTES, s => parseInt(s, 10)).unwrap().to(v => new Attributes(v));
+        const attr = RequestorHelper.decode_optional_header(resp, CYFS_ATTRIBUTES, s => new Attributes(parseInt(s, 10)));
 
         const object_update_time =
-            RequestorHelper.decode_optional_header(resp, CYFS_OBJECT_UPDATE_TIME, (s) => JSBI.BigInt(s)).unwrap();
+            RequestorHelper.decode_optional_header(resp, CYFS_OBJECT_UPDATE_TIME, (s) => JSBI.BigInt(s));
         const object_expires_time =
-            RequestorHelper.decode_optional_header(resp, CYFS_OBJECT_EXPIRES_TIME, (s) => JSBI.BigInt(s)).unwrap();
+            RequestorHelper.decode_optional_header(resp, CYFS_OBJECT_EXPIRES_TIME, (s) => JSBI.BigInt(s));
 
         const ret = {
             object: r.unwrap(),
-            object_expires_time: object_expires_time.is_some() ? object_expires_time.unwrap() : undefined,
-            object_update_time: object_update_time.is_some() ? object_update_time.unwrap() : undefined,
-            attr: attr.is_some()? attr.unwrap() : undefined,
+            object_expires_time,
+            object_update_time,
+            attr,
         };
 
         return Ok(ret)
@@ -112,7 +108,7 @@ export class NONRequestor {
         http_req.insert_header(CYFS_API_LEVEL, com_req.level);
 
         if (com_req.req_path) {
-            http_req.insert_header(CYFS_REQ_PATH, encodeURI(com_req.req_path));
+            http_req.insert_header(CYFS_REQ_PATH, encodeURIComponent(com_req.req_path));
         }
 
         if (com_req.target) {
@@ -157,14 +153,14 @@ export class NONRequestor {
         }
 
         const object_update_time =
-            RequestorHelper.decode_optional_header(resp, CYFS_OBJECT_UPDATE_TIME, (s) => JSBI.BigInt(s)).unwrap();
+            RequestorHelper.decode_optional_header(resp, CYFS_OBJECT_UPDATE_TIME, (s) => JSBI.BigInt(s));
         const object_expires_time =
-            RequestorHelper.decode_optional_header(resp, CYFS_OBJECT_EXPIRES_TIME, (s) => JSBI.BigInt(s)).unwrap();
+            RequestorHelper.decode_optional_header(resp, CYFS_OBJECT_EXPIRES_TIME, (s) => JSBI.BigInt(s));
 
         const ret = {
             result,
-            object_expires_time: object_expires_time.is_some() ? object_expires_time.unwrap() : undefined,
-            object_update_time: object_update_time.is_some() ? object_update_time.unwrap() : undefined,
+            object_expires_time,
+            object_update_time,
         };
 
         return Ok(ret)
@@ -199,7 +195,7 @@ export class NONRequestor {
         http_req.insert_header(CYFS_OBJECT_ID, req.object_id.to_base_58());
 
         if (req.inner_path) {
-            http_req.insert_header(CYFS_INNER_PATH, encodeURI(req.inner_path));
+            http_req.insert_header(CYFS_INNER_PATH, encodeURIComponent(req.inner_path));
         }
 
         return http_req
@@ -283,7 +279,7 @@ export class NONRequestor {
         http_req.insert_header(CYFS_OBJECT_ID, req.object_id.to_base_58());
 
         if (req.inner_path) {
-            http_req.insert_header(CYFS_INNER_PATH, encodeURI(req.inner_path));
+            http_req.insert_header(CYFS_INNER_PATH, encodeURIComponent(req.inner_path));
         }
 
         return http_req;

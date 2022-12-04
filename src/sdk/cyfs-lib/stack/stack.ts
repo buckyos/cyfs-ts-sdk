@@ -25,8 +25,8 @@ import JSBI from 'jsbi';
 import { NONRequestor } from "../non/requestor";
 import { NDNRequestor } from "../ndn/requestor";
 import { CryptoRequestor } from "../crypto/requestor";
-import { GlobalStateRequestor, GlobalStateAccessRequestor } from "../root_state/requestor"
-import { GlobalStateStub, GlobalStateAccessStub } from "../root_state/stub"
+import { GlobalStateRequestor, GlobalStateAccessorRequestor } from "../root_state/requestor"
+import { GlobalStateStub, GlobalStateAccessorStub } from "../root_state/stub"
 import { GlobalStateCategory } from '../root_state/def';
 import { SyncRequestor } from "../sync/requestor";
 import { StateStorage } from "../storage/state_storage";
@@ -193,8 +193,8 @@ export class SharedCyfsStack {
     private m_root_state: GlobalStateRequestor;
     private m_local_cache: GlobalStateRequestor;
 
-    private m_root_state_access :GlobalStateAccessRequestor;
-    private m_local_cache_access :GlobalStateAccessRequestor;
+    private m_root_state_accessor :GlobalStateAccessorRequestor;
+    private m_local_cache_accessor :GlobalStateAccessorRequestor;
 
     private m_root_state_meta: GlobalStateMetaRequestor;
     private m_local_cache_meta: GlobalStateMetaRequestor;
@@ -229,8 +229,8 @@ export class SharedCyfsStack {
         this.m_root_state = new GlobalStateRequestor(GlobalStateCategory.RootState, SharedCyfsStack.select_requestor(param, param.requestor_config!.root_state), this.dec_id);
         this.m_local_cache = new GlobalStateRequestor(GlobalStateCategory.LocalCache, SharedCyfsStack.select_requestor(param, param.requestor_config!.local_cache), this.dec_id);
 
-        this.m_root_state_access = GlobalStateAccessRequestor.new_root_state_access(SharedCyfsStack.select_requestor(param, param.requestor_config!.root_state), this.dec_id);
-        this.m_local_cache_access = GlobalStateAccessRequestor.new_local_cache_access(SharedCyfsStack.select_requestor(param, param.requestor_config!.local_cache), this.dec_id);
+        this.m_root_state_accessor = GlobalStateAccessorRequestor.new_root_state_accessor(SharedCyfsStack.select_requestor(param, param.requestor_config!.root_state), this.dec_id);
+        this.m_local_cache_accessor = GlobalStateAccessorRequestor.new_local_cache_accessor(SharedCyfsStack.select_requestor(param, param.requestor_config!.local_cache), this.dec_id);
 
         this.m_root_state_meta = GlobalStateMetaRequestor.new_root_state(SharedCyfsStack.select_requestor(param, param.requestor_config!.root_state), this.dec_id);
         this.m_local_cache_meta = GlobalStateMetaRequestor.new_local_cache(SharedCyfsStack.select_requestor(param, param.requestor_config!.root_state), this.dec_id);
@@ -395,20 +395,48 @@ export class SharedCyfsStack {
         return new GlobalStateStub(this.local_cache(), target, dec_id);
     }
 
-    root_state_access(): GlobalStateAccessRequestor {
-        return this.m_root_state_access;
+    root_state_accessor(): GlobalStateAccessorRequestor {
+        return this.m_root_state_accessor;
     }
 
-    root_state_access_stub(target?: ObjectId, dec_id?: ObjectId): GlobalStateAccessStub {
-        return new GlobalStateAccessStub(this.root_state_access(), target, dec_id);
+    root_state_accessor_stub(target?: ObjectId, dec_id?: ObjectId): GlobalStateAccessorStub {
+        return new GlobalStateAccessorStub(this.root_state_accessor(), target, dec_id);
     }
 
-    local_cache_access(): GlobalStateAccessRequestor {
-        return this.m_local_cache_access;
+    /**
+     * @deprecated will delete after ver 0.5.12
+     */
+    root_state_access(): GlobalStateAccessorRequestor {
+        return this.root_state_accessor();
     }
 
-    local_cache_access_stub(dec_id?: ObjectId): GlobalStateAccessStub {
-        return new GlobalStateAccessStub(this.local_cache_access(), undefined, dec_id);
+    /**
+     * @deprecated will delete after ver 0.5.12
+     */
+    root_state_access_stub(target?: ObjectId, dec_id?: ObjectId): GlobalStateAccessorStub {
+        return this.root_state_accessor_stub(target, dec_id)
+    }
+
+    /**
+     * @deprecated will delete after ver 0.5.12
+     */
+    local_cache_access(): GlobalStateAccessorRequestor {
+        return this.local_cache_accessor();
+    }
+
+    /**
+     * @deprecated will delete after ver 0.5.12
+     */
+    local_cache_access_stub(dec_id?: ObjectId): GlobalStateAccessorStub {
+        return this.local_cache_accessor_stub(dec_id)
+    }
+
+    local_cache_accessor(): GlobalStateAccessorRequestor {
+        return this.m_local_cache_accessor;
+    }
+
+    local_cache_accessor_stub(dec_id?: ObjectId): GlobalStateAccessorStub {
+        return new GlobalStateAccessorStub(this.local_cache_accessor(), undefined, dec_id);
     }
 
     root_state_meta(): GlobalStateMetaRequestor {

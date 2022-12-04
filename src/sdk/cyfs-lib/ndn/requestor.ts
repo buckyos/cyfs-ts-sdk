@@ -1,6 +1,7 @@
-import { Attributes, CYFS_ATTRIBUTES, CYFS_OBJECT_ID, BuckyResult, CYFS_API_LEVEL, CYFS_DEC_ID, CYFS_FLAGS, CYFS_NDN_ACTION, CYFS_REFERER_OBJECT, CYFS_RESULT, CYFS_TARGET, Err, ObjectId, Ok } from "../../cyfs-base";
+import { Attributes, CYFS_ATTRIBUTES, CYFS_OBJECT_ID, BuckyResult, CYFS_API_LEVEL, CYFS_DEC_ID, CYFS_FLAGS, CYFS_NDN_ACTION, CYFS_REFERER_OBJECT, CYFS_RESULT, CYFS_TARGET, Err, ObjectId, Ok, CYFS_REQ_PATH, CYFS_INNER_PATH, CYFS_OWNER_ID, CYFS_DATA_RANGE } from "../../cyfs-base";
 import { BaseRequestor, RequestorHelper } from "../base/base_requestor";
 import { HttpRequest } from "../base/http_request";
+import { NDNDataResponseRange } from "../base/range";
 import { NDNAction, NDNPutDataResult } from "./def";
 import { NDNQueryFileInputResponseJsonCodec, ndn_query_file_param_to_key_pair } from './input_request';
 import { NDNDeleteDataOutputRequest, NDNDeleteDataOutputResponse, NDNGetDataOutputRequest, NDNGetDataOutputResponse, NDNOutputRequestCommon, NDNPutDataOutputRequest, NDNPutDataOutputResponse, NDNQueryFileOutputRequest, NDNQueryFileOutputResponse, NDNQueryFileOutputResponseJsonCodec } from "./output_request";
@@ -10,30 +11,6 @@ export class NDNRequestor {
 
     constructor(private requestor: BaseRequestor, private dec_id?: ObjectId) {
         this.service_url = `http://${requestor.remote_addr()}/ndn/`;
-    }
-
-    // url支持下面的格式，其中device_id是可选
-    // {host:port}/ndn/[req_path/]object_id[/inner_path]
-    format_url(
-        req_path: string | undefined,
-        object_id?: ObjectId,
-        inner_path?: string,
-    ): string {
-        const parts = [];
-        if (req_path) {
-            parts.push(req_path.replace(/^\/+|\/+$/g, ""));
-        }
-
-        if (object_id) {
-            parts.push(object_id.to_base_58());
-        }
-
-        if (inner_path) {
-            parts.push(inner_path.replace(/^\/+|\/+$/g, ""));
-        }
-
-        const p = parts.join("/");
-        return this.service_url + p;
     }
 
     encode_common_headers(
@@ -55,7 +32,11 @@ export class NDNRequestor {
             http_req.insert_header(CYFS_TARGET, com_req.target.to_string());
         }
 
-        if (com_req.referer_object.length > 0) {
+        if (com_req.req_path) {
+            http_req.insert_header(CYFS_REQ_PATH, encodeURIComponent(com_req.req_path));
+        }
+
+        if (com_req.referer_object != null && com_req.referer_object.length > 0) {
             const headers = [];
             for (const object of com_req.referer_object) {
                 headers.push(object.toString());
@@ -88,7 +69,7 @@ export class NDNRequestor {
             querys.append(CYFS_TARGET, com_req.target.to_string());
         }
 
-        if (com_req.referer_object.length > 0) {
+        if (com_req.referer_object != null && com_req.referer_object.length > 0) {
             for (const object of com_req.referer_object) {
                 querys.append(CYFS_REFERER_OBJECT, object.toString());
             }
@@ -99,12 +80,12 @@ export class NDNRequestor {
         return querys.toString();
     }
 
-    encode_put_data_request(req: NDNPutDataOutputRequest): HttpRequest {
-        const url = this.format_url(req.common.req_path, req.object_id);
+    encode_put_data_request(action: NDNAction, req: NDNPutDataOutputRequest): HttpRequest {
+        const http_req = new HttpRequest("Put", this.service_url);
 
-        const http_req = new HttpRequest("Put", url);
+        this.encode_common_headers(action, req.common, http_req);
 
-        this.encode_common_headers(NDNAction.PutData, req.common, http_req);
+        http_req.insert_header(CYFS_OBJECT_ID, req.object_id.toString());
 
         return http_req;
     }
@@ -120,8 +101,19 @@ export class NDNRequestor {
         return Ok(ret)
     }
 
+    async decode_put_shared_data_response(resp: Response): Promise<BuckyResult<NDNPutDataOutputResponse>> {
+        const result = RequestorHelper.decode_header(resp, CYFS_RESULT, s => s as NDNPutDataResult);
+        if (result.err) {
+            return result;
+        }
+
+        const ret = { result: result.unwrap() };
+
+        return Ok(ret)
+    }
+
     async put_data(req: NDNPutDataOutputRequest): Promise<BuckyResult<NDNPutDataOutputResponse>> {
-        const http_req = this.encode_put_data_request(req);
+        const http_req = this.encode_put_data_request(NDNAction.PutData, req);
 
         http_req.set_body(req.data);
         const r = await this.requestor.request(http_req);
@@ -139,43 +131,61 @@ export class NDNRequestor {
         }
     }
 
-    // 直接使用url+get来触发一个下载请求
-    prepare_download_data(req: NDNGetDataOutputRequest): string {
-        const url = this.format_url(
-            req.common.req_path,
-            req.object_id,
-            req.inner_path,
-        );
+    async put_shared_data(req: NDNPutDataOutputRequest): Promise<BuckyResult<NDNPutDataOutputResponse>> {
+        const http_req = this.encode_put_data_request(NDNAction.PutSharedData, req);
 
-        const querys = this.encode_common_headers_to_query(NDNAction.GetData, req.common);
-        return url + "?" + querys;
+        http_req.set_body(req.data);
+        const r = await this.requestor.request(http_req);
+        if (r.err) {
+            return r;
+        }
+        const resp = r.unwrap();
+
+        if (resp.status === 200) {
+            console.debug("put data to ndn service success:", req.object_id);
+            return await this.decode_put_shared_data_response(resp);
+        } else {
+            const e = await RequestorHelper.error_from_resp(resp);
+            return Err(e);
+        }
     }
 
-    private encode_get_data_request(req: NDNGetDataOutputRequest): HttpRequest {
-        const url = this.format_url(
-            req.common.req_path,
-            req.object_id,
-            req.inner_path,
-        );
+    private encode_get_data_request(action: NDNAction, req: NDNGetDataOutputRequest): HttpRequest {
+        const http_req = new HttpRequest("Get", this.service_url);
+        this.encode_common_headers(action, req.common, http_req);
 
-        const http_req = new HttpRequest("Post", url);
-        this.encode_common_headers(NDNAction.GetData, req.common, http_req);
+        http_req.insert_header(CYFS_OBJECT_ID, req.object_id.toString());
+        if (req.inner_path) {
+            http_req.insert_header(CYFS_INNER_PATH, encodeURIComponent(req.inner_path));
+        }
 
         return http_req;
     }
 
     private async decode_get_data_response(
-        _req: NDNGetDataOutputRequest,
         resp: Response,
     ): Promise<BuckyResult<NDNGetDataOutputResponse>> {
         const data = await resp.arrayBuffer();
 
-        const attr = RequestorHelper.decode_optional_header(resp, CYFS_ATTRIBUTES, s => parseInt(s, 10)).unwrap().to(v => new Attributes(v));
+        const attr = RequestorHelper.decode_optional_header(resp, CYFS_ATTRIBUTES, s => new Attributes(parseInt(s, 10)));
 
         const object_id = RequestorHelper.decode_header(resp, CYFS_OBJECT_ID, s => ObjectId.from_base_58(s).unwrap());
         if (object_id.err) {
             return object_id;
         }
+        const owner_id = RequestorHelper.decode_optional_header(resp, CYFS_OWNER_ID, s => ObjectId.from_base_58(s));
+        if (owner_id && owner_id.err) {
+            return owner_id;
+        }
+
+        const range = RequestorHelper.decode_optional_header(resp, CYFS_DATA_RANGE, (s) => {
+            return NDNDataResponseRange.from_str(s)
+        });
+
+        if (range && range.err) {
+            return range
+        }
+
         const length =
             RequestorHelper.decode_header(resp, "content-length", s => parseInt(s, 10));
         if (length.err) {
@@ -183,7 +193,9 @@ export class NDNRequestor {
         }
         const ret = {
             object_id: object_id.unwrap(),
-            attr: attr.is_some() ? attr.unwrap() : undefined,
+            attr,
+            owner_id: owner_id?owner_id.unwrap():undefined,
+            range: range?range.unwrap():undefined,
 
             length: length.unwrap(),
             data: new Uint8Array(data),
@@ -195,7 +207,7 @@ export class NDNRequestor {
     async get_data(
         req: NDNGetDataOutputRequest,
     ): Promise<BuckyResult<NDNGetDataOutputResponse>> {
-        const http_req = this.encode_get_data_request(req);
+        const http_req = this.encode_get_data_request(NDNAction.GetData, req);
 
         const r = await this.requestor.request(http_req);
         if (r.err) {
@@ -205,7 +217,27 @@ export class NDNRequestor {
 
         if (resp.status === 200) {
             console.debug("get data from ndn service success:", req.object_id);
-            return await this.decode_get_data_response(req, resp);
+            return await this.decode_get_data_response(resp);
+        } else {
+            const e = await RequestorHelper.error_from_resp(resp);
+            return Err(e);
+        }
+    }
+
+    async get_shared_data(
+        req: NDNGetDataOutputRequest,
+    ): Promise<BuckyResult<NDNGetDataOutputResponse>> {
+        const http_req = this.encode_get_data_request(NDNAction.GetSharedData, req);
+
+        const r = await this.requestor.request(http_req);
+        if (r.err) {
+            return r;
+        }
+        const resp = r.unwrap();
+
+        if (resp.status === 200) {
+            console.debug("get data from ndn service success:", req.object_id);
+            return await this.decode_get_data_response(resp);
         } else {
             const e = await RequestorHelper.error_from_resp(resp);
             return Err(e);
@@ -213,14 +245,13 @@ export class NDNRequestor {
     }
 
     encode_delete_data_request(req: NDNDeleteDataOutputRequest): HttpRequest {
-        const url = this.format_url(
-            req.common.req_path,
-            req.object_id,
-            req.inner_path,
-        );
-
-        const http_req = new HttpRequest("Delete", url);
+        const http_req = new HttpRequest("Delete", this.service_url);
         this.encode_common_headers(NDNAction.DeleteData, req.common, http_req);
+
+        http_req.insert_header(CYFS_OBJECT_ID, req.object_id.to_string());
+        if (req.inner_path) {
+            http_req.insert_header(CYFS_INNER_PATH, encodeURIComponent(req.inner_path));
+        }
 
         return http_req;
     }
@@ -252,18 +283,14 @@ export class NDNRequestor {
     }
 
     encode_query_file_request(req: NDNQueryFileOutputRequest): HttpRequest {
-        const url = this.format_url(
-            req.common.req_path,
-        );
-
         const querys = new URLSearchParams();
         const [t, v] = ndn_query_file_param_to_key_pair(req.param);
         querys.append("type", t);
         querys.append("value", v);
 
-        const full_url = url + "?" + querys.toString();
+        const full_url = this.service_url + "?" + querys.toString();
 
-        const http_req = new HttpRequest("Post", full_url);
+        const http_req = new HttpRequest("Get", full_url);
         this.encode_common_headers(NDNAction.QueryFile, req.common, http_req);
 
         return http_req;

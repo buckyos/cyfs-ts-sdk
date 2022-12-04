@@ -1,6 +1,7 @@
 import { ObjectId, Attributes, BuckyResult, DeviceId, Ok } from "../../cyfs-base"
 import { JsonCodec } from "../base/codec"
-import { NDNAPILevel, NDNDataRefererObject, NDNDataRefererObjectJsonCodec, NDNPutDataResult } from "./def"
+import { NDNDataRequestRange, NDNDataResponseRange } from "../base/range";
+import { NDNAPILevel, NDNDataRefererObject, NDNPutDataResult } from "./def"
 import { NDNQueryFileInputResponse, NDNQueryFileInputResponseJsonCodec, NDNQueryFileParam, NDNQueryFileParamJsonCodec } from './input_request';
 
 export interface NDNOutputRequestCommon {
@@ -17,7 +18,7 @@ export interface NDNOutputRequestCommon {
     target?: ObjectId,
 
     // 需要处理数据的关联对象，主要用以chunk/file等
-    referer_object: NDNDataRefererObject[],
+    referer_object?: NDNDataRefererObject[],
 
     flags: number,
 }
@@ -37,15 +38,6 @@ export class NDNOutputRequestCommonJsonCodec extends JsonCodec<NDNOutputRequestC
             }
         }
 
-        let source;
-        {
-            const r = DeviceId.from_base_58(o.source);
-            if (r.err) {
-                return r;
-            }
-            source = r.unwrap();
-        }
-
         let target;
         {
             if (o.target) {
@@ -58,12 +50,14 @@ export class NDNOutputRequestCommonJsonCodec extends JsonCodec<NDNOutputRequestC
         }
 
         const referer_object = [];
-        for (const object of o.referer_object) {
-            const r = new NDNDataRefererObjectJsonCodec().decode_object(object);
-            if (r.err) {
-                return r;
+        if (o.referer_object != null) {
+            for (const object of o.referer_object) {
+                const r = NDNDataRefererObject.from_str(object);
+                if (r.err) {
+                    return r;
+                }
+                referer_object.push(r.unwrap());
             }
-            referer_object.push(r.unwrap());
         }
 
         return Ok({
@@ -179,6 +173,8 @@ export interface NDNGetDataOutputRequest {
 
     // 对dir_id有效
     inner_path?: string,
+
+    range?: NDNDataRequestRange
 }
 
 export class NDNGetDataOutputRequestJsonCodec extends JsonCodec<NDNGetDataOutputRequest> {
@@ -213,8 +209,12 @@ export interface NDNGetDataOutputResponse {
     // chunk_id/file_id
     object_id: ObjectId,
 
+    // file's owner
+    owner_id?: ObjectId,
+
     // 所属file的attr
     attr?: Attributes,
+    range?: NDNDataResponseRange,
 
     // content
     length: number,

@@ -127,8 +127,8 @@ export class RequestorHelper {
 
     public static decode_header<T>(resp: Response, name: string, from_str: (s: string) => T): BuckyResult<T> {
         const ret = this.decode_optional_header<T>(resp, name, from_str);
-        if (ret.unwrap().is_some()) {
-            return Ok(ret.unwrap().unwrap());
+        if (ret !== undefined) {
+            return Ok(ret);
         } else {
             const msg = `header not found: ${name}`;
             console.error(msg);
@@ -138,25 +138,14 @@ export class RequestorHelper {
     }
 
 
-    public static decode_optional_header<T>(resp: Response, name: string, from_str: (s: string) => T): BuckyResult<Option<T>> {
+    public static decode_optional_header<T>(resp: Response, name: string, from_str: (s: string) => T): T|undefined {
         const value = resp.headers.get(name);
 
         if (value) {
-            return Ok(Some(from_str(value)));
+            return from_str(value);
         } else {
-            return Ok(None);
+            return undefined;
         }
-    }
-
-
-    public static decode_optional_headers<T>(resp: Response, name: string, from_str: (s: string) => T): BuckyResult<Option<T[]>> {
-        const ret: T[] = [];
-        resp.headers.forEach((value, key) => {
-            if (key === name) {
-                ret.push(from_str(value));
-            }
-        });
-        return Ok(Some(ret));
     }
 
     public static trans_status_code(code: number): BuckyErrorCode {

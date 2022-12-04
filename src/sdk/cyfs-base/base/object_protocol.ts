@@ -60,6 +60,8 @@ export const CYFS_OBJ_TYPE = "cyfs-obj-type";
 
 export const CYFS_OBJ_TYPE_CODE = "cyfs-obj-type-code";
 
+export const CYFS_DATA_RANGE = "cyfs-data-range";
+
 export const CYFS_CREATE_TIME = "cyfs-create-time";
 export const CYFS_UPDATE_TIME = "cyfs-update-time";
 export const CYFS_INSERT_TIME = "cyfs-insert-time";

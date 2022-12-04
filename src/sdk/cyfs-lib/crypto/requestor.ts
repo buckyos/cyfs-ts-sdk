@@ -47,7 +47,7 @@ export class CryptoRequestor {
         }
 
         if (com_req.req_path) {
-            http_req.insert_header(CYFS_REQ_PATH, encodeURI(com_req.req_path));
+            http_req.insert_header(CYFS_REQ_PATH, encodeURIComponent(com_req.req_path));
         }
 
         if (com_req.target) {

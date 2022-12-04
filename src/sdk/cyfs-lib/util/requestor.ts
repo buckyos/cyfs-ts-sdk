@@ -23,7 +23,7 @@ export class UtilRequestor {
         }
 
         if (com_req.req_path) {
-            http_req.insert_header(CYFS_REQ_PATH, encodeURI(com_req.req_path));
+            http_req.insert_header(CYFS_REQ_PATH, encodeURIComponent(com_req.req_path));
         }
 
         if (com_req.target) {
@@ -364,6 +364,7 @@ export class UtilRequestor {
     encode_build_dir_from_object_map_request(req: UtilBuildDirFromObjectMapOutputRequest): HttpRequest {
         const url = this.service_url + "build_dir_from_object_map";
         const http_req = new HttpRequest("Post", url);
+        this.encode_common_headers(req.common, http_req);
         http_req.set_json_body(new UtilBuildDirFromObjectMapOutputRequestCodec().encode_object(req));
 
         return http_req
