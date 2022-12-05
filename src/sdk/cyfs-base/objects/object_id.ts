@@ -1,4 +1,4 @@
-import { Ok, BuckyResult } from "../base/results";
+import { Ok, BuckyResult, Err, BuckyError, BuckyErrorCode } from "../base/results";
 import { Option, OptionDecoder, Some, None, OptionEncoder } from "../base/option";
 import { RawEncode, RawDecode, Compareable } from "../base/raw_encode";
 import { } from "../base/buffer";
@@ -12,10 +12,12 @@ export enum ObjectCategory {
     Standard = "standard",
     Core = "core",
     DecApp = "dec_app",
+    Data = "data"
 }
 
 export const OBJECT_ID_LEN = 32;
 
+export const OBJECT_ID_DATA = 0;
 export const OBJECT_ID_STANDARD = 1;
 export const OBJECT_ID_CORE = 2;
 export const OBJECT_ID_DEC_APP = 3;
@@ -29,6 +31,7 @@ export interface ObjectIdInfoPartten<T> {
     StandardObjectIdInfo: (info: StandardObjectIdInfo) => T;
     CoreObjectIdInfo: (info: CoreObjectIdInfo) => T;
     DecAppObjectIdInfo: (info: DecAppObjectIdInfo) => T;
+    DataObjectidInfo: (data: Uint8Array) => T;
 }
 
 export interface ObjectIdInfoMatcher {
@@ -87,7 +90,15 @@ export class DecAppObjectIdInfo implements ObjectIdInfoMatcher {
     }
 }
 
-export type ObjectIdInfo = (StandardObjectIdInfo | CoreObjectIdInfo | DecAppObjectIdInfo) & ObjectIdInfoMatcher;
+export class DataObjectIdInfo implements ObjectIdInfoMatcher {
+    constructor(private buf: Uint8Array) {}
+
+    match<T>(p: ObjectIdInfoPartten<T>): T {
+        return p.DataObjectidInfo(this.buf);
+    }
+}
+
+export type ObjectIdInfo = (StandardObjectIdInfo | CoreObjectIdInfo | DecAppObjectIdInfo | DataObjectIdInfo) & ObjectIdInfoMatcher;
 
 export class ObjectId implements RawEncode, Compareable<ObjectId> {
     m_buf: Uint8Array;
@@ -107,6 +118,24 @@ export class ObjectId implements RawEncode, Compareable<ObjectId> {
 
     static copy_from_slice(buf: Uint8Array): ObjectId {
         return new ObjectId(buf.slice(0, OBJECT_ID_LEN));
+    }
+
+    static from_data(buf: Uint8Array): BuckyResult<ObjectId> {
+        const len = buf.byteLength;
+        if (len > OBJECT_ID_LEN-1) {
+            const msg = `invalid object id data len! len=${len}, max=${OBJECT_ID_LEN-1}`;
+            console.error(msg);
+            return Err(new BuckyError(BuckyErrorCode.OutOfLimit, msg))
+        }
+
+        const inner_buf = new Uint8Array(OBJECT_ID_LEN);
+        inner_buf[0] = len
+        inner_buf.set(buf, 1);
+        return Ok(new ObjectId(inner_buf))
+    }
+
+    static from_string_as_data(data: string): BuckyResult<ObjectId> {
+        return ObjectId.from_data(new TextEncoder().encode(data))
     }
 
     obj_type_code(): ObjectTypeCode {
@@ -199,36 +228,61 @@ export class ObjectId implements RawEncode, Compareable<ObjectId> {
     }
 
     object_category(): ObjectCategory {
-        if (this.is_stand_object()) {
+        if (this.is_standard_object()) {
             return ObjectCategory.Standard;
         } else if (this.is_core_object()) {
             return ObjectCategory.Core;
-        } else {
+        } else if (this.is_dec_app_object()) {
             return ObjectCategory.DecApp;
+        } else {
+            return ObjectCategory.Data;
         }
     }
 
-    is_stand_object(): boolean {
+    is_standard_object(): boolean {
         const buf = this.as_slice();
         const flag = buf[0];
-        return flag >> 6 === 1;
+        return flag >> 6 === OBJECT_ID_STANDARD;
     }
 
     is_core_object(): boolean {
         const buf = this.as_slice();
         const flag = buf[0];
-        return flag >> 6 === 2;
+        return flag >> 6 === OBJECT_ID_CORE;
     }
 
     is_dec_app_object(): boolean {
         const buf = this.as_slice();
         const flag = buf[0];
-        return flag >> 6 === 3;
+        return flag >> 6 === OBJECT_ID_DEC_APP;
+    }
+
+    is_data(): boolean {
+        const buf = this.as_slice();
+        const flag = buf[0];
+        return flag >> 6 === OBJECT_ID_DATA;
+    }
+
+    data_len(): number {
+        return this.as_slice()[0] & 0b00111111;
+    }
+
+    data(): Uint8Array {
+        const len = this.data_len();
+        return this.as_slice().subarray(1, 1+len)
+    }
+
+    data_as_string(): string {
+        return new TextDecoder().decode(this.data())
     }
 
     info(): ObjectIdInfo {
         const buf = this.as_slice();
         const flag = buf[0];
+        if (flag >> 6 == 0) {
+            const data_len = flag & 0b00111111;
+            return new DataObjectIdInfo(this.as_slice().subarray(1, 1+data_len));
+        }
 
         const decode_flag = (buffer: Uint8Array): [boolean, boolean, boolean, boolean] => {
             const type_code = buffer[0] << 2 >> 4;
@@ -239,7 +293,7 @@ export class ObjectId implements RawEncode, Compareable<ObjectId> {
             return [has_area, has_single_key, has_mn_key, has_owner];
         };
 
-        const decode_rea = (buffer: Uint8Array): Option<Area> => {
+        const decode_area = (buffer: Uint8Array): Option<Area> => {
             // --------------------------------------------
             // (2bit)(4bit)(国家编码8bits)+(运营商编码4bits)+城市编码(14bits)+inner(8bits) = 34 bit
             // --------------------------------------------
@@ -276,7 +330,7 @@ export class ObjectId implements RawEncode, Compareable<ObjectId> {
             ));
         };
 
-        const try_decode_rea = (buffer: Uint8Array): Option<Area> => {
+        const try_decode_area = (buffer: Uint8Array): Option<Area> => {
             if (buffer[1] === 0 &&
                 buffer[2] === 0 &&
                 buffer[3] === 0 &&
@@ -284,7 +338,7 @@ export class ObjectId implements RawEncode, Compareable<ObjectId> {
             ) {
                 return None;
             } else {
-                return decode_rea(buffer);
+                return decode_area(buffer);
             }
         };
 
@@ -295,7 +349,7 @@ export class ObjectId implements RawEncode, Compareable<ObjectId> {
                 // 标准对象 (flag<<2>>4)
                 const obj_type = ((flag & 63) >> 2) as number;
                 const obj_type_code = obj_type;
-                const area = try_decode_rea(buf);
+                const area = try_decode_area(buf);
 
                 return new StandardObjectIdInfo(
                     obj_type_code,
@@ -309,7 +363,7 @@ export class ObjectId implements RawEncode, Compareable<ObjectId> {
 
                 let area;
                 if (has_area) {
-                    area = decode_rea(buf)
+                    area = decode_area(buf)
                 } else {
                     area = None;
                 }
@@ -326,7 +380,7 @@ export class ObjectId implements RawEncode, Compareable<ObjectId> {
                 const [has_area, has_single_key, has_mn_key, has_owner] = decode_flag(buf);
                 let area;
                 if (has_area) {
-                    area = decode_rea(buf)
+                    area = decode_area(buf)
                 } else {
                     area = None;
                 }
@@ -439,6 +493,9 @@ function test() {
         },
         DecAppObjectIdInfo: (_info): void => {
             //
-        }
+        },
+        DataObjectidInfo(data) {
+            //
+        },
     });
 }
