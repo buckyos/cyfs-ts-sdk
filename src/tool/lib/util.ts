@@ -321,7 +321,7 @@ function start_runtime(config: CyfsToolConfig) {
     console.log("start cyfs runtime. pid", child_runtime.pid);
 }
 
-export async function create_stack(endpoint: string, config: CyfsToolConfig, dec_id?: ObjectId): Promise<[SharedCyfsStack, boolean]> {
+export async function create_stack(endpoint: string, config: CyfsToolConfig, dec_id: ObjectId): Promise<[SharedCyfsStack, boolean]> {
     if (endpoint === "ood") {
         return [SharedCyfsStack.open_default(dec_id), true];
     } else if (endpoint === "runtime") {
