@@ -97,7 +97,7 @@ export interface Erc20TransferResult {
     result: number
 }
 
-export type NFTState = "Normal" | {"Auctioning": [number, CoinTokenId, number]} | {"Selling": [number, CoinTokenId]};
+export type SPVNFTState = "Normal" | {"Auctioning": [number, CoinTokenId, number]} | {"Selling": [number, CoinTokenId]};
 
 export interface NFTData {
     nft_id: string;
@@ -107,7 +107,7 @@ export interface NFTData {
     author_id: string;
     reward_amount: number;
     like_count: number;
-    state: NFTState;
+    state: SPVNFTState;
 }
 
 export interface NFTBidRecord {
