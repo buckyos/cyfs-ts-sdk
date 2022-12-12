@@ -1,6 +1,6 @@
 import { u32 } from "@noble/hashes/utils";
 import { BuckyResult, None, ObjectId, Ok } from "../../cyfs-base";
-import { GlobalStateObjectMetaItem, GlobalStatePathAccessItem, GlobalStatePathLinkItem } from "./def";
+import { GlobalStateObjectMetaItem, GlobalStatePathAccessItem, GlobalStatePathConfigItem, GlobalStatePathLinkItem } from "./def";
 import { GlobalStateMetaRequestor } from "./requestor";
 
 export class GlobalStateMetaStub {
@@ -162,6 +162,59 @@ export class GlobalStateMetaStub {
         };
 
         const resp = await this.requestor.clear_object_meta(req);
+        if (resp.err) {
+            return resp;            
+        }
+        return Ok(resp.unwrap().count)
+    }
+
+    // path config
+    async add_path_config(item: GlobalStatePathConfigItem): Promise<BuckyResult<boolean>> {
+        const req = {
+            common: {
+                target_dec_id: this.target_dec_id,
+                target: this.target,
+                flags: 0,
+            },
+            item,
+        };
+
+        const resp = await this.requestor.add_path_config(req);
+        if (resp.err) {
+            return resp;            
+        }
+        return Ok(resp.unwrap().updated)
+    }
+
+    async remove_path_config(
+        item: GlobalStatePathConfigItem,
+    ): Promise<BuckyResult<GlobalStatePathConfigItem | undefined>> {
+        const req = {
+            common: {
+                target_dec_id: this.target_dec_id,
+                target: this.target,
+                flags: 0,
+            },
+            item,
+        };
+
+        const resp = await this.requestor.remove_path_config(req);
+        if (resp.err) {
+            return resp;            
+        }
+        return Ok(resp.unwrap().item)
+    }
+
+    async clear_path_config(): Promise<BuckyResult<number>> {
+        const req = {
+            common: {
+                target_dec_id: this.target_dec_id,
+                target: this.target,
+                flags: 0,
+            },
+        };
+
+        const resp = await this.requestor.clear_path_config(req);
         if (resp.err) {
             return resp;            
         }

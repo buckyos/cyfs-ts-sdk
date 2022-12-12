@@ -4,7 +4,7 @@ import { JsonCodec } from "../base/codec";
 import { HttpRequest } from "../base/http_request";
 import { GlobalStateCategory } from "../root_state/def";
 import { GlobalStatePathAccessItem, GlobalStatePathGroupAccess, MetaAction } from "./def";
-import { GlobalStateMetaAddAccessOutputRequest, GlobalStateMetaAddAccessOutputResponse, GlobalStateMetaAddLinkOutputRequest, GlobalStateMetaAddLinkOutputResponse, GlobalStateMetaAddObjectMetaOutputRequest, GlobalStateMetaAddObjectMetaOutputResponse, GlobalStateMetaClearAccessOutputRequest, GlobalStateMetaClearAccessOutputResponse, GlobalStateMetaClearLinkOutputRequest, GlobalStateMetaClearLinkOutputResponse, GlobalStateMetaClearObjectMetaOutputRequest, GlobalStateMetaClearObjectMetaOutputResponse, GlobalStateMetaRemoveAccessOutputRequest, GlobalStateMetaRemoveAccessOutputResponse, GlobalStateMetaRemoveLinkOutputRequest, GlobalStateMetaRemoveLinkOutputResponse, GlobalStateMetaRemoveObjectMetaOutputRequest, GlobalStateMetaRemoveObjectMetaOutputResponse, MetaOutputRequestCommon } from "./output_request";
+import { GlobalStateMetaAddAccessOutputRequest, GlobalStateMetaAddAccessOutputResponse, GlobalStateMetaAddLinkOutputRequest, GlobalStateMetaAddLinkOutputResponse, GlobalStateMetaAddObjectMetaOutputRequest, GlobalStateMetaAddObjectMetaOutputResponse, GlobalStateMetaAddPathConfigOutputRequest, GlobalStateMetaAddPathConfigOutputResponse, GlobalStateMetaClearAccessOutputRequest, GlobalStateMetaClearAccessOutputResponse, GlobalStateMetaClearLinkOutputRequest, GlobalStateMetaClearLinkOutputResponse, GlobalStateMetaClearObjectMetaOutputRequest, GlobalStateMetaClearObjectMetaOutputResponse, GlobalStateMetaClearPathConfigOutputRequest, GlobalStateMetaClearPathConfigOutputResponse, GlobalStateMetaRemoveAccessOutputRequest, GlobalStateMetaRemoveAccessOutputResponse, GlobalStateMetaRemoveLinkOutputRequest, GlobalStateMetaRemoveLinkOutputResponse, GlobalStateMetaRemoveObjectMetaOutputRequest, GlobalStateMetaRemoveObjectMetaOutputResponse, GlobalStateMetaRemovePathConfigOutputRequest, GlobalStateMetaRemovePathConfigOutputResponse, MetaOutputRequestCommon } from "./output_request";
 
 class MetaRequestorHelper {
     static encode_add_req(req: GlobalStateMetaAddAccessOutputRequest): any {
@@ -54,6 +54,29 @@ export class GlobalStateMetaRequestor {
         http_req.insert_header(CYFS_META_ACTION, action);
     }
 
+    async request<T>(http_req: HttpRequest, name: string, req: any, decoder?: (resp: Response) => Promise<T>): Promise<BuckyResult<T>> {
+        const resp_r = await this.requestor.request(http_req);
+        if (resp_r.err) {
+            return resp_r;
+        }
+        const resp = resp_r.unwrap()
+
+        if (resp.status === 200) {
+            let p;
+            if (decoder) {
+                p = await decoder(resp)
+            } else {
+                p = (await resp.json()) as T;
+            }
+            console.info(`global state meta ${name} success: req=${JSON.stringify(req)}, resp=${JSON.stringify(p)}`);
+            return Ok(p)
+        } else {
+            const e = await RequestorHelper.error_from_resp(resp);
+            console.error(`global state meta ${name} error! req=${JSON.stringify(req)}, ${e}`);
+            return Err(e)
+        }
+    }
+
     // global-state-meta add-access
     encode_add_access_request(req: GlobalStateMetaAddAccessOutputRequest): HttpRequest {
         const url = this.service_url + "access";
@@ -68,21 +91,7 @@ export class GlobalStateMetaRequestor {
         req: GlobalStateMetaAddAccessOutputRequest,
     ): Promise<BuckyResult<GlobalStateMetaAddAccessOutputResponse>> {
         const http_req = this.encode_add_access_request(req);
-        const resp_r = await this.requestor.request(http_req);
-        if (resp_r.err) {
-            return resp_r;
-        }
-        const resp = resp_r.unwrap()
-
-        if (resp.status === 200) {
-            const p = (await resp.json()) as GlobalStateMetaAddAccessOutputResponse;
-            console.info(`global state meta add access success: req=${JSON.stringify(req)}, resp=${JSON.stringify(p)}`);
-            return Ok(p)
-        } else {
-            const e = await RequestorHelper.error_from_resp(resp);
-            console.error(`global state meta add access console.error req=${req}, ${e}`);
-            return Err(e)
-        }
+        return this.request(http_req, "add access", req);
     }
 
     // global-state-meta remove-access
@@ -101,23 +110,9 @@ export class GlobalStateMetaRequestor {
 
     async remove_access(req: GlobalStateMetaRemoveAccessOutputRequest): Promise<BuckyResult<GlobalStateMetaRemoveAccessOutputResponse>> {
         const http_req = this.encode_remove_access_request(req);
-        const resp_r = await this.requestor.request(http_req);
-        if (resp_r.err) {
-            return resp_r;
-        }
-        const resp = resp_r.unwrap()
-
-        if (resp.status === 200) {
-            const p = await MetaRequestorHelper.decode_remove_resp(resp)
-            console.info(
-                `global state meta remove access success: req=${JSON.stringify(req)}, resp=${JSON.stringify(p)}`,
-            );
-            return Ok(p)
-        } else {
-            const e = await RequestorHelper.error_from_resp(resp);
-            console.error(`global state meta remove access console.error req=${req}, ${e}`);
-            return Err(e)
-        }
+        return this.request(http_req, "remove access", req, async (resp) => {
+            return await MetaRequestorHelper.decode_remove_resp(resp)
+        });
     }
 
     // global-state-meta clear-access
@@ -135,26 +130,10 @@ export class GlobalStateMetaRequestor {
     }
 
     async clear_access(
-        
         req: GlobalStateMetaClearAccessOutputRequest,
     ): Promise<BuckyResult<GlobalStateMetaClearAccessOutputResponse>> {
         const http_req = this.encode_clear_access_request(req);
-        const resp_r = await this.requestor.request(http_req);
-        if (resp_r.err) {
-            return resp_r;
-        }
-        const resp = resp_r.unwrap()
-        if (resp.status === 200) {
-            const p = (await resp.json()) as GlobalStateMetaClearAccessOutputResponse
-            console.info(
-                `global state meta clear access success: req=${req}, resp=${JSON.stringify(p)}`
-            );
-            return Ok(p)
-        } else {
-            const e = await RequestorHelper.error_from_resp(resp);
-            console.error(`global state meta clear access console.error req=${req}, ${e}`);
-            return Err(e)
-        }
+        return this.request(http_req, "clear access", req)
     }
 
     // global-state-meta add-link
@@ -171,23 +150,7 @@ export class GlobalStateMetaRequestor {
         req: GlobalStateMetaAddLinkOutputRequest,
     ): Promise<BuckyResult<GlobalStateMetaAddLinkOutputResponse>> {
         const http_req = this.encode_add_link_request(req);
-        const resp_r = await this.requestor.request(http_req);
-        if (resp_r.err) {
-            return resp_r;
-        }
-        const resp = resp_r.unwrap()
-
-        if (resp.status === 200) {
-            const p = (await resp.json()) as GlobalStateMetaAddLinkOutputResponse
-            console.info(
-                `global state meta add link success: req=${req}, resp=${JSON.stringify(p)}`,
-            );
-            return Ok(p)
-        } else {
-            const e = await RequestorHelper.error_from_resp(resp);
-            console.error(`global state meta add link console.error req=${req}, ${e}`);
-            return Err(e)
-        }
+        return this.request(http_req, "add link", req);
     }
 
     // global-state-meta remove-access
@@ -208,23 +171,7 @@ export class GlobalStateMetaRequestor {
         req: GlobalStateMetaRemoveLinkOutputRequest,
     ): Promise<BuckyResult<GlobalStateMetaRemoveLinkOutputResponse>> {
         const http_req = this.encode_remove_link_request(req);
-        const resp_r = await this.requestor.request(http_req);
-        if (resp_r.err) {
-            return resp_r;
-        }
-        const resp = resp_r.unwrap()
-
-        if (resp.status === 200) {
-            const p = (await resp.json()) as GlobalStateMetaRemoveLinkOutputResponse
-            console.info(
-                `global state meta remove link success: req=${req}, resp=${JSON.stringify(p)}`,
-            );
-            return Ok(p)
-        } else {
-            const e = await RequestorHelper.error_from_resp(resp);
-            console.error(`global state meta remove link console.error req=${req}, ${e}`);
-            return Err(e)
-        }
+        return this.request(http_req, "remove link", req);
     }
 
     // global-state-meta clear-link
@@ -241,23 +188,7 @@ export class GlobalStateMetaRequestor {
         req: GlobalStateMetaClearLinkOutputRequest,
     ): Promise<BuckyResult<GlobalStateMetaClearLinkOutputResponse>> {
         const http_req = this.encode_clear_link_request(req);
-        const resp_r = await this.requestor.request(http_req);
-        if (resp_r.err) {
-            return resp_r;
-        }
-        const resp = resp_r.unwrap()
-
-        if (resp.status === 200) {
-            const p = (await resp.json()) as GlobalStateMetaClearLinkOutputResponse
-            console.info(
-                `global state meta clear links success: req=${req}, resp=${JSON.stringify(p)}`
-            );
-            return Ok(p)
-        } else {
-            const e = await RequestorHelper.error_from_resp(resp);
-            console.error(`global state meta clear links console.error req=${req}, ${e}`, req, e);
-            return Err(e)
-        }
+        return this.request(http_req, "clear link", req);
     }
 
     encode_add_object_meta_request(req: GlobalStateMetaAddObjectMetaOutputRequest): HttpRequest {
@@ -277,23 +208,7 @@ export class GlobalStateMetaRequestor {
         req: GlobalStateMetaAddObjectMetaOutputRequest,
     ): Promise<BuckyResult<GlobalStateMetaAddObjectMetaOutputResponse>> {
         const http_req = this.encode_add_object_meta_request(req);
-        const resp_r = await this.requestor.request(http_req);
-        if (resp_r.err) {
-            return resp_r;
-        }
-        const resp = resp_r.unwrap()
-
-        if (resp.status === 200) {
-            const p = (await resp.json()) as GlobalStateMetaAddObjectMetaOutputResponse
-            console.info(
-                `global state meta add object meta success: req=${req}, resp=${JSON.stringify(p)}`
-            );
-            return Ok(p)
-        } else {
-            const e = await RequestorHelper.error_from_resp(resp);
-            console.error(`global state meta add object meta console.error req=${req}, ${e}`, req, e);
-            return Err(e)
-        }
+        return this.request(http_req, "add object meta", req);
     }
 
     encode_remove_object_meta_request(
@@ -315,28 +230,13 @@ export class GlobalStateMetaRequestor {
         req: GlobalStateMetaRemoveObjectMetaOutputRequest,
     ): Promise<BuckyResult<GlobalStateMetaRemoveObjectMetaOutputResponse>> {
         const http_req = this.encode_remove_object_meta_request(req);
-        const resp_r = await this.requestor.request(http_req);
-        if (resp_r.err) {
-            return resp_r;
-        }
-        const resp = resp_r.unwrap()
-
-        if (resp.status === 200) {
+        return this.request(http_req, "remove object meta", req, async (resp) => {
             const resp_obj = await resp.json();
             if (resp_obj.item) {
                 resp_obj.item.access = GlobalStatePathGroupAccess.from_obj(resp_obj.item.access)
             }
-            
-            const p = resp_obj as GlobalStateMetaRemoveObjectMetaOutputResponse
-            console.info(
-                `global state meta add object meta success: req=${req}, resp=${JSON.stringify(p)}`
-            );
-            return Ok(p)
-        } else {
-            const e = await RequestorHelper.error_from_resp(resp);
-            console.error(`global state meta add object meta console.error req=${req}, ${e}`, req, e);
-            return Err(e)
-        }
+            return resp_obj as GlobalStateMetaRemoveObjectMetaOutputResponse;
+        });
     }
 
     encode_clear_object_meta_request(
@@ -358,22 +258,71 @@ export class GlobalStateMetaRequestor {
         req: GlobalStateMetaClearObjectMetaOutputRequest,
     ): Promise<BuckyResult<GlobalStateMetaClearObjectMetaOutputResponse>> {
         const http_req = this.encode_clear_object_meta_request(req);
-        const resp_r = await this.requestor.request(http_req);
-        if (resp_r.err) {
-            return resp_r;
-        }
-        const resp = resp_r.unwrap()
+        return this.request(http_req, "clear object meta", req)
+    }
 
-        if (resp.status === 200) {            
-            const p = (await resp.json()) as GlobalStateMetaClearObjectMetaOutputResponse
-            console.info(
-                `global state meta add object meta success: req=${req}, resp=${JSON.stringify(p)}`
-            );
-            return Ok(p)
-        } else {
-            const e = await RequestorHelper.error_from_resp(resp);
-            console.error(`global state meta add object meta console.error req=${req}, ${e}`, req, e);
-            return Err(e)
-        }
+
+    encode_add_path_config_request(req: GlobalStateMetaAddPathConfigOutputRequest): HttpRequest {
+        const url = this.service_url + "path-config";
+        const http_req = new HttpRequest("Put", url);
+        this.encode_common_headers(
+            MetaAction.GlobalStateAddPathConfig,
+            req.common,
+            http_req,
+        );
+
+        http_req.set_json_body(req);
+        return http_req;
+    }
+
+    async add_path_config(
+        req: GlobalStateMetaAddPathConfigOutputRequest,
+    ): Promise<BuckyResult<GlobalStateMetaAddPathConfigOutputResponse>> {
+        const http_req = this.encode_add_path_config_request(req);
+        return this.request(http_req, "add path config", req);
+    }
+
+    encode_remove_path_config_request(
+        req: GlobalStateMetaRemovePathConfigOutputRequest,
+    ): HttpRequest {
+        const url = this.service_url + "path-config";
+        const http_req = new HttpRequest("Delete", url);
+        this.encode_common_headers(
+            MetaAction.GlobalStateRemovePathConfig,
+            req.common,
+            http_req,
+        );
+
+        http_req.set_json_body(req);
+        return http_req;
+    }
+
+    async remove_path_config(
+        req: GlobalStateMetaRemovePathConfigOutputRequest,
+    ): Promise<BuckyResult<GlobalStateMetaRemovePathConfigOutputResponse>> {
+        const http_req = this.encode_remove_path_config_request(req);
+        return this.request(http_req, "remove path config", req);
+    }
+
+    encode_clear_path_config_request(
+        req: GlobalStateMetaClearPathConfigOutputRequest,
+    ): HttpRequest {
+        const url = this.service_url + "path-config";
+        const http_req = new HttpRequest("Delete", url);
+        this.encode_common_headers(
+            MetaAction.GlobalStateClearPathConfig,
+            req.common,
+            http_req,
+        );
+
+        http_req.set_json_body(req);
+        return http_req;
+    }
+
+    async clear_path_config(
+        req: GlobalStateMetaClearPathConfigOutputRequest,
+    ): Promise<BuckyResult<GlobalStateMetaClearPathConfigOutputResponse>> {
+        const http_req = this.encode_clear_object_meta_request(req);
+        return this.request(http_req, "clear path config", req)
     }
 }
