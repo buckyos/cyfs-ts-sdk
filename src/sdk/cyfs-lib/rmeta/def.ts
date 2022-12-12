@@ -1,4 +1,4 @@
-import { AccessPermission, AccessPermissions, AccessString, ObjectId } from "../../cyfs-base";
+import { AccessPermissions, AccessString, ObjectId } from "../../cyfs-base";
 import { DeviceZoneCategory } from "../access/source";
 
 export enum MetaAction {
@@ -9,6 +9,10 @@ export enum MetaAction {
     GlobalStateAddLink = "global-state-add-link",
     GlobalStateRemoveLink = "global-state-remove-link",
     GlobalStateClearLink = "global-state-clear-link",
+
+    GlobalStateAddObjectMeta = "global-state-add-object-meta",
+    GlobalStateRemoveObjectMeta = "global-state-remove-object-meta",
+    GlobalStateClearObjectMeta = "global-state-clear-object-meta",
 }
 
 export interface GlobalStatePathLinkItem {
@@ -54,6 +58,10 @@ export class GlobalStatePathGroupAccess {
         } else {
             return {}
         }
+    }
+
+    toJSON(): any {
+        return this.to_obj()
     }
 
     static from_obj(obj: any): GlobalStatePathGroupAccess {
@@ -116,4 +124,15 @@ export class GlobalStatePathAccessItem {
     public static from_obj(obj: any): GlobalStatePathAccessItem {
         return new GlobalStatePathAccessItem(obj.path, GlobalStatePathGroupAccess.from_obj(obj.access));
     }
+}
+
+export interface GlobalStateObjectMetaItem {
+    // Object dynamic selector
+    selector: string,
+
+    // Access value
+    access: GlobalStatePathGroupAccess,
+
+    // Object referer's depth, default is 1
+    depth?: number,
 }

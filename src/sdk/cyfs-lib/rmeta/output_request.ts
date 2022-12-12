@@ -1,5 +1,5 @@
 import { ObjectId } from "../../cyfs-base";
-import { GlobalStatePathAccessItem, GlobalStatePathLinkItem } from "./def";
+import { GlobalStateObjectMetaItem, GlobalStatePathAccessItem, GlobalStatePathLinkItem } from "./def";
 
 export interface MetaOutputRequestCommon {
     // 来源DEC
@@ -64,5 +64,31 @@ export interface GlobalStateMetaClearLinkOutputRequest {
 }
 
 export interface GlobalStateMetaClearLinkOutputResponse {
+    count: number,
+}
+
+
+export interface GlobalStateMetaAddObjectMetaOutputRequest {
+    common: MetaOutputRequestCommon,
+
+    item: GlobalStateObjectMetaItem,
+}
+
+export interface GlobalStateMetaAddObjectMetaOutputResponse {
+    updated: boolean,
+}
+
+export type GlobalStateMetaRemoveObjectMetaOutputRequest = GlobalStateMetaAddObjectMetaOutputRequest;
+
+export interface GlobalStateMetaRemoveObjectMetaOutputResponse {
+    item?: GlobalStateObjectMetaItem,
+}
+
+
+export interface GlobalStateMetaClearObjectMetaOutputRequest {
+    common: MetaOutputRequestCommon,
+}
+
+export interface GlobalStateMetaClearObjectMetaOutputResponse {
     count: number,
 }
