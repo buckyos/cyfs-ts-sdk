@@ -1,4 +1,4 @@
-import { Ok, BuckyResult } from "../base/results";
+import { Ok, BuckyResult, BuckyError, BuckyErrorCode, Err } from "../base/results";
 import { OptionDecoder, OptionEncoder } from "../base/option";
 import { RawEncode, RawDecode, Compareable } from "../base/raw_encode";
 import { } from "../base/buffer";
