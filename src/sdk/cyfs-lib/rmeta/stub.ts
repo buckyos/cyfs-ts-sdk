@@ -1,5 +1,4 @@
-import { u32 } from "@noble/hashes/utils";
-import { BuckyResult, None, ObjectId, Ok } from "../../cyfs-base";
+import { BuckyResult, ObjectId, Ok } from "../../cyfs-base";
 import { GlobalStateObjectMetaItem, GlobalStatePathAccessItem, GlobalStatePathConfigItem, GlobalStatePathLinkItem } from "./def";
 import { GlobalStateMetaRequestor } from "./requestor";
 
