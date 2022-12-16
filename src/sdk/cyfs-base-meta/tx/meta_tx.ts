@@ -17,7 +17,7 @@ import {
 } from "../../cyfs-base/objects/object"
 
 import { Ok, BuckyResult } from "../../cyfs-base/base/results";
-import { Option, OptionDecoder, OptionEncoder, } from "../../cyfs-base/base/option";
+import { OptionDecoder, OptionEncoder, } from "../../cyfs-base/base/option";
 import { BuckyNumber, BuckyNumberDecoder } from "../../cyfs-base/base/bucky_number";
 import { Vec, VecDecoder } from "../../cyfs-base/base/vec";
 import { ObjectId } from "../../cyfs-base/objects/object_id";
@@ -67,7 +67,7 @@ export class MetaTxDescContent extends DescContent {
         public gas_coin_id: number,
         public gas_price: number,
         public max_fee: number,
-        public condition: Option<TxCondition>,
+        public condition: TxCondition|undefined,
         public body: MetaTxBody[],  // 实际上这里是TypeBuffer<Vec<MetaTxBody>>
     ) {
         super();
@@ -86,7 +86,7 @@ export class MetaTxDescContent extends DescContent {
         size += new BuckyNumber('u8', this.gas_coin_id).raw_measure().unwrap();
         size += new BuckyNumber('u16', this.gas_price).raw_measure().unwrap();
         size += new BuckyNumber('u32', this.max_fee).raw_measure().unwrap();
-        size += OptionEncoder.from(this.condition, (v: TxCondition) => v).raw_measure().unwrap();
+        size += OptionEncoder.from(this.condition).raw_measure().unwrap();
         size += new TypeBuffer(new Vec(this.body)).raw_measure().unwrap()
         // size += Vec.from(this.body, (v: MetaTxBody) => v).raw_measure().unwrap();
         return Ok(size);
@@ -99,7 +99,7 @@ export class MetaTxDescContent extends DescContent {
         buf = new BuckyNumber('u8', this.gas_coin_id).raw_encode(buf).unwrap();
         buf = new BuckyNumber('u16', this.gas_price).raw_encode(buf).unwrap();
         buf = new BuckyNumber('u32', this.max_fee).raw_encode(buf).unwrap();
-        buf = OptionEncoder.from(this.condition, (v: TxCondition) => v).raw_encode(buf).unwrap();
+        buf = OptionEncoder.from(this.condition).raw_encode(buf).unwrap();
         buf = new TypeBuffer(new Vec(this.body)).raw_encode(buf).unwrap();
         return Ok(buf);
     }
@@ -178,7 +178,7 @@ export class MetaTxDescContentDecoder extends DescContentDecoder<MetaTxDescConte
             [body, buf] = r.unwrap();
         }
 
-        const ret: [MetaTxDescContent, Uint8Array] = [new MetaTxDescContent(nonce.toBigInt(), caller, gas_coin_id.toNumber(), gas_price.toNumber(), max_fee.toNumber(), condition.to((v: TxCondition) => v), body.obj.to((v: MetaTxBody) => v)), buf];
+        const ret: [MetaTxDescContent, Uint8Array] = [new MetaTxDescContent(nonce.toBigInt(), caller, gas_coin_id.toNumber(), gas_price.toNumber(), max_fee.toNumber(), condition.value(), body.obj.to((v: MetaTxBody) => v)), buf];
         return Ok(ret);
     }
 
@@ -235,7 +235,7 @@ export class MetaTx extends NamedObject<MetaTxDescContent, TxBodyContent>{
     private m_ext?: MetaTxExt;
 
     // 提供一个静态的创建方法
-    static create(nonce: JSBI, caller: TxCaller, gas_coin_id: number, gas_price: number, max_fee: number, condition: Option<TxCondition>, body: MetaTxBody[], data: Uint8Array): MetaTx {
+    static create(nonce: JSBI, caller: TxCaller, gas_coin_id: number, gas_price: number, max_fee: number, condition: TxCondition|undefined, body: MetaTxBody[], data: Uint8Array): MetaTx {
         // 创建DescContent部分
         const desc_content = new MetaTxDescContent(nonce, caller, gas_coin_id, gas_price, max_fee, condition, body);
 

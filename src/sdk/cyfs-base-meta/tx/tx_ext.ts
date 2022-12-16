@@ -24,12 +24,11 @@ export class TxExt {
             return Ok(true);
         }
         const desc_signs = this.obj.signs().desc_signs();
-        if(desc_signs.is_none()) {
+        if(!desc_signs) {
             return Ok(false);
         }
 
-        const signs = desc_signs.unwrap();
-        if(signs.length === 0) {
+        if(desc_signs.length === 0) {
             return Ok(false);
         }
 

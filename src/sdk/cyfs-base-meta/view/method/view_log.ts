@@ -1,6 +1,6 @@
 import { BuckyFixedBuffer } from "../../../cyfs-base/base/bucky_buffer";
 import { BuckyNumber} from "../../../cyfs-base/base/bucky_number";
-import { None, Option, OptionEncoder, Some } from "../../../cyfs-base/base/option";
+import { OptionEncoder } from "../../../cyfs-base/base/option";
 import { RawDecode, RawEncode, RawEncodePurpose } from "../../../cyfs-base/base/raw_encode";
 import { BuckyResult, Ok } from "../../../cyfs-base/base/results";
 import { Vec } from "../../../cyfs-base/base/vec";
@@ -14,17 +14,17 @@ export class ViewLog implements RawEncode {
         public to: number,
         topics: (Uint8Array|null)[]
     ){
-        let inner_topics:Option<Uint8Array>[] = [];
+        const inner_topics:(Uint8Array|undefined)[] = [];
         for (const topic of topics) {
             if (topic === null) {
-                inner_topics.push(None);
+                inner_topics.push(undefined);
             } else {
-                inner_topics.push(Some(topic))
+                inner_topics.push(topic)
             }
         }
 
-        this.topic = Vec.from<OptionEncoder<BuckyFixedBuffer>, Option<Uint8Array>>(inner_topics, (v) => 
-            OptionEncoder.from<BuckyFixedBuffer, Uint8Array>(v, (v) => new BuckyFixedBuffer(v))
+        this.topic = Vec.from<OptionEncoder<BuckyFixedBuffer>, Uint8Array|undefined>(inner_topics, (v) =>
+            new OptionEncoder(v?new BuckyFixedBuffer(v):undefined)
         )
     }
 

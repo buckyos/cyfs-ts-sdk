@@ -1,5 +1,5 @@
 import JSBI from "jsbi";
-import { AnyNamedObject, AnyNamedObjectDecoder, BuckyError, BuckyErrorCode, BuckyResult, Err, ObjectId, Ok, Option } from "../../cyfs-base";
+import { AnyNamedObject, AnyNamedObjectDecoder, BuckyError, BuckyErrorCode, BuckyResult, Err, ObjectId, Ok } from "../../cyfs-base";
 import { JsonCodec, JsonCodecHelper } from "../base/codec";
 
 export enum NONDataType {
@@ -71,7 +71,7 @@ export class NONObjectInfo {
         }
 
         const body = this.object!.body();
-        const t = body.is_some()?body.unwrap().update_time():JSBI.BigInt(0);
+        const t = body?body.update_time():JSBI.BigInt(0);
         if (JSBI.greaterThan(t, JSBI.BigInt(0))) {
             console.debug(`object update time: ${this.object_id.to_base_58()}, ${t.toString}`);
         }
@@ -79,15 +79,15 @@ export class NONObjectInfo {
         return Ok(t);
     }
 
-    get_expired_time(): BuckyResult<Option<JSBI>> {
+    get_expired_time(): BuckyResult<JSBI|undefined> {
         const r = this.try_decode();
         if (r.err) {
             return r;
         }
 
         const t = this.object!.desc().expired_time();
-        if (t.is_some()) {
-            console.debug(`object expired time: ${this.object_id.to_base_58()}, ${t.unwrap().toString()}`)
+        if (t) {
+            console.debug(`object expired time: ${this.object_id.to_base_58()}, ${t.toString()}`)
         }
 
         return Ok(t);

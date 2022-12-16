@@ -16,13 +16,11 @@ import {
     bucky_time_now,
     ChunkId, ChunkIdDecoder,
     CHUNK_ID_LEN,
-    Option, OptionDecoder,
+    OptionDecoder,
     OptionEncoder,
     RawDecode,
     RawEncode,
     RawEncodePurpose,
-    Some,
-    None
 } from "..";
 import { Err, Ok } from "../base/results";
 import { BuckyNumber, BuckyNumberDecoder } from "../base/bucky_number";
@@ -304,9 +302,9 @@ export class InnerNodeInfoDecoder implements RawDecode<InnerNodeInfo> {
 }
 
 export class NDNObjectList implements RawEncode {
-    private m_parent_chunk: Option<ChunkId>;
+    private m_parent_chunk?: ChunkId;
     private m_object_map: BuckyHashMap<BuckyString, InnerNodeInfo>;
-    constructor(parent_chunk: Option<ChunkId>, object_map?: BuckyHashMap<BuckyString, InnerNodeInfo>) {
+    constructor(parent_chunk?: ChunkId, object_map?: BuckyHashMap<BuckyString, InnerNodeInfo>) {
         this.m_parent_chunk = parent_chunk;
         if (object_map) {
             this.m_object_map = object_map;
@@ -315,7 +313,7 @@ export class NDNObjectList implements RawEncode {
         }
     }
 
-    parent_chunk(): Option<ChunkId> {
+    parent_chunk(): ChunkId|undefined {
         return this.m_parent_chunk;
     }
 
@@ -324,12 +322,12 @@ export class NDNObjectList implements RawEncode {
     }
 
     raw_measure(ctx?: any): BuckyResult<number> {
-        const parent_chunk = new OptionEncoder(this.m_parent_chunk);
+        const parent_chunk = OptionEncoder.from(this.m_parent_chunk);
         return Ok(parent_chunk.raw_measure().unwrap() + this.m_object_map.raw_measure().unwrap());
     }
 
     raw_encode(buf: Uint8Array, ctx?: any): BuckyResult<Uint8Array> {
-        const parent_chunk = new OptionEncoder(this.m_parent_chunk);
+        const parent_chunk = OptionEncoder.from(this.m_parent_chunk);
         buf = parent_chunk.raw_encode(buf).unwrap();
         buf = this.m_object_map.raw_encode(buf).unwrap();
         return Ok(buf);
@@ -712,19 +710,19 @@ export class Dir extends NamedObject<DirDescContent, DirBodyContent>{
         return DirId.try_from_object_id(this.desc().calculate_id()).unwrap();
     }
 
-    get_data_from_body(id: & ObjectId): Option<Uint8Array> {
-        if (this.body().is_some()) {
+    get_data_from_body(id: ObjectId): Uint8Array|undefined {
+        if (this.body()) {
             return this.body_expect().content().match({
                 Chunk: (chunk) => {
-                    return None;
+                    return undefined;
                 },
                 ObjList: (list) => {
                     const data = list.get(id);
-                    return data ? Some(data.buffer) : None;
+                    return data?.buffer
                 }
             });
         } else {
-            return None;
+            return undefined;
         }
     }
 
@@ -745,7 +743,7 @@ export class Dir extends NamedObject<DirDescContent, DirBodyContent>{
                     const chunk = r.unwrap();
                     const chunk_id = ChunkId.calculate(chunk).unwrap();
 
-                    if (this.body().is_some()) {
+                    if (this.body()) {
                         return this.body_expect().content().match<BuckyResult<void>>({
                             Chunk: (chunk) => {
                                 // 不支持body的chunk模式
@@ -772,7 +770,7 @@ export class Dir extends NamedObject<DirDescContent, DirBodyContent>{
 
                         const builder = new ObjectMutBodyBuilder(this.obj_type(), new DirBodyContent({ obj_list }));
                         const body = builder.update_time(bucky_time_now()).build();
-                        this.set_body(Some(body));
+                        this.set_body(body);
 
                         this.desc().content().set_obj_list(new NDNObjectInfo({ chunk_id }))
                     }

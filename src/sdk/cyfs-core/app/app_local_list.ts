@@ -151,7 +151,7 @@ export class AppLocalList extends NamedObject<AppLocalListDescContent, EmptyProt
         this.desc().content().app_list.add(id);
     }
 
-    remove(id: & DecAppId): void {
+    remove(id: DecAppId): void {
         this.desc().content().app_list.delete(id);
     }
 

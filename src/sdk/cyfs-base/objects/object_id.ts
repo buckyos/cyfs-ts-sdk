@@ -1,5 +1,5 @@
-import { Ok, BuckyResult, Err, BuckyError, BuckyErrorCode } from "../base/results";
-import { Option, OptionDecoder, Some, None, OptionEncoder } from "../base/option";
+import { Ok, BuckyResult } from "../base/results";
+import { OptionDecoder, OptionEncoder } from "../base/option";
 import { RawEncode, RawDecode, Compareable } from "../base/raw_encode";
 import { } from "../base/buffer";
 import { HashValue } from "../crypto/hash";
@@ -41,9 +41,9 @@ export interface ObjectIdInfoMatcher {
 export class StandardObjectIdInfo implements ObjectIdInfoMatcher {
     obj_type_code: ObjectTypeCode;
     obj_type: number;
-    area: Option<Area>;
+    area?: Area;
 
-    constructor(obj_type_code: ObjectTypeCode, obj_type: number, area: Option<Area>) {
+    constructor(obj_type_code: ObjectTypeCode, obj_type: number, area?: Area) {
         this.obj_type_code = obj_type_code;
         this.obj_type = obj_type;
         this.area = area;
@@ -55,12 +55,12 @@ export class StandardObjectIdInfo implements ObjectIdInfoMatcher {
 }
 
 export class CoreObjectIdInfo implements ObjectIdInfoMatcher {
-    area: Option<Area>;
+    area?: Area;
     has_owner: boolean;
     has_single_key: boolean;
     has_mn_key: boolean;
 
-    constructor(area: Option<Area>, has_owner: boolean, has_single_key: boolean, has_mn_key: boolean) {
+    constructor(area: Area|undefined, has_owner: boolean, has_single_key: boolean, has_mn_key: boolean) {
         this.area = area;
         this.has_owner = has_owner;
         this.has_single_key = has_single_key;
@@ -73,12 +73,12 @@ export class CoreObjectIdInfo implements ObjectIdInfoMatcher {
 }
 
 export class DecAppObjectIdInfo implements ObjectIdInfoMatcher {
-    area: Option<Area>;
+    area?: Area;
     has_owner: boolean;
     has_single_key: boolean;
     has_mn_key: boolean;
 
-    constructor(area: Option<Area>, has_owner: boolean, has_single_key: boolean, has_mn_key: boolean) {
+    constructor(area: Area|undefined, has_owner: boolean, has_single_key: boolean, has_mn_key: boolean) {
         this.area = area;
         this.has_owner = has_owner;
         this.has_single_key = has_single_key;
@@ -293,7 +293,7 @@ export class ObjectId implements RawEncode, Compareable<ObjectId> {
             return [has_area, has_single_key, has_mn_key, has_owner];
         };
 
-        const decode_area = (buffer: Uint8Array): Option<Area> => {
+        const decode_area = (buffer: Uint8Array): Area => {
             // --------------------------------------------
             // (2bit)(4bit)(国家编码8bits)+(运营商编码4bits)+城市编码(14bits)+inner(8bits) = 34 bit
             // --------------------------------------------
@@ -322,21 +322,21 @@ export class ObjectId implements RawEncode, Compareable<ObjectId> {
             const city = (y[0] & parseInt("11111111111111", 2));
             const inner = buffer[4];
 
-            return Some(new Area(
+            return new Area(
                 country,
                 carrier,
                 city,
                 inner
-            ));
+            );
         };
 
-        const try_decode_area = (buffer: Uint8Array): Option<Area> => {
+        const try_decode_area = (buffer: Uint8Array): Area|undefined => {
             if (buffer[1] === 0 &&
                 buffer[2] === 0 &&
                 buffer[3] === 0 &&
                 buffer[4] === 0
             ) {
-                return None;
+                return undefined;
             } else {
                 return decode_area(buffer);
             }
@@ -361,11 +361,9 @@ export class ObjectId implements RawEncode, Compareable<ObjectId> {
                 // 核心对象
                 const [has_area, has_single_key, has_mn_key, has_owner] = decode_flag(buf);
 
-                let area;
+                let area = undefined;
                 if (has_area) {
                     area = decode_area(buf)
-                } else {
-                    area = None;
                 }
 
                 return new CoreObjectIdInfo(
@@ -378,11 +376,9 @@ export class ObjectId implements RawEncode, Compareable<ObjectId> {
             case OBJECT_ID_DEC_APP: {
                 // Dec App 对象
                 const [has_area, has_single_key, has_mn_key, has_owner] = decode_flag(buf);
-                let area;
+                let area = undefined;
                 if (has_area) {
                     area = decode_area(buf)
-                } else {
-                    area = None;
                 }
 
                 return new DecAppObjectIdInfo(
@@ -410,17 +406,17 @@ export class ObjectIdDecoder implements RawDecode<ObjectId>{
 
 export class ObjectLink implements RawEncode {
     private m_obj_id: ObjectId;
-    private m_obj_owner: Option<ObjectId>;
+    private m_obj_owner?: ObjectId;
 
     get obj_id(): ObjectId {
         return this.m_obj_id;
     }
 
-    get obj_owner(): Option<ObjectId> {
+    get obj_owner(): ObjectId|undefined {
         return this.m_obj_owner;
     }
 
-    constructor(obj_id: ObjectId, obj_owner: Option<ObjectId>) {
+    constructor(obj_id: ObjectId, obj_owner?: ObjectId) {
         this.m_obj_id = obj_id;
         this.m_obj_owner = obj_owner;
     }
@@ -429,7 +425,7 @@ export class ObjectLink implements RawEncode {
         let bytes = 0;
 
         bytes += this.m_obj_id!.raw_measure().unwrap();
-        bytes += new OptionEncoder(this.m_obj_owner).raw_measure().unwrap();
+        bytes += OptionEncoder.from(this.m_obj_owner).raw_measure().unwrap();
 
         return Ok(bytes);
     }
@@ -441,7 +437,7 @@ export class ObjectLink implements RawEncode {
         }
         buf = ret.unwrap();
 
-        ret = new OptionEncoder(this.m_obj_owner).raw_encode(buf);
+        ret = OptionEncoder.from(this.m_obj_owner).raw_encode(buf);
         if (ret.err) {
             return ret;
         }

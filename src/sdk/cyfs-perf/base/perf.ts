@@ -1,23 +1,21 @@
 import {
     SubDescType,
-    DescTypeInfo, DescContent, DescContentDecoder,
-    BodyContent, BodyContentDecoder,
-    NamedObjectId, NamedObjectIdDecoder,
+    DescTypeInfo, NamedObjectId, NamedObjectIdDecoder,
     NamedObjectDesc, NamedObjectDescDecoder,
     NamedObject, NamedObjectBuilder, NamedObjectDecoder,
     named_id_gen_default,
     named_id_from_base_58,
     named_id_try_from_object_id,
     DeviceIdDecoder,
-    PeopleIdDecoder, from_buf, RawEncode, RawEncodePurpose, BuckyHashMap, Option, ObjectIdDecoder,
+    ObjectIdDecoder,
 } from "../../cyfs-base"
 
 import { Ok, BuckyResult } from "../../cyfs-base"
-import { ObjectId, PeopleId, DeviceId } from "../../cyfs-base"
+import { ObjectId, DeviceId } from "../../cyfs-base"
 
 
 import {
-    BuckyString, BuckyStringDecoder, bucky_time_now,
+    BuckyString, bucky_time_now,
     ProtobufBodyContent, ProtobufBodyContentDecoder, ProtobufCodecHelper, ProtobufDescContent, ProtobufDescContentDecoder
 } from "../../cyfs-base"
 
@@ -32,7 +30,7 @@ import {
 } from "./item";
 import JSBI from 'jsbi';
 import { perf_protos } from '../codec';
-import { CoreObjectType, DecAppId, DecAppIdDecoder } from "../../cyfs-core";
+import { CoreObjectType } from "../../cyfs-core";
 
 
 export class PerfDescTypeInfo extends DescTypeInfo {
@@ -394,7 +392,7 @@ export class PerfIdDecoder extends NamedObjectIdDecoder<PerfDescContent, PerfBod
 
 
 export class Perf extends NamedObject<PerfDescContent, PerfBodyContent>{
-    static create(device: DeviceId, people: ObjectId, dec_id: Option<ObjectId>, id: string, version: string, list: PerfIsolateEntityList): Perf {
+    static create(device: DeviceId, people: ObjectId, dec_id: ObjectId|undefined, id: string, version: string, list: PerfIsolateEntityList): Perf {
         const desc_content = new PerfDescContent(device, people, id, version, "");
         const all: Map<BuckyString, PerfIsolateEntity> = new Map();
         const body_content = new PerfBodyContent(list.time_range!, list.list!);

@@ -10,7 +10,6 @@ import {
 } from "../../cyfs-base/objects/object"
 
 import { Ok, BuckyResult, } from "../../cyfs-base/base/results";
-import { Option } from "../../cyfs-base/base/option";
 import { ObjectId } from "../../cyfs-base/objects/object_id";
 
 import { CoreObjectType } from "../core_obj_type";
@@ -156,16 +155,16 @@ export class TextObjectIdDecoder extends NamedObjectIdDecoder<TextObjectDescCont
 
 
 export class TextObject extends NamedObject<TextObjectDescContent, TextObjectBodyContent>{
-    static build(owner: Option<ObjectId>, id: string, header: string, value: string): TextObjectBuilder {
+    static build(owner: ObjectId|undefined, id: string, header: string, value: string): TextObjectBuilder {
         const desc_content = new TextObjectDescContent(id, header);
         const body_content = new TextObjectBodyContent(value);
-        return new TextObjectBuilder(desc_content, body_content);
+        return new TextObjectBuilder(desc_content, body_content).option_owner(owner);
     }
 
-    static create(owner: Option<ObjectId>, id: string, header: string, value: string): TextObject {
+    static create(owner: ObjectId|undefined, id: string, header: string, value: string): TextObject {
         const builder = this.build(owner, id, header, value);
 
-        return builder.option_owner(owner).no_create_time().build(TextObject);
+        return builder.no_create_time().build(TextObject);
     }
 
     get id(): string {

@@ -7,7 +7,7 @@
 
 
 import { Ok, BuckyResult } from "../../../cyfs-base/base/results";
-import { Option, OptionDecoder, OptionEncoder, } from "../../../cyfs-base/base/option";
+import { OptionDecoder, OptionEncoder, } from "../../../cyfs-base/base/option";
 import { RawDecode, RawEncode } from "../../../cyfs-base/base/raw_encode";
 
 import{ ViewNameResultItem, ViewNameResultItemDecoder } from './view_name_result_item'
@@ -15,19 +15,19 @@ import{ ViewNameResultItem, ViewNameResultItemDecoder } from './view_name_result
 
 export class ViewNameResult implements RawEncode {
     constructor(
-        public results: Option<ViewNameResultItem>,
+        public results?: ViewNameResultItem,
     ){
         // ignore
     }
 
     raw_measure(ctx?:any): BuckyResult<number>{
         let size = 0;
-        size += OptionEncoder.from(this.results, (v:ViewNameResultItem)=>v).raw_measure().unwrap();
+        size += OptionEncoder.from(this.results).raw_measure().unwrap();
         return Ok(size);
     }
 
     raw_encode(buf: Uint8Array, ctx?:any): BuckyResult<Uint8Array>{
-        buf = OptionEncoder.from(this.results, (v:ViewNameResultItem)=>v).raw_encode(buf).unwrap();
+        buf = OptionEncoder.from(this.results).raw_encode(buf).unwrap();
         return Ok(buf);
     }
 }
@@ -43,7 +43,7 @@ export class ViewNameResultDecoder implements RawDecode<ViewNameResult> {
             [results, buf] = r.unwrap();
         }
 
-        const ret:[ViewNameResult, Uint8Array] = [new ViewNameResult(results.to((v:ViewNameResultItem)=>v)), buf];
+        const ret:[ViewNameResult, Uint8Array] = [new ViewNameResult(results.value()), buf];
         return Ok(ret);
     }
 

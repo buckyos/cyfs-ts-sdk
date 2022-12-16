@@ -7,7 +7,7 @@
 
 
 import { Ok, BuckyResult } from "../../cyfs-base/base/results";
-import { Option, OptionDecoder, OptionEncoder, } from "../../cyfs-base/base/option";
+import { OptionDecoder, OptionEncoder, } from "../../cyfs-base/base/option";
 import { BuckyNumber, BuckyNumberDecoder } from "../../cyfs-base/base/bucky_number";
 import { RawDecode, RawEncode } from "../../cyfs-base/base/raw_encode";
 
@@ -23,7 +23,7 @@ export class TxFullInfo implements RawEncode {
         public status: number,
         public block_number: JSBI,
         public tx: MetaTx,
-        public receipt: Option<Receipt>,
+        public receipt?: Receipt,
     ) {
         // ignore
     }
@@ -33,7 +33,7 @@ export class TxFullInfo implements RawEncode {
         size += new BuckyNumber('u8', this.status).raw_measure().unwrap();
         size += new BuckyNumber('i64', this.block_number).raw_measure().unwrap();
         size += this.tx.raw_measure().unwrap();
-        size += OptionEncoder.from(this.receipt, (v: Receipt) => v).raw_measure().unwrap();
+        size += OptionEncoder.from(this.receipt).raw_measure().unwrap();
         return Ok(size);
     }
 
@@ -41,7 +41,7 @@ export class TxFullInfo implements RawEncode {
         buf = new BuckyNumber('u8', this.status).raw_encode(buf).unwrap();
         buf = new BuckyNumber('i64', this.block_number).raw_encode(buf).unwrap();
         buf = this.tx.raw_encode(buf).unwrap();
-        buf = OptionEncoder.from(this.receipt, (v: Receipt) => v).raw_encode(buf).unwrap();
+        buf = OptionEncoder.from(this.receipt).raw_encode(buf).unwrap();
         return Ok(buf);
     }
 }
@@ -84,7 +84,7 @@ export class TxFullInfoDecoder implements RawDecode<TxFullInfo> {
             [receipt, buf] = r.unwrap();
         }
 
-        const ret: [TxFullInfo, Uint8Array] = [new TxFullInfo(status.toNumber(), block_number.toBigInt(), tx, receipt.to((v: Receipt) => v)), buf];
+        const ret: [TxFullInfo, Uint8Array] = [new TxFullInfo(status.toNumber(), block_number.toBigInt(), tx, receipt.value()), buf];
         return Ok(ret);
     }
 

@@ -1,4 +1,4 @@
-import { bucky_time_now, BuckyError, BuckyErrorCode, BuckyResult, Err, None, Ok, Option, Some } from "../../cyfs-base";
+import { bucky_time_now, BuckyError, BuckyErrorCode, BuckyResult, Err, Ok} from "../../cyfs-base";
 import { WebSocketSession } from "./session";
 import { WSPacket } from "./packet";
 import JSBI from 'jsbi';
@@ -8,7 +8,7 @@ export abstract class WebSocketRequestHandler {
         requestor: WebSocketRequestManager,
         cmd: number,
         content: Uint8Array,
-    ): Promise<BuckyResult<Option<Uint8Array>>> {
+    ): Promise<BuckyResult<Uint8Array|undefined>> {
         return this.process_string_request(requestor, cmd, content);
     }
 
@@ -16,7 +16,7 @@ export abstract class WebSocketRequestHandler {
         requestor: WebSocketRequestManager,
         cmd: number,
         content: Uint8Array,
-    ): Promise<BuckyResult<Option<Uint8Array>>> {
+    ): Promise<BuckyResult<Uint8Array|undefined>> {
 
         // 解码到文本
         const de = new TextDecoder();
@@ -29,12 +29,12 @@ export abstract class WebSocketRequestHandler {
 
         // 编码到文本
         const resp = ret.unwrap();
-        if (resp.is_some()) {
+        if (resp) {
             const enc = new TextEncoder();
-            const resp_buffer = enc.encode(resp.unwrap());
-            return Ok(Some(resp_buffer));
+            const resp_buffer = enc.encode(resp);
+            return Ok(resp_buffer);
         } else {
-            return Ok(None);
+            return Ok(undefined);
         }
     }
 
@@ -42,7 +42,7 @@ export abstract class WebSocketRequestHandler {
         requestor: WebSocketRequestManager,
         cmd: number,
         content: string,
-    ): Promise<BuckyResult<Option<string>>> {
+    ): Promise<BuckyResult<string|undefined>> {
         console.error(`on_string_request should had one impl!`);
         return Err(BuckyError.from(BuckyErrorCode.NotImplement));
     }
@@ -55,13 +55,13 @@ export abstract class WebSocketRequestHandler {
 
 class AbortHandle {
     abort() {
-
+        // 
     }
 }
 
 export class RequestItem {
 
-    resp: Option<BuckyResult<Uint8Array>> = None;
+    resp?: BuckyResult<Uint8Array>;
     isTimeout = false;
     resolve?: () => void;
     waker: Promise<void>;
@@ -73,8 +73,8 @@ export class RequestItem {
     }
 
     timeout() {
-        if (this.resp.is_none()) {
-            this.resp = Some(Err(BuckyError.from(BuckyErrorCode.Timeout)));
+        if (!this.resp) {
+            this.resp = Err(BuckyError.from(BuckyErrorCode.Timeout));
         } else {
             console.warn(`ws request timeout but already has resp! send_tick=${this.send_tick}, seq=${this.seq}`);
         }
@@ -178,12 +178,12 @@ export class WebSocketRequestManager {
             }
 
             const resp = ret.unwrap();
-            if (resp.is_none()) {
+            if (!resp) {
                 console.assert(seq === 0);
             } else {
                 console.assert(seq > 0);
 
-                const resp_packet = WSPacket.new_from_buffer(seq, 0, resp.unwrap());
+                const resp_packet = WSPacket.new_from_buffer(seq, 0, resp);
                 const buf = resp_packet.encode();
                 (await requestor.post_to_session(buf)).unwrap();
             }
@@ -210,7 +210,7 @@ export class WebSocketRequestManager {
         }
 
         await item.waker!;
-        return Ok(item.resp.unwrap().unwrap());
+        return Ok(item.resp!.unwrap());
     }
 
     async post_req(cmd: number, msg: string): Promise<BuckyResult<string>> {
@@ -245,7 +245,7 @@ export class WebSocketRequestManager {
         }
 
         // 保存应答并唤醒
-        item.resp = Some(Ok(packet.content));
+        item.resp = Ok(packet.content);
 
         console.log(`ws recv resp, sid=${this.sid}, seq=${item.seq}`);
 

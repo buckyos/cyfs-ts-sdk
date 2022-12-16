@@ -5,7 +5,7 @@ import { RawDecode, RawEncode, RawEncodePurpose } from "./raw_encode";
 import { BuckyResult } from "./results";
 
 export class BuckyTuple implements RawEncode {
-    constructor(public members: RawEncode[]){}
+    constructor(public members: (RawEncode)[]){}
     raw_measure(ctx?: any, purpose?: RawEncodePurpose): BuckyResult<number> {
         let size = 0;
         for (const member of this.members) {
@@ -25,11 +25,11 @@ export class BuckyTuple implements RawEncode {
 }
 
 export class BuckyTupleDecoder<U extends RawEncode, T extends RawDecode<U>> implements RawDecode<BuckyTuple> {
-    constructor(public decoders: T[]){};
+    constructor(public decoders: T[]){}
     raw_decode(buf: Uint8Array, ctx?: any): BuckyResult<[BuckyTuple, Uint8Array]> {
-        let members = [];
+        const members = [];
         for (const decoder of this.decoders) {
-            let r = decoder.raw_decode(buf);
+            const r = decoder.raw_decode(buf);
             if (r.err) {
                 return r;
             }
@@ -38,7 +38,7 @@ export class BuckyTupleDecoder<U extends RawEncode, T extends RawDecode<U>> impl
             members.push(obj)
         }
 
-        let ret: [BuckyTuple, Uint8Array] = [new BuckyTuple(members), buf];
+        const ret: [BuckyTuple, Uint8Array] = [new BuckyTuple(members), buf];
         return Ok(ret);
     }
 

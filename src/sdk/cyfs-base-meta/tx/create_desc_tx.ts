@@ -7,7 +7,7 @@
 
 
 import { Ok, BuckyResult } from "../../cyfs-base/base/results";
-import { Option, OptionDecoder, OptionEncoder, } from "../../cyfs-base/base/option";
+import { OptionDecoder, OptionEncoder, } from "../../cyfs-base/base/option";
 import { BuckyNumber, BuckyNumberDecoder } from "../../cyfs-base/base/bucky_number";
 import { RawDecode, RawEncode } from "../../cyfs-base/base/raw_encode";
 import { HashValue, HashValueDecoder } from "../../cyfs-base/crypto/hash";
@@ -18,7 +18,7 @@ import JSBI from 'jsbi';
 export class CreateDescTx implements RawEncode {
     constructor(
         public coin_id: number,
-        public from: Option<ObjectId>,
+        public from: ObjectId|undefined,
         public value: JSBI,
         public desc_hash: HashValue,
         public price: number,
@@ -29,7 +29,7 @@ export class CreateDescTx implements RawEncode {
     raw_measure(ctx?: any): BuckyResult<number> {
         let size = 0;
         size += new BuckyNumber('u8', this.coin_id).raw_measure().unwrap();
-        size += OptionEncoder.from(this.from, (v: ObjectId) => v).raw_measure().unwrap();
+        size += OptionEncoder.from(this.from).raw_measure().unwrap();
         size += new BuckyNumber('i64', this.value).raw_measure().unwrap();
         size += this.desc_hash.raw_measure().unwrap();
         size += new BuckyNumber('u32', this.price).raw_measure().unwrap();
@@ -38,7 +38,7 @@ export class CreateDescTx implements RawEncode {
 
     raw_encode(buf: Uint8Array, ctx?: any): BuckyResult<Uint8Array> {
         buf = new BuckyNumber('u8', this.coin_id).raw_encode(buf).unwrap();
-        buf = OptionEncoder.from(this.from, (v: ObjectId) => v).raw_encode(buf).unwrap();
+        buf = OptionEncoder.from(this.from).raw_encode(buf).unwrap();
         buf = new BuckyNumber('i64', this.value).raw_encode(buf).unwrap();
         buf = this.desc_hash.raw_encode(buf).unwrap();
         buf = new BuckyNumber('u32', this.price).raw_encode(buf).unwrap();
@@ -93,7 +93,7 @@ export class CreateDescTxDecoder implements RawDecode<CreateDescTx> {
             [price, buf] = r.unwrap();
         }
 
-        const ret: [CreateDescTx, Uint8Array] = [new CreateDescTx(coin_id.toNumber(), from.to((v: ObjectId) => v), value.toBigInt(), desc_hash, price.toNumber()), buf];
+        const ret: [CreateDescTx, Uint8Array] = [new CreateDescTx(coin_id.toNumber(), from.value(), value.toBigInt(), desc_hash, price.toNumber()), buf];
         return Ok(ret);
     }
 
