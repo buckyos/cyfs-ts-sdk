@@ -119,7 +119,6 @@ export class NONRequestor {
     }
 
     encode_put_object_request(req: NONPutObjectOutputRequest): HttpRequest {
-        // #[cfg(debug_assertions)]
         {
             if (!req.object.is_empty()) {
                 const r = req.object.verify();

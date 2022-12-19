@@ -46,6 +46,9 @@ export class NONObjectInfo {
     }
 
     decode(): BuckyResult<null> {
+        if (this.object_id.is_data()) {
+            return Ok(null)
+        }
         const r = new AnyNamedObjectDecoder().raw_decode(this.object_raw);
         if (r.err) {
             console.error(`decode object from object_raw error: obj=${this.object_id.to_base_58()} ${r.val}`);
@@ -70,6 +73,10 @@ export class NONObjectInfo {
             return r;
         }
 
+        if (this.object_id.is_data()) {
+            return Ok(JSBI.BigInt(0))
+        }
+
         const body = this.object!.body();
         const t = body?body.update_time():JSBI.BigInt(0);
         if (JSBI.greaterThan(t, JSBI.BigInt(0))) {
@@ -85,6 +92,10 @@ export class NONObjectInfo {
             return r;
         }
 
+        if (this.object_id.is_data()) {
+            return Ok(undefined)
+        }
+
         const t = this.object!.desc().expired_time();
         if (t) {
             console.debug(`object expired time: ${this.object_id.to_base_58()}, ${t.toString()}`)
@@ -97,6 +108,9 @@ export class NONObjectInfo {
         const r = this.try_decode();
         if (r.err) {
             return r;
+        }
+        if (this.object_id.is_data()) {
+            return Ok(null)
         }
         const calc_id = this.object!.desc().calculate_id();
         

@@ -402,34 +402,6 @@ export class SharedCyfsStack {
         return new GlobalStateAccessorStub(this.root_state_accessor(), target, dec_id);
     }
 
-    /**
-     * @deprecated will delete after ver 0.5.12
-     */
-    root_state_access(): GlobalStateAccessorRequestor {
-        return this.root_state_accessor();
-    }
-
-    /**
-     * @deprecated will delete after ver 0.5.12
-     */
-    root_state_access_stub(target?: ObjectId, dec_id?: ObjectId): GlobalStateAccessorStub {
-        return this.root_state_accessor_stub(target, dec_id)
-    }
-
-    /**
-     * @deprecated will delete after ver 0.5.12
-     */
-    local_cache_access(): GlobalStateAccessorRequestor {
-        return this.local_cache_accessor();
-    }
-
-    /**
-     * @deprecated will delete after ver 0.5.12
-     */
-    local_cache_access_stub(dec_id?: ObjectId): GlobalStateAccessorStub {
-        return this.local_cache_accessor_stub(dec_id)
-    }
-
     local_cache_accessor(): GlobalStateAccessorRequestor {
         return this.m_local_cache_accessor;
     }
