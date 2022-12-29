@@ -1,7 +1,11 @@
 import {
+    BuckyError,
+    BuckyErrorCode,
     BuckyResult,
     DescTypeInfo,
-    DeviceId, DeviceIdDecoder, NamedObject, NamedObjectDecoder,
+    DeviceId, DeviceIdDecoder, Err, NamedObject, NamedObjectBuilder, NamedObjectDecoder,
+    NamedObjectDesc,
+    NamedObjectDescDecoder,
     ObjectId,
     ObjectIdDecoder,
     Ok,
@@ -10,10 +14,12 @@ import {
     ProtobufCodecHelper,
     ProtobufDescContent,
     ProtobufDescContentDecoder,
-    SubDescType
+    SubDescType,
+    Vec
 } from "../../cyfs-base";
 import {CoreObjectType} from "../core_obj_type";
 import {protos} from "../codec";
+import { ChunkCodecDesc } from "./bdt_defs";
 
 export class TransContextTypeInfo extends DescTypeInfo {
     obj_type(): number {
@@ -32,19 +38,14 @@ export class TransContextTypeInfo extends DescTypeInfo {
 }
 
 export class TransContextDescContent extends ProtobufDescContent {
-    private readonly dec_id: ObjectId;
-    private readonly context_name: string;
-
-    constructor(dec_id: ObjectId, context_name: string) {
+    constructor(public context_path: string) {
         super();
-        this.dec_id = dec_id;
-        this.context_name = context_name;
+        this.context_path = context_path;
     }
 
     try_to_proto(): BuckyResult<any> {
         const target = new protos.TransContextDescContent()
-        target.setDecId(ProtobufCodecHelper.encode_buf(this.dec_id).unwrap())
-        target.setContextName(this.context_name)
+        target.setContextPath(this.context_path)
 
         return Ok(target);
     }
@@ -60,9 +61,8 @@ export class TransContextDescContentDecoder extends ProtobufDescContentDecoder<T
         super(protos.TransContextDescContent.deserializeBinary);
     }
     try_from_proto(value: protos.TransContextDescContent): BuckyResult<TransContextDescContent> {
-        const dec_id: ObjectId = ProtobufCodecHelper.decode_buf(value.getDecId_asU8(), new ObjectIdDecoder()).unwrap();
-        const context_name = value.getContextName();
-        return Ok(new TransContextDescContent(dec_id, context_name));
+        const context_name = value.getContextPath();
+        return Ok(new TransContextDescContent(context_name));
     }
 
     type_info(): DescTypeInfo {
@@ -70,25 +70,96 @@ export class TransContextDescContentDecoder extends ProtobufDescContentDecoder<T
     }
 }
 
-export class TransContextBodyContent extends ProtobufBodyContent {
-    private readonly ref_id?: ObjectId;
-    private readonly device_list: DeviceId[];
+export class TransContextDevice {
+    constructor(public target: DeviceId, public chunk_codec_desc: ChunkCodecDesc) {}
+    
+    static from_proto(proto: protos.TransContextDevice): BuckyResult<TransContextDevice> {
+        const target = new DeviceIdDecoder().raw_decode(proto.getTarget_asU8());
+        if (target.err) {
+            return target;
+        }
 
-    constructor(ref_id: ObjectId|undefined, device_list: DeviceId[]) {
+        const info = proto.getChunkCodecInfo();
+
+        let chunk_codec_desc: ChunkCodecDesc;
+        switch (proto.getChunkCodecDesc()) {
+            case protos.TransContextDevice.ChunkCodecDesc.UNKNOWN:
+                chunk_codec_desc = ChunkCodecDesc.Unknown()
+                break;
+            case protos.TransContextDevice.ChunkCodecDesc.STREAM:
+                if (!info) {
+                    return Err(new BuckyError(BuckyErrorCode.InvalidData, `chunk_codec_info field missing! type=${proto.getChunkCodecDesc()}`));
+                }
+                chunk_codec_desc = ChunkCodecDesc.Stream(info.hasStart()?info.getStart():undefined, info.hasEnd()?info.getEnd():undefined, info.hasStep()?info.getStep():undefined)
+                break;
+            case protos.TransContextDevice.ChunkCodecDesc.RAPTOR:
+                if (!info) {
+                    return Err(new BuckyError(BuckyErrorCode.InvalidData, `chunk_codec_info field missing! type=${proto.getChunkCodecDesc()}`));
+                }
+                chunk_codec_desc = ChunkCodecDesc.Raptor(info.hasStart()?info.getStart():undefined, info.hasEnd()?info.getEnd():undefined, info.hasStep()?info.getStep():undefined)
+                break;
+        }
+
+        return Ok(new TransContextDevice(target.unwrap()[0], chunk_codec_desc))
+    }
+
+    to_proto(): BuckyResult<protos.TransContextDevice> {
+        const obj = new protos.TransContextDevice();
+        obj.setTarget(this.target.object_id.as_slice());
+        
+        this.chunk_codec_desc.match({
+            unknown: () => {
+                obj.setChunkCodecDesc(protos.TransContextDevice.ChunkCodecDesc.UNKNOWN)
+            },
+            stream: (start, end, step) => {
+                obj.setChunkCodecDesc(protos.TransContextDevice.ChunkCodecDesc.STREAM)
+                const info = new protos.TransContextDeviceChunkCodecInfo()
+                if (start !== undefined) {
+                    info.setStart(start)
+                }
+                if (end !== undefined) {
+                    info.setEnd(end)
+                }
+                if (step !== undefined) {
+                    info.setStep(step)
+                }
+                obj.setChunkCodecInfo(info)
+                
+            },
+            raptor: (start, end, step) => {
+                obj.setChunkCodecDesc(protos.TransContextDevice.ChunkCodecDesc.RAPTOR)
+                const info = new protos.TransContextDeviceChunkCodecInfo()
+                if (start !== undefined) {
+                    info.setStart(start)
+                }
+                if (end !== undefined) {
+                    info.setEnd(end)
+                }
+                if (step !== undefined) {
+                    info.setStep(step)
+                }
+                obj.setChunkCodecInfo(info)
+            }
+        })
+        return Ok(obj)
+    }
+}
+
+export class TransContextBodyContent extends ProtobufBodyContent {
+    constructor(public device_list: TransContextDevice[]) {
         super();
-        this.ref_id = ref_id;
         this.device_list = device_list;
     }
 
     try_to_proto(): BuckyResult<protos.TransContextBodyContent> {
         const target = new protos.TransContextBodyContent()
-        if(this.ref_id) {
-            target.setRefId(ProtobufCodecHelper.encode_buf(this.ref_id).unwrap())
+        for (const device of this.device_list) {
+            const proto = device.to_proto();
+            if (proto.err) {
+                return proto;
+            }
+            target.addDeviceList(proto.unwrap())
         }
-
-        
-        const device_list = ProtobufCodecHelper.encode_buf_list(this.device_list).unwrap();
-        target.setDeviceListList(device_list)
         return Ok(target);
     }
 
@@ -100,22 +171,76 @@ export class TransContextBodyContentDecoder extends ProtobufBodyContentDecoder<T
     }
 
     try_from_proto(value: protos.TransContextBodyContent): BuckyResult<TransContextBodyContent> {
-        let ref_id;
-        if (value.hasRefId()) {
-            ref_id = ProtobufCodecHelper.decode_buf(value.getRefId_asU8(), new ObjectIdDecoder()).unwrap();
+        const device_list: TransContextDevice[] = [];
+        for (const pdevice of value.getDeviceListList()) {
+            const device = TransContextDevice.from_proto(pdevice);
+            if (device.err) {
+                return device;
+            }
+
+            device_list.push(device.unwrap())
         }
-        const device_list = ProtobufCodecHelper.decode_buf_list(ProtobufCodecHelper.ensure_not_null(value.getDeviceListList_asU8()).unwrap(), new DeviceIdDecoder()).unwrap();
-        return Ok(new TransContextBodyContent(ref_id, device_list));
+
+        return Ok(new TransContextBodyContent(device_list));
     }
 
 }
 
-export class TransContext extends NamedObject<TransContextDescContent, TransContextBodyContent> {
+export class TransContextDesc extends NamedObjectDesc<TransContextDescContent>{
+    // ignore
+}
 
+export class TransContextDescDecoder extends NamedObjectDescDecoder<TransContextDescContent>{
+    // ignore
+}
+
+export class TransContextBuilder extends NamedObjectBuilder<TransContextDescContent, TransContextBodyContent>{
+    // ignore
+}
+
+export class TransContext extends NamedObject<TransContextDescContent, TransContextBodyContent> {
+    static new(dec_id: ObjectId|undefined, context_path: string): TransContext {
+        const path = TransContextPath.fix_path(context_path);
+
+        return new TransContextBuilder(new TransContextDescContent(path), new TransContextBodyContent([])).no_create_time().option_dec_id(dec_id).build(TransContext);
+    }
+    static gen_context_id(dec_id: ObjectId|undefined, context_path: string): ObjectId {
+        return TransContext.new(dec_id, context_path).calculate_id()
+    }
+
+    context_path(): string {
+        return this.desc().content().context_path
+    }
+    device_list(): TransContextDevice[] {
+        return this.body_expect().content().device_list
+    }
 }
 
 export class TransContextDecoder extends NamedObjectDecoder<TransContextDescContent, TransContextBodyContent, TransContext> {
     constructor() {
         super(new TransContextDescContentDecoder(), new TransContextBodyContentDecoder(), TransContext);
+    }
+}
+
+export class TransContextPath {
+    static verify(path: string): boolean {
+        if (path === "/") {
+            return true;
+        }
+
+        return path.startsWith('/') && !path.endsWith('/')
+    }
+
+    static fix_path(path: string): string {
+        if (path === "/") {
+            return path;
+        }
+
+        path = path.replace(/^\$+/g, '').replace(/\/+$/g, '')
+        if (path.startsWith('/')) {
+            return path
+        } else {
+            return `/${path}`
+        }
     }
 }

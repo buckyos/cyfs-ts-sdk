@@ -25,7 +25,7 @@ function upload_dec_app(config: CyfsToolConfig, ctx: CyfsToolContext) {
     // 上传 dec app 包到 chunk manager
     // cyfs-client.exe put <app.zip> -f fid -o <owner>
     const app_dist_path = ctx.get_app_dist_path();
-    exec(`"${config.cyfs_client}" put "${app_dist_path}" -f "${ctx.get_app_fid_path()}" -o "${ctx.app_owner().all}" --use-stack-sn`, process.cwd());
+    exec(`"${config.cyfs_client}" put "${app_dist_path}" -f "${ctx.get_app_fid_path()}" -o "${ctx.app_owner().all}" --use-stack-sn --tcp`, process.cwd());
 }
 
 function increseBuildNo(version: string){

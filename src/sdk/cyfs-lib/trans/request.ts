@@ -1,7 +1,6 @@
 
 import { BuckyError, BuckyErrorCodeEx, BuckyErrorCode, BuckyResult, Err, ObjectId, Ok, DirId, DeviceId, error_code_from_number } from "../../cyfs-base";
-import { NDNOutputRequestCommon, NDNOutputRequestCommonJsonCodec } from "../ndn/output_request";
-import exp from "constants";
+import { NDNOutputRequestCommon } from "../ndn/output_request";
 import {TransContext} from "../../cyfs-core/trans/trans_context";
 
 export interface TransTaskOnAirState {
