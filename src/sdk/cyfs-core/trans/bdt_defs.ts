@@ -1,3 +1,5 @@
+import { BuckyError } from "../../cyfs-base"
+
 export class ChunkCodecDesc {
     private constructor(
         public unknown?: boolean,
@@ -27,4 +29,10 @@ export class ChunkCodecDesc {
 
         return undefined;
     }
+}
+
+export class DownloadTaskState {
+    private constructor(public Downloading: [number/*速度*/, number/*进度*/], public Paused: boolean, public Error: BuckyError/*被cancel的原因*/, public Finished: boolean) {}
+
+    
 }

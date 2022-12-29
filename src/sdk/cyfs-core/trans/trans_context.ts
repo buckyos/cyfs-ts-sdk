@@ -7,15 +7,12 @@ import {
     NamedObjectDesc,
     NamedObjectDescDecoder,
     ObjectId,
-    ObjectIdDecoder,
     Ok,
     ProtobufBodyContent,
     ProtobufBodyContentDecoder,
-    ProtobufCodecHelper,
     ProtobufDescContent,
     ProtobufDescContentDecoder,
     SubDescType,
-    Vec
 } from "../../cyfs-base";
 import {CoreObjectType} from "../core_obj_type";
 import {protos} from "../codec";

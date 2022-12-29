@@ -1,7 +1,8 @@
 
-import { BuckyError, BuckyErrorCodeEx, BuckyErrorCode, BuckyResult, Err, ObjectId, Ok, DirId, DeviceId, error_code_from_number } from "../../cyfs-base";
+import { BuckyError, BuckyErrorCodeEx, BuckyErrorCode, BuckyResult, Err, ObjectId, Ok, DirId, DeviceId, error_code_from_number, AccessString } from "../../cyfs-base";
 import { NDNOutputRequestCommon } from "../ndn/output_request";
 import {TransContext} from "../../cyfs-core/trans/trans_context";
+import JSBI from "jsbi";
 
 export interface TransTaskOnAirState {
     download_percent: number;
@@ -84,17 +85,26 @@ export enum TransTaskStatus {
     Failed = 'Failed',
 }
 
-export interface TransGetContextRequest {
+export interface TransGetContextOutputRequest {
     common: NDNOutputRequestCommon;
-    context_name: string;
+    // get TransContext object by object id
+    context_id?: ObjectId,
+
+    // or get TransContext object by context_path excatly
+    context_path?: string,
 }
 
-export interface TransPutContextRequest {
+export interface TransGetContextOutputResponse {
+    context: TransContext,
+}
+
+export interface TransPutContextOutputRequest {
     common: NDNOutputRequestCommon;
     context: TransContext;
+    access?: AccessString;
 }
 
-export interface TransCreateTaskRequest {
+export interface TransCreateTaskOutputRequest {
     common: NDNOutputRequestCommon;
 
     object_id: ObjectId;
@@ -104,27 +114,28 @@ export interface TransCreateTaskRequest {
 
     // 源设备(hub)列表
     device_list: DeviceId[];
-    context_id?: ObjectId;
+    group?: string,
+    context?: string,
     auto_start: boolean;
 }
 
-export class TransCreateTaskResponse {
+export class TransCreateTaskOutputResponse {
     task_id: string;
 
     constructor(task_id: string) {
         this.task_id = task_id;
     }
 
-    public static async from_response(resp: Response): Promise<BuckyResult<TransCreateTaskResponse>> {
+    public static async from_response(resp: Response): Promise<BuckyResult<TransCreateTaskOutputResponse>> {
         return Ok(await resp.json());
     }
 }
 
-export interface TransTaskRequest {
+export interface TransTaskOutputRequest {
     common: NDNOutputRequestCommon;
     task_id: string;
 }
-export interface TransControlTaskRequest {
+export interface TransControlTaskOutputRequest {
     common: NDNOutputRequestCommon;
     task_id: string,
 
@@ -132,10 +143,15 @@ export interface TransControlTaskRequest {
     action: TransTaskControlAction;
 }
 
-export interface TransGetTaskStateRequest {
+export interface TransGetTaskStateOutputRequest {
     common: NDNOutputRequestCommon;
 
     task_id: string;
+}
+
+export interface TransGetTaskStateOutputResponse {
+    state: TransTaskState,
+    group?: string,
 }
 
 export interface FileDirRef {
@@ -143,34 +159,33 @@ export interface FileDirRef {
     inner_path: string,
 }
 
-export interface TransQueryTasksRequest {
+export interface TransQueryTasksOutputRequest {
     common: NDNOutputRequestCommon;
-    context_id?: ObjectId;
     task_status?: TransTaskStatus;
     range?: [number, number];
 }
 
 export interface TransTaskInfo {
     task_id: string;
-    context_id?: ObjectId;
+    context?: string;
     object_id: ObjectId;
     local_path: string;
     device_list: DeviceId[];
 }
 
-export class TransQueryTaskResponse {
+export class TransQueryTaskOutputResponse {
     task_list: TransTaskInfo[];
 
     constructor(task_list: TransTaskInfo[]) {
         this.task_list = task_list;
     }
 
-    public static async from_response(resp: Response): Promise<BuckyResult<TransQueryTaskResponse>> {
+    public static async from_response(resp: Response): Promise<BuckyResult<TransQueryTaskOutputResponse>> {
         return Ok(await resp.json());
     }
 }
 
-export interface TransPublishFileRequest {
+export interface TransPublishFileOutputRequest {
     common: NDNOutputRequestCommon;
     // 文件所属者
     owner: ObjectId,
@@ -187,14 +202,14 @@ export interface TransPublishFileRequest {
     dirs?: FileDirRef[]
 }
 
-export class TransAddFileResponse {
+export class TransPublishFileOutputResponse {
     file_id: ObjectId
 
     constructor(id: ObjectId) {
         this.file_id = id;
     }
 
-    public static async from_respone(resp: Response): Promise<BuckyResult<TransAddFileResponse>> {
+    public static async from_respone(resp: Response): Promise<BuckyResult<TransPublishFileOutputResponse>> {
         const root = await resp.json();
 
         const r = ObjectId.from_base_58(root.file_id);
@@ -202,6 +217,22 @@ export class TransAddFileResponse {
             return r;
         }
 
-        return Ok(new TransAddFileResponse(r.unwrap()));
+        return Ok(new TransPublishFileOutputResponse(r.unwrap()));
     }
+}
+
+
+export interface TransGetTaskGroupStateOutputRequest {
+    common: NDNOutputRequestCommon,
+
+    group: string,
+    speed_when?: JSBI,
+}
+
+export interface TransGetTaskGroupStateOutputResponse {
+    state: DownloadTaskState,
+    control_state: DownloadTaskControlState,
+    speed?: number,
+    cur_speed: number,
+    history_speed: number,
 }
