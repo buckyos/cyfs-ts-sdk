@@ -55,7 +55,7 @@ export class DeviceDescTypeInfo extends DescTypeInfo {
         return {
             owner_type: "option",   // 是否有主，"disable": 禁用，"option": 可选
             area_type: "option",    // 是否有区域信息，"disable": 禁用，"option": 可选
-            author_type: "option",  // 是否有作者，"disable": 禁用，"option": 可选
+            author_type: "disable",  // 是否有作者，"disable": 禁用，"option": 可选
             key_type: "single_key"  // 公钥类型，"disable": 禁用，"single_key": 单PublicKey，"mn_key": M-N 公钥对
         }
     }
