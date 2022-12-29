@@ -1790,6 +1790,9 @@ export class NamedObjectDescBuilder<T extends DescContent> {
                 this.m_owner = value;
                 break;
             }
+            case "disable": {
+                console.error(`set owner on owner disabled object!`)
+            }
         }
         return this;
     }
@@ -1799,6 +1802,9 @@ export class NamedObjectDescBuilder<T extends DescContent> {
             case "option": {
                 this.m_owner = value;
                 break;
+            }
+            case "disable": {
+                console.error(`set owner on owner disabled object!`)
             }
         }
         return this;
@@ -1810,6 +1816,9 @@ export class NamedObjectDescBuilder<T extends DescContent> {
                 this.m_area = value;
                 break;
             }
+            case "disable": {
+                console.error(`set area on area disabled object!`)
+            }
         }
         return this;
     }
@@ -1819,6 +1828,9 @@ export class NamedObjectDescBuilder<T extends DescContent> {
             case "option": {
                 this.m_area = value;
                 break;
+            }
+            case "disable": {
+                console.error(`set area on area disabled object!`)
             }
         }
         return this;
@@ -1830,6 +1842,9 @@ export class NamedObjectDescBuilder<T extends DescContent> {
                 this.m_author = value;
                 break;
             }
+            case "disable": {
+                console.error(`set author on author disabled object!`)
+            }
         }
         return this;
     }
@@ -1839,6 +1854,9 @@ export class NamedObjectDescBuilder<T extends DescContent> {
             case "option": {
                 this.m_author = value;
                 break;
+            }
+            case "disable": {
+                console.error(`set author on author disabled object!`)
             }
         }
         return this;
@@ -1850,6 +1868,9 @@ export class NamedObjectDescBuilder<T extends DescContent> {
                 this.m_public_key = value;
                 break;
             }
+            default: {
+                console.error(`set single_key on key ${this.m_desc_content.type_info().sub_desc_type().key_type} object!`)
+            }
         }
         return this;
     }
@@ -1859,6 +1880,9 @@ export class NamedObjectDescBuilder<T extends DescContent> {
             case "single_key": {
                 this.m_public_key = value;
                 break;
+            }
+            default: {
+                console.error(`set single_key on key ${this.m_desc_content.type_info().sub_desc_type().key_type} object!`)
             }
         }
         return this;
@@ -1870,6 +1894,9 @@ export class NamedObjectDescBuilder<T extends DescContent> {
                 this.m_public_key = value;
                 break;
             }
+            default: {
+                console.error(`set mn_key on key ${this.m_desc_content.type_info().sub_desc_type().key_type} object!`)
+            }
         }
         return this;
     }
@@ -1879,6 +1906,9 @@ export class NamedObjectDescBuilder<T extends DescContent> {
             case "mn_key": {
                 this.m_public_key = value;
                 break;
+            }
+            default: {
+                console.error(`set mn_key on key ${this.m_desc_content.type_info().sub_desc_type().key_type} object!`)
             }
         }
         return this;
@@ -1891,6 +1921,9 @@ export class NamedObjectDescBuilder<T extends DescContent> {
                 this.m_public_key = value;
                 break;
             }
+            default: {
+                console.error(`set key on key ${this.m_desc_content.type_info().sub_desc_type().key_type} object!`)
+            }
         }
         return this;
     }
@@ -1901,6 +1934,9 @@ export class NamedObjectDescBuilder<T extends DescContent> {
             case "mn_key": {
                 this.m_public_key = value;
                 break;
+            }
+            default: {
+                console.error(`set key on key ${this.m_desc_content.type_info().sub_desc_type().key_type} object!`)
             }
         }
         return this;
