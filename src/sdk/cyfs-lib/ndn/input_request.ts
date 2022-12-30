@@ -124,6 +124,12 @@ export interface NDNGetDataInputRequest {
 
     // 对dir_id有效
     inner_path?: string,
+
+    // get data from context instead of common.target
+    context?: string,
+
+    // get data task's group
+    group?: string,
 }
 
 export class NDNGetDataInputRequestJsonCodec extends JsonCodec<NDNGetDataInputRequest> {
@@ -134,6 +140,8 @@ export class NDNGetDataInputRequestJsonCodec extends JsonCodec<NDNGetDataInputRe
             object_id: param.object_id.to_base_58(),
             data_type: param.data_type,
             inner_path: param.inner_path,
+            context: param.context,
+            group: param.group
         };
         if (param.range) {
             val.range = param.range.toString();
@@ -161,7 +169,9 @@ export class NDNGetDataInputRequestJsonCodec extends JsonCodec<NDNGetDataInputRe
             object_id: id.unwrap(),
             data_type: o.data_type,
             range,
-            inner_path: o.inner_path
+            inner_path: o.inner_path,
+            context: o.context,
+            group: o.group
         })
     }
 }
@@ -177,6 +187,9 @@ export interface NDNGetDataInputResponse {
 
     range?: NDNDataResponseRange,
 
+    // task group
+    group?: string,
+
     length: number,
     // TODO: 这里在rust中是个Reader，在ts里应该是什么？
     data: Uint8Array,
@@ -188,7 +201,8 @@ export class NDNGetDataInputResponseJsonCodec extends JsonCodec<NDNGetDataInputR
         const o: any = {
             object_id: param.object_id.to_base_58(),
             length: param.length,
-            data: param.data.toHex()
+            data: param.data.toHex(),
+            group: param.group
         }
         if (param.attr) {
             o.attr = param.attr.flags;
@@ -236,7 +250,8 @@ export class NDNGetDataInputResponseJsonCodec extends JsonCodec<NDNGetDataInputR
             attr,
             range,
             length: o.length,
-            data
+            data,
+            group: o.group
         })
     }
 }

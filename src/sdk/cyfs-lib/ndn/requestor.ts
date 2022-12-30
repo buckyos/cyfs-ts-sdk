@@ -1,4 +1,4 @@
-import { Attributes, CYFS_ATTRIBUTES, CYFS_OBJECT_ID, BuckyResult, CYFS_API_LEVEL, CYFS_DEC_ID, CYFS_FLAGS, CYFS_NDN_ACTION, CYFS_REFERER_OBJECT, CYFS_RESULT, CYFS_TARGET, Err, ObjectId, Ok, CYFS_REQ_PATH, CYFS_INNER_PATH, CYFS_OWNER_ID, CYFS_DATA_RANGE } from "../../cyfs-base";
+import { Attributes, CYFS_ATTRIBUTES, CYFS_OBJECT_ID, BuckyResult, CYFS_API_LEVEL, CYFS_DEC_ID, CYFS_FLAGS, CYFS_NDN_ACTION, CYFS_REFERER_OBJECT, CYFS_RESULT, CYFS_TARGET, Err, ObjectId, Ok, CYFS_REQ_PATH, CYFS_INNER_PATH, CYFS_OWNER_ID, CYFS_DATA_RANGE, CYFS_CONTEXT, CYFS_TASK_GROUP } from "../../cyfs-base";
 import { BaseRequestor, RequestorHelper } from "../base/base_requestor";
 import { HttpRequest } from "../base/http_request";
 import { NDNDataResponseRange } from "../base/range";
@@ -158,6 +158,15 @@ export class NDNRequestor {
         if (req.inner_path) {
             http_req.insert_header(CYFS_INNER_PATH, encodeURIComponent(req.inner_path));
         }
+        if (req.context) {
+            http_req.insert_header(CYFS_CONTEXT, encodeURIComponent(req.context))
+        }
+        if (req.group) {
+            http_req.insert_header(CYFS_TASK_GROUP, encodeURIComponent(req.group))
+        }
+        if (req.range) {
+            http_req.insert_header("Range", req.range.toString())
+        }
 
         return http_req;
     }
@@ -191,6 +200,9 @@ export class NDNRequestor {
         if (length.err) {
             return length;
         }
+        const group = RequestorHelper.decode_optional_header(resp, CYFS_TASK_GROUP, (s) => {
+            return decodeURIComponent(s)
+        });
         const ret = {
             object_id: object_id.unwrap(),
             attr,
@@ -199,6 +211,7 @@ export class NDNRequestor {
 
             length: length.unwrap(),
             data: new Uint8Array(data),
+            group
         };
 
         return Ok(ret);
