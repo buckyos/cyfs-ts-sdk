@@ -3,6 +3,7 @@ import { BuckyError, BuckyErrorCodeEx, BuckyErrorCode, BuckyResult, Err, ObjectI
 import { NDNOutputRequestCommon } from "../ndn/output_request";
 import {TransContext} from "../../cyfs-core/trans/trans_context";
 import JSBI from "jsbi";
+import { DownloadTaskControlState, DownloadTaskState } from "../../cyfs-core";
 
 export interface TransTaskOnAirState {
     download_percent: number;
@@ -42,7 +43,7 @@ export class TransTaskStateInfo {
         try {
             json = JSON.parse(text);
         } catch (error) {
-            const msg = `parse TransTaskStateInfo from resp error! ${text}, ${error.to_string()}`;
+            const msg = `parse TransTaskStateInfo from resp error! ${text}, ${error}`;
             console.error(msg);
             return Err(new BuckyError(BuckyErrorCode.InvalidFormat, msg));
         }
@@ -229,10 +230,35 @@ export interface TransGetTaskGroupStateOutputRequest {
     speed_when?: JSBI,
 }
 
-export interface TransGetTaskGroupStateOutputResponse {
-    state: DownloadTaskState,
+export class TransGetTaskGroupStateOutputResponse {
+    constructor(public state: DownloadTaskState,
+        public control_state: DownloadTaskControlState,
+        public speed: number|undefined,
+        public cur_speed: number,
+        public history_speed: number) {}
+
+    static async from_response(resp: Response): Promise<TransGetTaskGroupStateOutputResponse> {
+        const root = await resp.json();
+        const state = DownloadTaskState.from_obj(root.state);
+        return new TransGetTaskGroupStateOutputResponse(state, root.control_state, root.speed, root.cur_speed, root.history_speed);
+    }
+    
+}
+
+export enum TransTaskGroupControlAction {
+    Resume,
+    Cancel,
+    Pause,
+}
+
+
+export interface TransControlTaskGroupOutputRequest {
+    common: NDNOutputRequestCommon,
+
+    group: string,
+    action: TransTaskGroupControlAction,
+}
+
+export interface TransControlTaskGroupOutputResponse {
     control_state: DownloadTaskControlState,
-    speed?: number,
-    cur_speed: number,
-    history_speed: number,
 }
