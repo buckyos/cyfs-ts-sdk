@@ -200,18 +200,11 @@ export class NDNGetDataInputResponseJsonCodec extends JsonCodec<NDNGetDataInputR
     encode_object(param: NDNGetDataInputResponse): any {
         const o: any = {
             object_id: param.object_id.to_base_58(),
+            owner_id: param.owner_id?.to_base_58(),
+            attr: param.attr?.flags,
             length: param.length,
-            data: param.data.toHex(),
-            group: param.group
-        }
-        if (param.attr) {
-            o.attr = param.attr.flags;
-        }
-        if (param.owner_id) {
-            o.owner_id = param.owner_id.to_base_58()
-        }
-        if (param.range) {
-            o.range = param.range.toString()
+            group: param.group,
+            range: param.range?.toString()
         }
         return o;
     }
