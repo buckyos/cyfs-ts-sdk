@@ -4,7 +4,7 @@ import * as cyfs from '../../sdk';
 import JSBI from 'jsbi';
 import { Command } from "commander";
 import { CyfsToolConfig } from "../lib/util";
-import fetch, { Request } from 'node-fetch'
+import fetch from 'node-fetch'
 
 export function makeCommand(config: CyfsToolConfig) {
     return new Command("desc")
@@ -29,7 +29,7 @@ function create_people(mnemonic: string): [cyfs.People, cyfs.PrivateKey] {
         0);
     const pk = gen.sub_key(bip_path).unwrap();
 
-    const people = cyfs.People.create(cyfs.None, [], pk.public(), cyfs.Some(cyfs.Area.from_str("00:00:0000:00").unwrap()), undefined, undefined, (build) => {
+    const people = cyfs.People.create(undefined, [], pk.public(), cyfs.Area.from_str("00:00:0000:00").unwrap(), undefined, undefined, (build) => {
         build.no_create_time()
     });
 
@@ -78,7 +78,7 @@ function create_device(owner: cyfs.ObjectId, pk: cyfs.PrivateKey, category: cyfs
     console.info(`unique_str: ${unique_id} -> ${unique.as_slice().toHex()}`);
 
     const device = cyfs.Device.create(
-        cyfs.Some(owner),
+        owner,
         unique,
         [],
         [],
@@ -197,7 +197,7 @@ async function run(option: any) {
 
                         // People上链
                         if (meta_people) {
-                            await meta_client.update_desc(people, cyfs.SavedMetaObject.try_from(people).unwrap(), cyfs.None, cyfs.None, people_pk);
+                            await meta_client.update_desc(people, cyfs.SavedMetaObject.try_from(people).unwrap(), undefined, undefined, people_pk);
                         } else {
                             await meta_client.create_desc(people, cyfs.SavedMetaObject.try_from(people).unwrap(), JSBI.BigInt(0), 0, 0, people_pk);
                         }
@@ -288,7 +288,7 @@ async function run(option: any) {
 
                 // People上链
                 if (meta_people) {
-                    await meta_client.update_desc(people, cyfs.SavedMetaObject.try_from(people).unwrap(), cyfs.None, cyfs.None, people_pk);
+                    await meta_client.update_desc(people, cyfs.SavedMetaObject.try_from(people).unwrap(), undefined, undefined, people_pk);
                 } else {
                     await meta_client.create_desc(people, cyfs.SavedMetaObject.try_from(people).unwrap(), JSBI.BigInt(0), 0, 0, people_pk);
                 }

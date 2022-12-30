@@ -5,7 +5,7 @@ import {ObjectId, ObjectIdDecoder} from "../objects/object_id";
 import { NameRecord, NameRecordDecoder } from "./name_record";
 import { BuckyMap, BuckyMapDecoder } from "../base/bucky_map";
 import { BuckyString, BuckyStringDecoder } from "../base/bucky_string";
-import { Option, OptionDecoder, OptionEncoder } from "../base/option";
+import { OptionDecoder, OptionEncoder } from "../base/option";
 
 // #[derive(Clone, Debug, RawEncode, RawDecode)]
 // #[cyfs(optimize_option)]
@@ -23,7 +23,7 @@ export class NameInfo {
         public sub_records : BuckyMap<BuckyString, NameRecord>,
         //直接记录
         public record : NameRecord,
-        public owner: Option<ObjectId>,
+        public owner?: ObjectId,
     ){
         //
     }
@@ -32,14 +32,14 @@ export class NameInfo {
         let size = 0;
         size += this.sub_records.raw_measure().unwrap();
         size += this.record.raw_measure().unwrap();
-        size += new OptionEncoder(this.owner).raw_measure().unwrap();
+        size += OptionEncoder.from(this.owner).raw_measure().unwrap();
         return Ok(size);
     }
 
     raw_encode(buf: Uint8Array, ctx?:any): BuckyResult<Uint8Array>{
         buf = this.sub_records.raw_encode(buf).unwrap();
         buf = this.record.raw_encode(buf).unwrap();
-        buf = new OptionEncoder(this.owner).raw_encode(buf).unwrap();
+        buf = OptionEncoder.from(this.owner).raw_encode(buf).unwrap();
         return Ok(buf);
     }
 }

@@ -1,5 +1,5 @@
 import { RouterHandlerCategory, RouterHandlerAction, RouterHandlerChain } from "../def";
-import { BuckyError, BuckyErrorCode, BuckyResult, Err, None, Ok, Option, Some, EventListenerAsyncRoutineT, ObjectId } from "../../../cyfs-base";
+import { BuckyError, BuckyErrorCode, BuckyResult, Err, Ok, EventListenerAsyncRoutineT, ObjectId } from "../../../cyfs-base";
 import { WebSocketRequestHandler, WebSocketRequestManager } from "../../ws/request";
 import {
     RouterAddHandlerParam,
@@ -201,7 +201,7 @@ export class RouterWSHandlerHandlerManagerImpl {
         return unregister_item;
     }
 
-    static async on_event(manager: RouterWSHandlerHandlerManagerImpl, content: string): Promise<BuckyResult<Option<string>>> {
+    static async on_event(manager: RouterWSHandlerHandlerManagerImpl, content: string): Promise<BuckyResult<string|undefined>> {
         const event: RouterWSHandlerEventParam = JSON.parse(content);
         const full_id = RouterWSHandlerHandlerManagerImpl.gen_full_id(event.chain, event.category, event.id);
 
@@ -219,7 +219,7 @@ export class RouterWSHandlerHandlerManagerImpl {
         }
 
         const resp = ret.unwrap();
-        return Ok(Some(resp));
+        return Ok(resp);
     }
 
 
@@ -277,7 +277,7 @@ class RouterWSHandlerRequestHandler extends WebSocketRequestHandler {
 
     async on_string_request(requestor: WebSocketRequestManager,
         cmd: number,
-        content: string): Promise<BuckyResult<Option<string>>> {
+        content: string): Promise<BuckyResult<string|undefined>> {
         switch (cmd) {
             case ROUTER_WS_HANDLER_CMD_EVENT:
                 return await RouterWSHandlerHandlerManagerImpl.on_event(this.owner, content);

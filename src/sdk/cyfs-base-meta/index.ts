@@ -78,6 +78,7 @@ export * from './tx/nft_like_tx';
 export * from './tx/nft_sell_tx';
 export * from './tx/nft_sell_tx2';
 export * from './tx/nft_create2_tx';
+export * from './tx/nft_state';
 export * from './types';
 export * from './view/chain_status';
 export * from './view/gas_price';

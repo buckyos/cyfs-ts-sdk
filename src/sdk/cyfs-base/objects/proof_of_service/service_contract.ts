@@ -7,7 +7,7 @@
 
 
 import { Ok, BuckyResult } from "../../base/results";
-import { Option, OptionDecoder, OptionEncoder, } from "../../base/option";
+import { OptionDecoder, OptionEncoder, } from "../../base/option";
 import { BuckyNumber, BuckyNumberDecoder } from "../../base/bucky_number";
 import { RawDecode, RawEncode } from "../../base/raw_encode";
 import { ObjectId, ObjectIdDecoder } from "../object_id";
@@ -20,13 +20,13 @@ export class ServiceContract implements RawEncode {
     constructor(
         public buyer: ObjectId,
         public seller: ObjectId,
-        public customer: Option<ObjectId>,
+        public customer: ObjectId|undefined,
         public service_type: number,
         public service_start: JSBI,
         public service_end: JSBI,
-        public coin_id: Option<number>,
-        public total_price: Option<JSBI>,
-        public advance_payment: Option<JSBI>,
+        public coin_id: number|undefined,
+        public total_price: JSBI|undefined,
+        public advance_payment: JSBI|undefined,
         public contract_body: ServiceContractBody,
     ) {
         // ignore
@@ -36,13 +36,13 @@ export class ServiceContract implements RawEncode {
         let size = 0;
         size += this.buyer.raw_measure().unwrap();
         size += this.seller.raw_measure().unwrap();
-        size += OptionEncoder.from(this.customer, (v: ObjectId) => v).raw_measure().unwrap();
+        size += OptionEncoder.from(this.customer).raw_measure().unwrap();
         size += new BuckyNumber('u32', this.service_type).raw_measure().unwrap();
         size += new BuckyNumber('u64', this.service_start).raw_measure().unwrap();
         size += new BuckyNumber('u64', this.service_end).raw_measure().unwrap();
-        size += OptionEncoder.from(this.coin_id, (v: number) => new BuckyNumber('u8', v)).raw_measure().unwrap();
-        size += OptionEncoder.from(this.total_price, (v: JSBI) => new BuckyNumber('u64', v)).raw_measure().unwrap();
-        size += OptionEncoder.from(this.advance_payment, (v: JSBI) => new BuckyNumber('u64', v)).raw_measure().unwrap();
+        size += OptionEncoder.from(this.coin_id, 'u8').raw_measure().unwrap();
+        size += OptionEncoder.from(this.total_price, 'u64').raw_measure().unwrap();
+        size += OptionEncoder.from(this.advance_payment, 'u64').raw_measure().unwrap();
         size += this.contract_body.raw_measure().unwrap();
         return Ok(size);
     }
@@ -50,13 +50,13 @@ export class ServiceContract implements RawEncode {
     raw_encode(buf: Uint8Array, ctx?: any): BuckyResult<Uint8Array> {
         buf = this.buyer.raw_encode(buf).unwrap();
         buf = this.seller.raw_encode(buf).unwrap();
-        buf = OptionEncoder.from(this.customer, (v: ObjectId) => v).raw_encode(buf).unwrap();
+        buf = OptionEncoder.from(this.customer).raw_encode(buf).unwrap();
         buf = new BuckyNumber('u32', this.service_type).raw_encode(buf).unwrap();
         buf = new BuckyNumber('u64', this.service_start).raw_encode(buf).unwrap();
         buf = new BuckyNumber('u64', this.service_end).raw_encode(buf).unwrap();
-        buf = OptionEncoder.from(this.coin_id, (v: number) => new BuckyNumber('u8', v)).raw_encode(buf).unwrap();
-        buf = OptionEncoder.from(this.total_price, (v: JSBI) => new BuckyNumber('u64', v)).raw_encode(buf).unwrap();
-        buf = OptionEncoder.from(this.advance_payment, (v: JSBI) => new BuckyNumber('u64', v)).raw_encode(buf).unwrap();
+        buf = OptionEncoder.from(this.coin_id, 'u8').raw_encode(buf).unwrap();
+        buf = OptionEncoder.from(this.total_price, 'u64').raw_encode(buf).unwrap();
+        buf = OptionEncoder.from(this.advance_payment, 'u64').raw_encode(buf).unwrap();
         buf = this.contract_body.raw_encode(buf).unwrap();
         return Ok(buf);
     }
@@ -154,7 +154,7 @@ export class ServiceContractDecoder implements RawDecode<ServiceContract> {
             [contract_body, buf] = r.unwrap();
         }
 
-        const ret: [ServiceContract, Uint8Array] = [new ServiceContract(buyer, seller, customer.to((v: ObjectId) => v), service_type.toNumber(), service_start.toBigInt(), service_end.toBigInt(), coin_id.to((v) => v.toNumber()), total_price.to((v) => v.toBigInt()), advance_payment.to((v) => v.toBigInt()), contract_body), buf];
+        const ret: [ServiceContract, Uint8Array] = [new ServiceContract(buyer, seller, customer.value(), service_type.toNumber(), service_start.toBigInt(), service_end.toBigInt(), coin_id.value()?.toNumber(), total_price.value()?.toBigInt(), advance_payment.value()?.toBigInt(), contract_body), buf];
         return Ok(ret);
     }
 

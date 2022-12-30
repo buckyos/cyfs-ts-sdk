@@ -1,16 +1,15 @@
 import {
     BuckyResult,
     DescTypeInfo,
-    DeviceId, DeviceIdDecoder, NamedObject, NamedObjectDecoder, None,
+    DeviceId, DeviceIdDecoder, NamedObject, NamedObjectDecoder,
     ObjectId,
     ObjectIdDecoder,
     Ok,
-    Option,
     ProtobufBodyContent,
     ProtobufBodyContentDecoder,
     ProtobufCodecHelper,
     ProtobufDescContent,
-    ProtobufDescContentDecoder, Some,
+    ProtobufDescContentDecoder,
     SubDescType
 } from "../../cyfs-base";
 import {CoreObjectType} from "../core_obj_type";

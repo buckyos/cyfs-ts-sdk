@@ -40,7 +40,7 @@ export class UtilRequestor {
         return http_req;
     }
 
-    async decode_get_device_response(resp: & Response): Promise<BuckyResult<UtilGetDeviceResponse>> {
+    async decode_get_device_response(resp: Response): Promise<BuckyResult<UtilGetDeviceResponse>> {
         const buf = await resp.arrayBuffer();
         const r = new DeviceDecoder().from_raw(new Uint8Array(buf));
         if (r.err) {

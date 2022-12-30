@@ -216,7 +216,7 @@ export class Msg extends NamedObject<MsgDescContent, EmptyProtobufBodyContent>{
 
     belongs(id: ObjectId):boolean {
         const owner = this.desc().owner();
-        if (owner && owner.is_some() && owner.unwrap().equals(id)) {
+        if (owner && owner.equals(id)) {
             return true;
         }
 

@@ -7,7 +7,7 @@
 
 
 import { Ok, BuckyResult } from "../../base/results";
-import { Option, OptionDecoder, OptionEncoder, } from "../../base/option";
+import { OptionDecoder, OptionEncoder, } from "../../base/option";
 import { BuckyNumber, BuckyNumberDecoder } from "../../base/bucky_number";
 import { RawDecode, RawEncode } from "../../base/raw_encode";
 import JSBI from 'jsbi';
@@ -18,12 +18,12 @@ export class TrafficReceipt implements RawEncode {
         public up_bytes: JSBI,
         public down_bytes: JSBI,
         public total_package: JSBI,
-        public max_speed: Option<number>,
-        public min_speed: Option<number>,
-        public avg_ping_ms: Option<number>,
-        public stream_count: Option<number>,
-        public failed_stream_count: Option<number>,
-        public break_stream_count: Option<number>,
+        public max_speed?: number,
+        public min_speed?: number,
+        public avg_ping_ms?: number,
+        public stream_count?: number,
+        public failed_stream_count?: number,
+        public break_stream_count?: number,
     ) {
         // ignore
     }
@@ -33,12 +33,12 @@ export class TrafficReceipt implements RawEncode {
         size += new BuckyNumber('u64', this.up_bytes).raw_measure().unwrap();
         size += new BuckyNumber('u64', this.down_bytes).raw_measure().unwrap();
         size += new BuckyNumber('u64', this.total_package).raw_measure().unwrap();
-        size += OptionEncoder.from(this.max_speed, (v: number) => new BuckyNumber('u32', v)).raw_measure().unwrap();
-        size += OptionEncoder.from(this.min_speed, (v: number) => new BuckyNumber('u32', v)).raw_measure().unwrap();
-        size += OptionEncoder.from(this.avg_ping_ms, (v: number) => new BuckyNumber('u16', v)).raw_measure().unwrap();
-        size += OptionEncoder.from(this.stream_count, (v: number) => new BuckyNumber('u32', v)).raw_measure().unwrap();
-        size += OptionEncoder.from(this.failed_stream_count, (v: number) => new BuckyNumber('u32', v)).raw_measure().unwrap();
-        size += OptionEncoder.from(this.break_stream_count, (v: number) => new BuckyNumber('u32', v)).raw_measure().unwrap();
+        size += OptionEncoder.from(this.max_speed, 'u32').raw_measure().unwrap();
+        size += OptionEncoder.from(this.min_speed, 'u32').raw_measure().unwrap();
+        size += OptionEncoder.from(this.avg_ping_ms, 'u16').raw_measure().unwrap();
+        size += OptionEncoder.from(this.stream_count, 'u32').raw_measure().unwrap();
+        size += OptionEncoder.from(this.failed_stream_count, 'u32').raw_measure().unwrap();
+        size += OptionEncoder.from(this.break_stream_count, 'u32').raw_measure().unwrap();
         return Ok(size);
     }
 
@@ -46,12 +46,12 @@ export class TrafficReceipt implements RawEncode {
         buf = new BuckyNumber('u64', this.up_bytes).raw_encode(buf).unwrap();
         buf = new BuckyNumber('u64', this.down_bytes).raw_encode(buf).unwrap();
         buf = new BuckyNumber('u64', this.total_package).raw_encode(buf).unwrap();
-        buf = OptionEncoder.from(this.max_speed, (v: number) => new BuckyNumber('u32', v)).raw_encode(buf).unwrap();
-        buf = OptionEncoder.from(this.min_speed, (v: number) => new BuckyNumber('u32', v)).raw_encode(buf).unwrap();
-        buf = OptionEncoder.from(this.avg_ping_ms, (v: number) => new BuckyNumber('u16', v)).raw_encode(buf).unwrap();
-        buf = OptionEncoder.from(this.stream_count, (v: number) => new BuckyNumber('u32', v)).raw_encode(buf).unwrap();
-        buf = OptionEncoder.from(this.failed_stream_count, (v: number) => new BuckyNumber('u32', v)).raw_encode(buf).unwrap();
-        buf = OptionEncoder.from(this.break_stream_count, (v: number) => new BuckyNumber('u32', v)).raw_encode(buf).unwrap();
+        buf = OptionEncoder.from(this.max_speed, 'u32').raw_encode(buf).unwrap();
+        buf = OptionEncoder.from(this.min_speed, 'u32').raw_encode(buf).unwrap();
+        buf = OptionEncoder.from(this.avg_ping_ms, 'u16').raw_encode(buf).unwrap();
+        buf = OptionEncoder.from(this.stream_count, 'u32').raw_encode(buf).unwrap();
+        buf = OptionEncoder.from(this.failed_stream_count, 'u32').raw_encode(buf).unwrap();
+        buf = OptionEncoder.from(this.break_stream_count, 'u32').raw_encode(buf).unwrap();
         return Ok(buf);
     }
 }
@@ -139,7 +139,7 @@ export class TrafficReceiptDecoder implements RawDecode<TrafficReceipt> {
             [break_stream_count, buf] = r.unwrap();
         }
 
-        const ret: [TrafficReceipt, Uint8Array] = [new TrafficReceipt(up_bytes.toBigInt(), down_bytes.toBigInt(), total_package.toBigInt(), max_speed.to((v) => v.toNumber()), min_speed.to((v) => v.toNumber()), avg_ping_ms.to((v) => v.toNumber()), stream_count.to((v) => v.toNumber()), failed_stream_count.to((v) => v.toNumber()), break_stream_count.to((v) => v.toNumber())), buf];
+        const ret: [TrafficReceipt, Uint8Array] = [new TrafficReceipt(up_bytes.toBigInt(), down_bytes.toBigInt(), total_package.toBigInt(), max_speed.value()?.toNumber(), min_speed.value()?.toNumber(), avg_ping_ms.value()?.toNumber(), stream_count.value()?.toNumber(), failed_stream_count.value()?.toNumber(), break_stream_count.value()?.toNumber()), buf];
         return Ok(ret);
     }
 

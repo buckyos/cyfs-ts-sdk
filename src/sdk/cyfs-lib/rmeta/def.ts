@@ -1,4 +1,4 @@
-import { AccessPermission, AccessPermissions, AccessString, ObjectId } from "../../cyfs-base";
+import { AccessPermissions, AccessString, ObjectId } from "../../cyfs-base";
 import { DeviceZoneCategory } from "../access/source";
 
 export enum MetaAction {
@@ -9,6 +9,14 @@ export enum MetaAction {
     GlobalStateAddLink = "global-state-add-link",
     GlobalStateRemoveLink = "global-state-remove-link",
     GlobalStateClearLink = "global-state-clear-link",
+
+    GlobalStateAddObjectMeta = "global-state-add-object-meta",
+    GlobalStateRemoveObjectMeta = "global-state-remove-object-meta",
+    GlobalStateClearObjectMeta = "global-state-clear-object-meta",
+
+    GlobalStateAddPathConfig = "global-state-add-path-config",
+    GlobalStateRemovePathConfig = "global-state-remove-path-config",
+    GlobalStateClearPathConfig = "global-state-clear-path-config",
 }
 
 export interface GlobalStatePathLinkItem {
@@ -54,6 +62,10 @@ export class GlobalStatePathGroupAccess {
         } else {
             return {}
         }
+    }
+
+    toJSON(): any {
+        return this.to_obj()
     }
 
     static from_obj(obj: any): GlobalStatePathGroupAccess {
@@ -116,4 +128,30 @@ export class GlobalStatePathAccessItem {
     public static from_obj(obj: any): GlobalStatePathAccessItem {
         return new GlobalStatePathAccessItem(obj.path, GlobalStatePathGroupAccess.from_obj(obj.access));
     }
+}
+
+export interface GlobalStateObjectMetaItem {
+    // Object dynamic selector
+    selector: string,
+
+    // Access value
+    access: GlobalStatePathGroupAccess,
+
+    // Object referer's depth, default is 1
+    depth?: number,
+}
+
+export enum GlobalStatePathStorageState {
+    Concrete = 0,
+    Virtual = 1,
+}
+
+export interface GlobalStatePathConfigItem {
+    path: string,
+
+    // 要求存储状态，如为virtual则重建时会跳过。
+    storage_state?: GlobalStatePathStorageState,
+
+    // 重建深度.0表示无引用深度，1表示会重建其引用的1层对象。不配置则根据对象的Selector确定初始重建深度。对大文件不自动重建，需要手动将depth设置为1.
+    depth?: number,
 }

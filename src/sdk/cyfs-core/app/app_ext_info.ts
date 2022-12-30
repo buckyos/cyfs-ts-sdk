@@ -142,7 +142,7 @@ export class AppExtInfo extends NamedObject<AppExtInfoDescContent, AppExtInfoBod
     }
 
     static getExtId(app: DecApp): ObjectId {
-        return AppExtInfo.create(app.desc().owner()!.unwrap(), app.name()).desc().calculate_id();
+        return AppExtInfo.create(app.desc().owner()!, app.name()).desc().calculate_id();
     }
 
     info(): string {

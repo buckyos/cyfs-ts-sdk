@@ -1,193 +1,83 @@
-import { Ok, Err, Result, BuckyResult, BuckyError, BuckyErrorCode } from "./results";
-import { RawEncode, RawDecode, DecodeBuilder, RawEncodePurpose } from "./raw_encode";
-import { } from "./buffer";
-
-export interface BaseOption<T> {
-    is_some(): boolean;
-    is_none(): boolean;
-    unwrap(): T;
-    ok_or(): BuckyResult<T>;
-    to<V1>(ve: (v: T) => V1): Option<V1>;
-    map(mapper: (obj: T) => T): void;
-}
-
-export class SomeOption<T> implements BaseOption<T> {
-    private value: T;
-
-    constructor(value: T) {
-        this.value = value;
-    }
-
-    is_some(): boolean {
-        return true;
-    }
-
-    is_none(): boolean {
-        return false;
-    }
-
-    unwrap(): T {
-        return this.value;
-    }
-
-
-    ok_or(): BuckyResult<T> {
-        const v = this.value;
-        return Ok(v);
-    }
-
-    to<V1>(ve: (v: T) => V1): Option<V1> {
-        return Some(ve(this.value));
-    }
-
-    map(mapper: (obj: T) => T): void {
-        this.value = mapper(this.value);
-    }
-}
-
-export class NoneOption implements BaseOption<never> {
-    private value: never;
-
-    constructor() {
-        //
-    }
-
-    is_some(): boolean {
-        return false;
-    }
-
-    is_none(): boolean {
-        return true;
-    }
-
-    unwrap(): never {
-        throw new Error('option is none');
-    }
-
-    ok_or(): BuckyResult<never> {
-        return Err(new BuckyError(BuckyErrorCode.NotFound, "option is none"));
-    }
-
-    to<V1>(ve: (v: never) => V1): NoneOption {
-        return None;
-    }
-
-    map(mapper: (obj: never) => never): void {
-        // ignore
-    }
-}
-
-export type Option<T> = (SomeOption<T> | NoneOption) & BaseOption<T>;
-
-export function Some<T>(val: T): Option<T> {
-    return new SomeOption(val);
-}
-
-export const None = new NoneOption();
-
+import { Ok, Err, BuckyResult, BuckyError, BuckyErrorCode } from "./results";
+import { BuckyNumber, BuckyNumberType } from "./bucky_number";
+import { RawEncode, RawDecode } from "./raw_encode";
+import JSBI from "jsbi";
+import { BuckyString } from "./bucky_string";
+import { Vec } from "./vec";
+import { BuckyBuffer } from "./bucky_buffer";
 // Codec
 
 export class OptionEncoder<T extends RawEncode> implements RawEncode {
-    val: Option<T>;
-
-    constructor(val: Option<T>) {
-        this.val = val;
+    // private val?: T;
+    constructor(private val?: T) {
     }
 
-    value(): Option<T> {
-        return this.val!;
-    }
-
-    static from<V extends RawEncode, V1>(val: Option<V1>, ve: (v: V1) => V): OptionEncoder<V> {
-        if (val.is_some()) {
-            return new OptionEncoder(Some(ve(val.unwrap())));
+    static from<T extends RawEncode>(val?: T|number|JSBI|string|T[]|Uint8Array, number_type?: BuckyNumberType): OptionEncoder<T>|OptionEncoder<BuckyNumber>|OptionEncoder<BuckyString>|OptionEncoder<Vec<T>>|OptionEncoder<BuckyBuffer> {
+        if (typeof val === "number") {
+            return new OptionEncoder(new BuckyNumber(number_type!, val));
+        } else if (typeof val === "string") {
+            return new OptionEncoder(new BuckyString(val));
+        } else if (val instanceof JSBI) {
+            return new OptionEncoder(new BuckyNumber(number_type!, val));
+        } else if (val instanceof Uint8Array) {
+            return new OptionEncoder(new BuckyBuffer(val));
+        } else if (val instanceof Array) {
+            return new OptionEncoder(new Vec(val));
         } else {
-            return new OptionEncoder(None);
+            return new OptionEncoder(val)
         }
     }
 
     raw_measure(): BuckyResult<number> {
-        const val = this.val;
-
-        if (val.is_some()) {
-            return Ok(1 + val.unwrap().raw_measure().unwrap());
+        if (this.val !== undefined) {
+            return Ok(1 + this.val.raw_measure().unwrap());
         } else {
             return Ok(1);
         }
-    };
+    }
 
     raw_encode(buf: Uint8Array): BuckyResult<Uint8Array> {
-        const val = this.val!;
-
-        if (val.is_some()) {
+        if (this.val !== undefined) {
             buf[0] = 1;
             buf = buf.offset(1);
-            return val.unwrap().raw_encode(buf);
+            return this.val.raw_encode(buf);
         } else {
             buf[0] = 0;
             buf = buf.offset(1);
             return Ok(buf);
         }
-    };
-}
-
-export class OptionWrapper<T extends RawEncode> implements RawEncode {
-    constructor(private v: Option<T>) {
     }
 
-    public value(): Option<T> {
-        return this.v;
-    }
-
-    public to<V1>(ve: (v: T) => V1): Option<V1> {
-        return this.v.to(ve);
-    }
-
-    raw_measure(ctx?: any): BuckyResult<number> {
-        return new OptionEncoder(this.v).raw_measure();
-    }
-
-    raw_encode(buf: Uint8Array, ctx?: any): BuckyResult<Uint8Array> {
-        return new OptionEncoder(this.v).raw_encode(buf);
+    value(): T|undefined {
+        return this.val
     }
 }
 
 // DB用来构造D
 // D用来解码出T
-export class OptionDecoder<
-    T extends RawEncode,
-    > implements RawDecode<OptionWrapper<T>> {
+export class OptionDecoder<T extends RawEncode> implements RawDecode<OptionEncoder<T>> {
     readonly decoder: RawDecode<T>;
 
     constructor(decoder: RawDecode<T>) {
         this.decoder = decoder;
     }
 
-    raw_decode(buf: Uint8Array): BuckyResult<[OptionWrapper<T>, Uint8Array]> {
+    raw_decode(buf: Uint8Array): BuckyResult<[OptionEncoder<T>, Uint8Array]> {
         // decode length
         const tag = buf[0];
         buf = buf.offset(1);
 
         // buffer
-        let val: Option<T>;
         switch (tag) {
             case 0: {
-                val = None;
-                const ret: [OptionWrapper<T>, Uint8Array] = [new OptionWrapper(val), buf];
-                return Ok(ret);
+                return Ok([new OptionEncoder(), buf]);
             }
             case 1: {
-                const element_ret = this.decoder.raw_decode(buf);
-                if (element_ret.err) {
-                    return element_ret;
+                const ret = this.decoder.raw_decode(buf);
+                if (ret.err) {
+                    return ret;
                 }
-                let element;
-                [element, buf] = element_ret.unwrap();
-
-                val = Some(element);
-                const ret: [OptionWrapper<T>, Uint8Array] = [new OptionWrapper(val), buf];
-
-                return Ok(ret);
+                return Ok([new OptionEncoder(ret.unwrap()[0]), ret.unwrap()[1]]);
             }
             default: {
                 return Err(new BuckyError(BuckyErrorCode.NotSupport, "not support option flag"));

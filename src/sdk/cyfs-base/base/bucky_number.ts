@@ -14,7 +14,7 @@ import { DataViewJSBIHelper } from '../../platform-spec';
  * 6. JavaScript/TypeScript提供了灵活性，有些地方可以大幅度合并
  */
 
-type Int = "u8" | "i8" | "u16" | "i16" | "u32" | "i32" | "u64" | "i64" | "u128";
+export type BuckyNumberType = "u8" | "i8" | "u16" | "i16" | "u32" | "i32" | "u64" | "i64" | "u128";
 
 const U64MAX = JSBI.BigInt("18446744073709551615");
 
@@ -23,10 +23,10 @@ const U64MAX = JSBI.BigInt("18446744073709551615");
  */
 export class BuckyNumber implements RawEncode {
 
-    readonly type: Int;
+    readonly type: BuckyNumberType;
     val: JSBI;
 
-    constructor(type: Int, val: JSBI | number | string) {
+    constructor(type: BuckyNumberType, val: JSBI | number | string) {
         this.type = type;
         if (val instanceof JSBI) {
             this.val = val;
@@ -143,9 +143,9 @@ export class BuckyNumber implements RawEncode {
 }
 
 export class BuckyNumberDecoder implements RawDecode<BuckyNumber>{
-    readonly type: Int;
+    readonly type: BuckyNumberType;
 
-    constructor(type: Int) {
+    constructor(type: BuckyNumberType) {
         this.type = type;
     }
 

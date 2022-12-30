@@ -1,7 +1,7 @@
 import * as cyfs from '../sdk';
 
 export function test_access_string(): void {
-    let access_string = cyfs.AccessString.default();
+    const access_string = cyfs.AccessString.default();
     console.log("default=", access_string);
     console.assert(access_string.to_string() === "rwxrwxrwx---rwxrwx---");
 

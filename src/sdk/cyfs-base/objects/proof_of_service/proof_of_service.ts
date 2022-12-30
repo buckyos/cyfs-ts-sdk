@@ -18,7 +18,6 @@ import {
 } from "../object"
 
 import { Ok, BuckyResult } from "../../base/results";
-import { Option, } from "../../base/option";
 import { ObjectId } from "../object_id";
 
 import{ ProofData, ProofDataDecoder } from './proof_data'
@@ -206,7 +205,7 @@ export class ProofOfService extends NamedObject<ProofOfServiceDescContent, Proof
     private m_ext?: ProofOfServiceExt;
 
     // 提供一个静态的创建方法
-    static create(owner: Option<ObjectId>, proof_type: ProofTypeCode, data_0: ProofData, data_1: ProofData): ProofOfService{
+    static create(owner: ObjectId|undefined, proof_type: ProofTypeCode, data_0: ProofData, data_1: ProofData): ProofOfService{
         // 创建DescContent部分
         const desc_content = new ProofOfServiceDescContent(proof_type, data_0);
 

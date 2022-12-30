@@ -1,5 +1,4 @@
 import { Err, Ok, BuckyResult, BuckyError, BuckyErrorCode } from "../base/results";
-import { Option } from "../base/option";
 import { } from "../base/buffer";
 import { UniqueId, UniqueIdDecoder } from "./unique_id";
 import { Endpoint, EndPointDecoder } from "../base/endpoint";
@@ -56,7 +55,7 @@ export class DeviceDescTypeInfo extends DescTypeInfo {
         return {
             owner_type: "option",   // 是否有主，"disable": 禁用，"option": 可选
             area_type: "option",    // 是否有区域信息，"disable": 禁用，"option": 可选
-            author_type: "option",  // 是否有作者，"disable": 禁用，"option": 可选
+            author_type: "disable",  // 是否有作者，"disable": 禁用，"option": 可选
             key_type: "single_key"  // 公钥类型，"disable": 禁用，"single_key": 单PublicKey，"mn_key": M-N 公钥对
         }
     }
@@ -282,7 +281,7 @@ export class DeviceIdDecoder extends NamedObjectIdDecoder<DeviceDescContent, Dev
 // 继承自NamedObject<DeviceDescContent, DeviceBodyContent>
 // 提供创建方法和其他自定义方法
 export class Device extends NamedObject<DeviceDescContent, DeviceBodyContent>{
-    static create(owner: Option<ObjectId>, unique_id: UniqueId, endpoints: Endpoint[], sn_list: DeviceId[], passive_sn_list: DeviceId[], public_key: PublicKey, area: Area, category: DeviceCategory, build?: (builder: DeviceBuilder) => void): Device {
+    static create(owner: ObjectId|undefined, unique_id: UniqueId, endpoints: Endpoint[], sn_list: DeviceId[], passive_sn_list: DeviceId[], public_key: PublicKey, area: Area, category: DeviceCategory, build?: (builder: DeviceBuilder) => void): Device {
         const desc_content = new DeviceDescContent(unique_id);
         const body_content = new DeviceBodyContent(endpoints, sn_list, passive_sn_list);
 
@@ -322,7 +321,7 @@ export class Device extends NamedObject<DeviceDescContent, DeviceBodyContent>{
     }
 
     category(): BuckyResult<DeviceCategory> {
-        const inner = this.desc().area()?.unwrap().inner;
+        const inner = this.desc().area()?.inner;
         if (inner !== undefined) {
             return Ok(number_2_devicecategory(inner));
         } else {

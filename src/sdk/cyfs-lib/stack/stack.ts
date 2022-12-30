@@ -14,7 +14,6 @@ import {
     Err,
     Ok,
     sleep,
-    Option,
     ObjectId,
     ObjectMapSimpleContentType,
 } from "../../cyfs-base";
@@ -61,7 +60,7 @@ export class SharedCyfsStackParam {
     constructor(
         public service_url: string,
         public event_type: CyfsStackEventType,
-        public dec_id?: ObjectId,
+        public dec_id: ObjectId,
         public ws_url?: string,
         public requestor_config?: CyfsStackRequestorConfig
     ) {
@@ -96,7 +95,7 @@ export class SharedCyfsStackParam {
         }
     }
 
-    static default(dec_id?: ObjectId): SharedCyfsStackParam {
+    static default(dec_id: ObjectId): SharedCyfsStackParam {
         const url = `http://127.0.0.1:${NON_STACK_HTTP_PORT}`;
         const ws_url = `ws://127.0.0.1:${NON_STACK_WS_PORT}`;
 
@@ -108,7 +107,7 @@ export class SharedCyfsStackParam {
         );
     }
 
-    static default_with_ws_event(dec_id?: ObjectId): SharedCyfsStackParam {
+    static default_with_ws_event(dec_id: ObjectId): SharedCyfsStackParam {
         return new SharedCyfsStackParam(
             NON_STACK_HTTP_URL,
             CyfsStackEventType.WebSocket,
@@ -118,7 +117,7 @@ export class SharedCyfsStackParam {
     }
 
     // runtime协议栈默认都是websocket事件系统，端口也是固定的
-    static default_runtime(dec_id?: ObjectId): SharedCyfsStackParam {
+    static default_runtime(dec_id: ObjectId): SharedCyfsStackParam {
         const url = `http://127.0.0.1:${CYFS_RUNTIME_NON_STACK_HTTP_PORT}`;
         const ws_url = `ws://127.0.0.1:${CYFS_RUNTIME_NON_STACK_WS_PORT}`;
 
@@ -131,7 +130,7 @@ export class SharedCyfsStackParam {
     }
 
     // 使用指定的url打开协议栈，并使用http事件系统
-    static new_with_http_event(service_url: string, dec_id?: ObjectId): BuckyResult<SharedCyfsStackParam> {
+    static new_with_http_event(service_url: string, dec_id: ObjectId): BuckyResult<SharedCyfsStackParam> {
         return Ok(new SharedCyfsStackParam(
             service_url,
             CyfsStackEventType.Http,
@@ -140,7 +139,7 @@ export class SharedCyfsStackParam {
     }
 
     // 使用指定的端口打开协议栈，并使用http事件系统
-    static new_with_http_event_ports(service_http_port: number, dec_id?: ObjectId): BuckyResult<SharedCyfsStackParam> {
+    static new_with_http_event_ports(service_http_port: number, dec_id: ObjectId): BuckyResult<SharedCyfsStackParam> {
         const service_url = `http://127.0.0.1:${service_http_port}`;
 
         return Ok(new SharedCyfsStackParam(
@@ -151,7 +150,7 @@ export class SharedCyfsStackParam {
     }
 
     // 使用指定的url打开协议栈，并使用websocket事件系统
-    static new_with_ws_event(service_url: string, ws_url: string, dec_id?: ObjectId): BuckyResult<SharedCyfsStackParam> {
+    static new_with_ws_event(service_url: string, ws_url: string, dec_id: ObjectId): BuckyResult<SharedCyfsStackParam> {
         return Ok(new SharedCyfsStackParam(
             service_url,
             CyfsStackEventType.WebSocket,
@@ -161,7 +160,7 @@ export class SharedCyfsStackParam {
     }
 
     // 使用指定的端口打开协议栈，并使用websocket事件系统
-    static new_with_ws_event_ports(service_http_port: number, ws_port: number, dec_id?: ObjectId): BuckyResult<SharedCyfsStackParam> {
+    static new_with_ws_event_ports(service_http_port: number, ws_port: number, dec_id: ObjectId): BuckyResult<SharedCyfsStackParam> {
         console.assert(service_http_port !== ws_port);
 
         const service_url = `http://127.0.0.1:${service_http_port}`;
@@ -184,7 +183,7 @@ export class SharedCyfsStackParam {
 
 export class SharedCyfsStack {
     // 所属的dec_id
-    public dec_id?: ObjectId;
+    public dec_id: ObjectId;
     private m_util_service: UtilRequestor;
     private m_non_service: NONRequestor;
     private m_ndn_service: NDNRequestor;
@@ -259,21 +258,21 @@ export class SharedCyfsStack {
         }
     }
 
-    static default_with_ws_event(dec_id?: ObjectId): SharedCyfsStack {
+    static default_with_ws_event(dec_id: ObjectId): SharedCyfsStack {
         const p = SharedCyfsStackParam.default_with_ws_event(dec_id);
         const self = new SharedCyfsStack(p);
         return self;
     }
 
-    static open_default(dec_id?: ObjectId): SharedCyfsStack {
+    static open_default(dec_id: ObjectId): SharedCyfsStack {
         return new SharedCyfsStack(SharedCyfsStackParam.default(dec_id));
     }
 
-    static open_default_with_ws_event(dec_id?: ObjectId): SharedCyfsStack {
+    static open_default_with_ws_event(dec_id: ObjectId): SharedCyfsStack {
         return new SharedCyfsStack(SharedCyfsStackParam.default_with_ws_event(dec_id));
     }
 
-    static open_runtime(dec_id?: ObjectId): SharedCyfsStack {
+    static open_runtime(dec_id: ObjectId): SharedCyfsStack {
         return new SharedCyfsStack(SharedCyfsStackParam.default_runtime(dec_id));
     }
 
@@ -401,34 +400,6 @@ export class SharedCyfsStack {
 
     root_state_accessor_stub(target?: ObjectId, dec_id?: ObjectId): GlobalStateAccessorStub {
         return new GlobalStateAccessorStub(this.root_state_accessor(), target, dec_id);
-    }
-
-    /**
-     * @deprecated will delete after ver 0.5.12
-     */
-    root_state_access(): GlobalStateAccessorRequestor {
-        return this.root_state_accessor();
-    }
-
-    /**
-     * @deprecated will delete after ver 0.5.12
-     */
-    root_state_access_stub(target?: ObjectId, dec_id?: ObjectId): GlobalStateAccessorStub {
-        return this.root_state_accessor_stub(target, dec_id)
-    }
-
-    /**
-     * @deprecated will delete after ver 0.5.12
-     */
-    local_cache_access(): GlobalStateAccessorRequestor {
-        return this.local_cache_accessor();
-    }
-
-    /**
-     * @deprecated will delete after ver 0.5.12
-     */
-    local_cache_access_stub(dec_id?: ObjectId): GlobalStateAccessorStub {
-        return this.local_cache_accessor_stub(dec_id)
     }
 
     local_cache_accessor(): GlobalStateAccessorRequestor {

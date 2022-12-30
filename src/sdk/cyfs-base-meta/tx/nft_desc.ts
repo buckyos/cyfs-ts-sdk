@@ -6,7 +6,7 @@
 
 
 import { Err, Ok, BuckyResult, BuckyError, BuckyErrorCode } from "../../cyfs-base/base/results";
-import { Option, OptionEncoder, OptionWrapper, } from "../../cyfs-base/base/option";
+import { OptionEncoder, } from "../../cyfs-base/base/option";
 import { BuckyNumber, BuckyNumberDecoder } from "../../cyfs-base/base/bucky_number";
 import { RawDecode, RawEncode } from "../../cyfs-base/base/raw_encode";
 import { ObjectId, ObjectIdDecoder } from "../../cyfs-base/objects/object_id";
@@ -17,7 +17,7 @@ export class NFTDesc implements RawEncode {
     private readonly tag: number;
     private constructor(
         private filedesc?: FileDesc,
-        private filedesc2?: [FileDesc, Option<ObjectId>],
+        private filedesc2?: [FileDesc, ObjectId|undefined],
         private listdesc?: NFTListDesc,
     ) {
         if (filedesc) {
@@ -35,7 +35,7 @@ export class NFTDesc implements RawEncode {
         return new NFTDesc(filedesc);
     }
 
-    static FileDesc2(filedesc2: [FileDesc, Option<ObjectId>]): NFTDesc {
+    static FileDesc2(filedesc2: [FileDesc, ObjectId|undefined]): NFTDesc {
         return new NFTDesc(undefined, filedesc2);
     }
 
@@ -45,7 +45,7 @@ export class NFTDesc implements RawEncode {
 
     match<T>(visitor: {
         FileDesc?: (filedesc: FileDesc) => T,
-        FileDesc2?: (filedesc2: [FileDesc, Option<ObjectId>]) => T,
+        FileDesc2?: (filedesc2: [FileDesc, ObjectId|undefined]) => T,
         ListDesc?: (listdesc: NFTListDesc) => T,
     }):T|undefined{
         switch(this.tag) {
@@ -66,7 +66,7 @@ export class NFTDesc implements RawEncode {
         size += this.match({
             FileDesc:(filedesc) => { return filedesc.raw_measure().unwrap();},
             FileDesc2:(filedesc2) => {
-                return new BuckyTuple([filedesc2[0], new OptionEncoder(filedesc2[1])]).raw_measure().unwrap()
+                return new BuckyTuple([filedesc2[0], OptionEncoder.from(filedesc2[1])]).raw_measure().unwrap()
             },
             ListDesc:(listdesc) => { return listdesc.raw_measure().unwrap();},
         })!;
@@ -78,7 +78,7 @@ export class NFTDesc implements RawEncode {
         buf = this.match({
             FileDesc:(filedesc) => {return filedesc.raw_encode(buf).unwrap();},
             FileDesc2:(filedesc2) => {
-                return new BuckyTuple([filedesc2[0], new OptionEncoder(filedesc2[1])]).raw_encode(buf, ctx).unwrap();
+                return new BuckyTuple([filedesc2[0], OptionEncoder.from(filedesc2[1])]).raw_encode(buf, ctx).unwrap();
             },
             ListDesc:(listdesc) => {return listdesc.raw_encode(buf).unwrap();},
         })!;
@@ -115,7 +115,7 @@ export class NFTDescDecoder implements RawDecode<NFTDesc> {
                 }
                 let filedesc2;
                 [filedesc2, buf] = r.unwrap();
-                const ret: [NFTDesc, Uint8Array] =  [NFTDesc.FileDesc2([filedesc2.index(0), filedesc2.index<OptionWrapper<ObjectId>>(1).value()]), buf];
+                const ret: [NFTDesc, Uint8Array] =  [NFTDesc.FileDesc2([filedesc2.index(0), filedesc2.index<ObjectId>(1)]), buf];
                 return Ok(ret);
             }
             case 2:{

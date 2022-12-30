@@ -1,5 +1,5 @@
 import JSBI from "jsbi";
-import { BuckyResult, CYFS_API_LEVEL, CYFS_DEC_ID, CYFS_FLAGS, CYFS_NON_ACTION, CYFS_OBJECT_EXPIRES_TIME, CYFS_OBJECT_ID, CYFS_OBJECT_UPDATE_TIME, CYFS_RESULT, CYFS_TARGET, Err, ObjectId, Ok, Option, None, Some, Attributes, CYFS_ATTRIBUTES, CYFS_ACCESS, CYFS_REQ_PATH, CYFS_INNER_PATH, CYFS_SOURCE } from "../../cyfs-base"
+import { BuckyResult, CYFS_API_LEVEL, CYFS_DEC_ID, CYFS_FLAGS, CYFS_NON_ACTION, CYFS_OBJECT_EXPIRES_TIME, CYFS_OBJECT_ID, CYFS_OBJECT_UPDATE_TIME, CYFS_RESULT, CYFS_TARGET, Err, ObjectId, Ok, Attributes, CYFS_ATTRIBUTES, CYFS_ACCESS, CYFS_REQ_PATH, CYFS_INNER_PATH } from "../../cyfs-base"
 import { BaseRequestor, RequestorHelper } from "../base/base_requestor";
 import { HttpRequest } from "../base/http_request";
 import { CYFS_REQUEST_FLAG_DELETE_WITH_QUERY } from "../base/request";
@@ -29,10 +29,10 @@ export class NONRequestorHelper {
         return Ok(info);
     }
 
-    static async decode_option_object_info(req: Response): Promise<BuckyResult<Option<NONObjectInfo>>> {
+    static async decode_option_object_info(req: Response): Promise<BuckyResult<NONObjectInfo|undefined>> {
         const id = RequestorHelper.decode_optional_header(req, CYFS_OBJECT_ID, (s) => s);
         if (id === undefined) {
-            return Ok(None);
+            return Ok(id);
         }
 
         const object_id = ObjectId.from_base_58(id);
@@ -48,7 +48,7 @@ export class NONRequestorHelper {
             return r;
         }
 
-        return Ok(Some(info));
+        return Ok(info);
     }
 
     static encode_object_info(req: HttpRequest, info: NONObjectInfo): void {
@@ -119,7 +119,6 @@ export class NONRequestor {
     }
 
     encode_put_object_request(req: NONPutObjectOutputRequest): HttpRequest {
-        // #[cfg(debug_assertions)]
         {
             if (!req.object.is_empty()) {
                 const r = req.object.verify();
@@ -141,7 +140,7 @@ export class NONRequestor {
     }
 
     async decode_put_object_response(
-        resp: & Response,
+        resp: Response,
     ): Promise<BuckyResult<NONPutObjectOutputResponse>> {
         let result;
         {
@@ -241,8 +240,8 @@ export class NONRequestor {
 
         let object;
         const o_ret = ret.unwrap();
-        if (o_ret.is_some()) {
-            object = o_ret.unwrap();
+        if (o_ret) {
+            object = o_ret;
         }
 
         const r = { object, };

@@ -9,7 +9,7 @@ import {
     RawEncodePurpose, Vec, VecDecoder
 } from "../../../cyfs-base";
 import {CoinTokenId, CoinTokenIdDecoder} from "../../tx/coin_token_id";
-import { Option, OptionDecoder, OptionEncoder, } from "../../../cyfs-base/base/option";
+import { OptionDecoder, OptionEncoder, } from "../../../cyfs-base/base/option";
 
 export class NFTBuyItem implements RawEncode {
     constructor(
@@ -170,17 +170,17 @@ export class NFTLargestBuyValueDataDecoder implements RawDecode<NFTLargestBuyVal
 }
 
 export class NFTLargestBuyValue implements RawEncode {
-    constructor(public value: Option<NFTLargestBuyValueData>) {
+    constructor(public value?: NFTLargestBuyValueData) {
     }
 
     raw_encode(buf: Uint8Array, ctx?: any, purpose?: RawEncodePurpose): BuckyResult<Uint8Array> {
-        buf = OptionEncoder.from(this.value, (v: NFTLargestBuyValueData) => v).raw_encode(buf).unwrap();
+        buf = OptionEncoder.from(this.value).raw_encode(buf).unwrap();
         return Ok(buf);
     }
 
     raw_measure(ctx?: any, purpose?: RawEncodePurpose): BuckyResult<number> {
         let size = 0;
-        size += OptionEncoder.from(this.value, (v: NFTLargestBuyValueData) => v).raw_measure().unwrap();
+        size += OptionEncoder.from(this.value).raw_measure().unwrap();
         return Ok(size);
     }
 
@@ -197,7 +197,7 @@ export class NFTLargestBuyValueDecoder implements RawDecode<NFTLargestBuyValue> 
             [results, buf] = r.unwrap();
         }
 
-        const ret:[NFTLargestBuyValue, Uint8Array] = [new NFTLargestBuyValue(results.to((v:NFTLargestBuyValueData)=>v)), buf];
+        const ret:[NFTLargestBuyValue, Uint8Array] = [new NFTLargestBuyValue(results.value()), buf];
         return Ok(ret);
     }
 

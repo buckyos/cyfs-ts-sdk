@@ -10,7 +10,6 @@ import {
 } from "../../cyfs-base/objects/object"
 
 import { Err, Ok, BuckyResult, BuckyError, BuckyErrorCode } from "../../cyfs-base/base/results";
-import { Option, None, Some, } from "../../cyfs-base/base/option";
 import { BuckyString } from "../../cyfs-base/base/bucky_string";
 import { ObjectId, ObjectIdDecoder } from "../../cyfs-base/objects/object_id";
 import { bucky_time_now } from "../../cyfs-base/base/time";
