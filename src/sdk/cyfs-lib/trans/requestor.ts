@@ -18,7 +18,7 @@ import {
     TransControlTaskGroupOutputResponse,
     TransGetTaskGroupStateOutputRequest,
     TransGetTaskGroupStateOutputResponse
-} from './request';
+} from './output_request';
 import {TransContextDecoder} from "../../cyfs-core/trans/trans_context";
 import { NDNOutputRequestCommon } from '../ndn/output_request';
 
@@ -207,7 +207,7 @@ export class TransRequestor {
         const url = `${this.serviceURL}task/state`;
         console.log('will get trans task state: ', url, req);
 
-        const httpReq = new HttpRequest('GET', url);
+        const httpReq = new HttpRequest('POST', url);
         this.encode_common_headers(req.common, httpReq);
         httpReq.set_json_body(req);
 
