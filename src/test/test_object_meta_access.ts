@@ -56,7 +56,7 @@ async function add_file(): Promise<[cyfs.SharedCyfsStack, cyfs.ObjectId, cyfs.Ob
     const dec_id = cyfs.DecApp.generate_id(cyfs.ObjectId.default(), "zone-simulator");
     const stack = cyfs.SharedCyfsStack.open(cyfs.SharedCyfsStackParam.new_with_ws_event_ports(21000, 21001, dec_id).unwrap());
     await stack.online();
-    const owner_id = stack.local_device().desc().owner()!.unwrap()
+    const owner_id = stack.local_device().desc().owner()!;
 
     const data = forge.util.binary.raw.decode(`test chunk ${cyfs.bucky_time_now()}`);
     const chunk_id = cyfs.ChunkId.calculate(data).unwrap();

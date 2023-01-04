@@ -1,23 +1,23 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import * as cyfs from '../sdk';
 import { test_codec } from "./test_codec";
-import { test_dir } from './test_dir';
-import { test_file, test_trans} from "./test_file";
-import { test_meta } from './test_meta';
+// import { test_dir } from './test_dir';
+import { test_trans} from "./test_file";
+// import { test_meta } from './test_meta';
 import { test_router_handlers } from './test_router_handler';
 import { test_router } from './test_router';
-import { test_protobuf } from './test_protobuf';
-import { test_object_codec } from './test_object_codec';
-import { test_core_objects } from './test_core_object';
-import { test_acl } from './test_acl';
-import { test_perf } from './test_perf';
+// import { test_protobuf } from './test_protobuf';
+// import { test_object_codec } from './test_object_codec';
+// import { test_core_objects } from './test_core_object';
+// import { test_acl } from './test_acl';
+// import { test_perf } from './test_perf';
 import { test_root_state } from './test_root_state';
-import { BuckyErrorCode, BuckyError, BUCKY_DEC_ERROR_CODE_END, BUCKY_DEC_ERROR_CODE_START, BUCKY_META_ERROR_CODE_START, SavedMetaObject, People, PeopleDecoder, StandardObjectDecoder, EmptyContentV1, protos, DeviceId, to_buf, BuckySize, BuckySizeDecoder, Some, sleep, } from '../sdk';
+import { BuckyErrorCode, BuckyError, BUCKY_DEC_ERROR_CODE_END, BUCKY_DEC_ERROR_CODE_START, BUCKY_META_ERROR_CODE_START, SavedMetaObject, People, PeopleDecoder, StandardObjectDecoder, EmptyContentV1, protos, DeviceId, to_buf, BuckySize, BuckySizeDecoder, sleep, ChunkId, HashValue, } from '../sdk';
 import {JSBI} from '../sdk';
 import { test_object_map } from './test_object_map';
 import { test_base } from './test_base';
 import { assert } from 'console';
-import { test_state_storage } from './test_state_storage';
+// import { test_state_storage } from './test_state_storage';
 
 function test_meta_codec() {
 
@@ -89,7 +89,9 @@ async function main() {
     //     console.info(!)
     // }
 
-
+    const buf = new Uint8Array(1024 * 1024);
+    let hash_value = HashValue.hash_data(buf);
+    
     await test_base();
 
 

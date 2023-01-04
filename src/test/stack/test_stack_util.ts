@@ -3,7 +3,7 @@ import { SharedCyfsStack } from "../../sdk";
 export async function test_stack_util(stack: SharedCyfsStack): Promise<void> {
     const util_service = stack.util();
     const self_device_id = stack.local_device_id();
-    const self_owner_id = stack.local_device().desc().owner()!.unwrap();
+    const self_owner_id = stack.local_device().desc().owner()!;
     let ood_id;
     {
         const r = await util_service.get_device({

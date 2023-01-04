@@ -1,5 +1,5 @@
 import assert from "assert";
-import { SharedCyfsStack, TextObject, NONObjectInfo, CRYPTO_REQUEST_FLAG_SIGN_BY_DEVICE, CRYPTO_REQUEST_FLAG_SIGN_SET_DESC, CRYPTO_REQUEST_FLAG_SIGN_SET_BODY, SignObjectResult, TextObjectDecoder, VerifySignType, VerifyObjectType, Some, RouterHandlerChain, RouterHandlerAction, RouterHandlerSignObjectRoutine, BuckyResult, RouterHandlerSignObjectRequest, RouterHandlerSignObjectResult, Ok } from "../../sdk";
+import { SharedCyfsStack, TextObject, NONObjectInfo, CRYPTO_REQUEST_FLAG_SIGN_BY_DEVICE, CRYPTO_REQUEST_FLAG_SIGN_SET_DESC, CRYPTO_REQUEST_FLAG_SIGN_SET_BODY, SignObjectResult, TextObjectDecoder, VerifySignType, VerifyObjectType, RouterHandlerChain, RouterHandlerAction, RouterHandlerSignObjectRoutine, BuckyResult, RouterHandlerSignObjectRequest, RouterHandlerSignObjectResult, Ok } from "../../sdk";
 
 class CryptoHandler implements RouterHandlerSignObjectRoutine {
     async call(param: RouterHandlerSignObjectRequest): Promise<BuckyResult<RouterHandlerSignObjectResult>> {
@@ -12,14 +12,14 @@ class CryptoHandler implements RouterHandlerSignObjectRoutine {
 }
 
 export async function test_crypto(stack: SharedCyfsStack) {
-    //添加一个sign event handler
-    stack.router_handlers().add_sign_object_handler(RouterHandlerChain.PreCrypto, "test-pre-crypto", 0, "*", RouterHandlerAction.Default, Some(new CryptoHandler()))
+    // 添加一个sign event handler
+    stack.router_handlers().add_sign_object_handler(RouterHandlerChain.PreCrypto, "test-pre-crypto", 0, "*", undefined, RouterHandlerAction.Default, new CryptoHandler())
     const crypto = stack.crypto();
     // 因为测试用栈的device签名，对象的owner就是栈的device
     const owner = stack.local_device_id();
 
     // 用TextObject测试
-    const obj = TextObject.create(Some(owner.object_id), "test-text-id", "test-text-key", "test-text-value");
+    const obj = TextObject.create(owner.object_id, "test-text-id", "test-text-key", "test-text-value");
 
     // 测试签名
     const resp = (await crypto.sign_object({
@@ -31,8 +31,8 @@ export async function test_crypto(stack: SharedCyfsStack) {
     assert(resp.result === SignObjectResult.Signed, "check sign result failed");
 
     const signed_obj = new TextObjectDecoder().from_raw(resp.object!.object_raw).unwrap();
-    assert(signed_obj.signs().desc_signs().unwrap().length === 1, "check desc signs failed");
-    assert(signed_obj.signs().body_signs().unwrap().length === 1, "check body signs failed");
+    assert(signed_obj.signs().desc_signs()!.length === 1, "check desc signs failed");
+    assert(signed_obj.signs().body_signs()!.length === 1, "check body signs failed");
 
     console.log("test sign object success");
 
@@ -44,9 +44,8 @@ export async function test_crypto(stack: SharedCyfsStack) {
             object: resp.object!,
             sign_object: VerifyObjectType.Owner()
         })).unwrap();
-    
+        
         assert(resp2.result.valid, "check verfiy result failed")
-    
         console.log("test verify object by owner success");
     }
 
