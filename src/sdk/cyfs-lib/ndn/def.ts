@@ -29,7 +29,7 @@ export enum NDNDataType {
 }
 
 export class NDNDataRefererObject {
-    constructor(public target: ObjectId|undefined, public object_id: ObjectId, public inner_path?: string) {}
+    constructor(public target: ObjectId | undefined, public object_id: ObjectId, public inner_path?: string) { }
     toString(): string {
         let last;
         if (this.inner_path) {
@@ -60,7 +60,8 @@ export class NDNDataRefererObject {
         }
 
         const id_parts = parts[0].split(":");
-        let target, object_id;
+        let target;
+        let object_id;
         if (id_parts.length === 1) {
             const r = ObjectId.from_str(id_parts[0]);
             if (r.err) {
@@ -93,7 +94,7 @@ export class NDNDataRefererObject {
             console.error(msg);
             return Err(new BuckyError(BuckyErrorCode.InvalidFormat, msg))
         }
-        
+
         let inner_path;
         if (parts.length > 1) {
             inner_path = parts.slice(1).join("/");

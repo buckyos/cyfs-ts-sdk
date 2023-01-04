@@ -95,7 +95,7 @@ export class AesKey implements RawEncode {
     }
 
     mix_hash(salt?: JSBI): KeyMixHash {
-        //const hash = sha256.create();
+        // const hash = sha256.create();
         const hash = md.sha256.create()
         hash.update(util.binary.raw.encode(this.as_slice()));
         if(salt){

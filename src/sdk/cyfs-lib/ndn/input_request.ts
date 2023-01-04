@@ -3,7 +3,7 @@ import { BuckyResult, Ok, ObjectId, Attributes, HashValue, ChunkId, BuckyError, 
 import { RequestSourceInfo, SourceHelper } from '../access/source'
 import { JsonCodec, JsonCodecHelper } from "../base/codec"
 import { NDNDataRequestRange, NDNDataResponseRange } from '../base/range'
-import { FileDirRef } from '../trans/request'
+import { FileDirRef } from '../trans/output_request'
 import { NDNAPILevel, NDNDataRefererObject, NDNDataType, NDNPutDataResult } from "./def"
 
 export interface NDNInputRequestCommon {

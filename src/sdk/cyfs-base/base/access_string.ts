@@ -42,16 +42,16 @@ export class AccessPermissions {
     private constructor(public value: number){}
 
     as_str(): string {
-        let can_call = AccessPermission.Call.test(this.value);
-        let can_read = AccessPermission.Read.test(this.value);
-        let can_write = AccessPermission.Write.test(this.value);
+        const can_call = AccessPermission.Call.test(this.value);
+        const can_read = AccessPermission.Read.test(this.value);
+        const can_write = AccessPermission.Write.test(this.value);
 
         return `${can_read?"r":"-"}${can_write?"w":"-"}${can_call?"x":"-"}`
     }
 
     static from_u8(value: number): BuckyResult<AccessPermissions> {
         if (value > AccessPermissions.Full.value) {
-            let msg = `invalid AccessPermissions value: ${value}`
+            const msg = `invalid AccessPermissions value: ${value}`
             console.error(msg);
             return Err(new BuckyError(BuckyErrorCode.InvalidParam, msg))
         }

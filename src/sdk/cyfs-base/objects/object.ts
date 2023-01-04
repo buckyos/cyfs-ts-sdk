@@ -14,7 +14,6 @@ import { base_trace } from "../base/log";
 import JSBI from 'jsbi';
 import { OBJECT_CONTENT_CODEC_FORMAT_RAW } from '../codec';
 import { BuckySize, BuckySizeDecoder } from '../base/bucky_usize';
-import { OptionEncoder } from "../base";
 
 export class ObjectIdBuilder<T extends RawEncode & ObjectDesc> {
     m_t: T;
@@ -667,7 +666,7 @@ export class ObjectMutBody<
     private m_obj_type: number;
     private m_trace?: number;
 
-    toString() {
+    toString(): string {
         return `ObjectMutBody:{{ prev_version:${this.prev_version}, update_time:${this.update_time}, content:${this.content}, user_data: ... }}`;
     }
 
@@ -679,7 +678,7 @@ export class ObjectMutBody<
         this.m_user_data = user_data;
     }
 
-    set_trace_id(trace: number) {
+    set_trace_id(trace: number): void {
         this.m_trace = trace;
     }
 
@@ -719,12 +718,12 @@ export class ObjectMutBody<
         return this.m_user_data;
     }
 
-    set_update_time(value: JSBI) {
+    set_update_time(value: JSBI): void {
         this.m_update_time = value;
     }
 
     // 更新时间，并且确保大于旧时间
-    increase_update_time(value: JSBI) {
+    increase_update_time(value: JSBI): void {
         if (JSBI.lessThan(value, this.m_update_time)) {
             console.warn(`object body new time is older than current time! now=${value.toString()}, cur=${this.m_update_time.toString()}`);
             value = JSBI.add(this.m_update_time, JSBI.BigInt(1));
@@ -733,7 +732,7 @@ export class ObjectMutBody<
         this.set_update_time(value);
     }
 
-    set_userdata(user_data: Uint8Array) {
+    set_userdata(user_data: Uint8Array): void {
         this.m_user_data = user_data;
         this.m_update_time = bucky_time_now();
     }
@@ -918,9 +917,9 @@ export class ObjectMutBody<
         const size = r.unwrap();
         const buf = new Uint8Array(size);
         {
-            const r = this.raw_encode(buf, ctx, purpose);
-            if (r.err) {
-                return r;
+            const ret = this.raw_encode(buf, ctx, purpose);
+            if (ret.err) {
+                return ret;
             }
         }
 
@@ -955,7 +954,7 @@ export class ObjectMutBodyDecoder<
         this.obj_type = obj_type;
     }
 
-    set_trace_id(trace: number) {
+    set_trace_id(trace: number): void {
         this.m_trace = trace;
     }
 
@@ -970,7 +969,7 @@ export class ObjectMutBodyDecoder<
         base_trace(`[body(${this.trace_id()})] raw_decode, body_flags, buf len:`, buf.length);
 
         // prev_version
-        let prev_version = undefined;
+        let prev_version;
         if ((body_flags & OBJECT_BODY_FLAG_PREV) === OBJECT_BODY_FLAG_PREV) {
             const r = new HashValueDecoder().raw_decode(buf);
             if (r.err) {
@@ -1072,7 +1071,7 @@ export class ObjectMutBodyDecoder<
         base_trace(`[body(${this.trace_id()})] raw_decode, BodyContentFormat.Typed, content, buf len:`, buf.length);
 
         // user_data
-        let user_data = undefined;
+        let user_data;
         if ((body_flags & OBJECT_BODY_FLAG_USER_DATA) === OBJECT_BODY_FLAG_USER_DATA) {
             // user_data_len
             let user_data_len;
@@ -1174,17 +1173,17 @@ export class ObjectSigns implements RawEncode {
     }
 
     // 重置desc签名
-    reset_desc_sign(sign: Signature) {
+    reset_desc_sign(sign: Signature): void {
         this.m_desc_signs = new Vec([sign]);
     }
 
     // 重置body签名
-    reset_body_sign(sign: Signature) {
+    reset_body_sign(sign: Signature): void {
         this.m_body_signs = new Vec([sign]);
     }
 
     // 追加desc签名
-    push_desc_sign(sign: Signature) {
+    push_desc_sign(sign: Signature): void {
         if (this.m_desc_signs) {
             this.m_desc_signs.value().push(sign)
         } else {
@@ -1193,7 +1192,7 @@ export class ObjectSigns implements RawEncode {
     }
 
     // 追加body签名
-    push_body_sign(sign: Signature) {
+    push_body_sign(sign: Signature): void {
         if (this.m_body_signs) {
             this.m_body_signs.value().push(sign);
         } else {
@@ -1285,7 +1284,7 @@ export class ObjectSigns implements RawEncode {
  */
 export class ObjectSignsDecoder implements RawDecode<ObjectSigns> {
     raw_decode(buf: Uint8Array, ctx: NamedObjectContext): BuckyResult<[ObjectSigns, Uint8Array]> {
-        let desc_signs = undefined;
+        let desc_signs;
         if (ctx.has_desc_signs()) {
             const r = new VecDecoder<Signature>(new SignatureDecoder()).raw_decode(buf);
             if (r.err) {
@@ -1297,7 +1296,7 @@ export class ObjectSignsDecoder implements RawDecode<ObjectSigns> {
             desc_signs = _desc_signs;
         }
 
-        let body_signs = undefined;
+        let body_signs;
         if (ctx.has_body_signs()) {
             const r = new VecDecoder<Signature>(new SignatureDecoder()).raw_decode(buf);
             if (r.err) {
@@ -1351,7 +1350,7 @@ export class NamedObjectId<
         return obj_id;
     }
 
-    gen(object_id: ObjectId) {
+    gen(object_id: ObjectId): void {
         const hash_value = object_id.as_slice();
         if (!is_standard_object(this.obj_type)) {
             // 用户类型
@@ -1399,7 +1398,7 @@ export class NamedObjectId<
         return this.object_id.raw_measure();
     }
 
-    raw_encode(buf: Uint8Array, ctx?: any): BuckyResult<Uint8Array> {
+    raw_encode(buf: Uint8Array, _ctx?: any): BuckyResult<Uint8Array> {
         return this.object_id.raw_encode(buf);
     }
 }
@@ -1622,7 +1621,7 @@ export abstract class DescTypeInfo {
         return this.obj_type();
     }
 
-    set_sub_obj_type(v: number) {
+    set_sub_obj_type(v: number): void {
         //
     }
 
@@ -1649,7 +1648,7 @@ export abstract class DescContentDecoder<T extends DescContent> implements RawDe
 }
 
 ///////////////////////////////
-// 默认的DescContent空实现 
+// 默认的DescContent空实现
 export class EmptyDescContent extends DescContent {
     constructor(private m_type_info: DescTypeInfo) {
         super();
@@ -1718,7 +1717,6 @@ export class NamedObjectDescBuilder<T extends DescContent> {
         this.m_create_time = bucky_time_now();
 
         this.m_desc_content = desc_content;
-        const sub_desc_type = desc_content.type_info().sub_desc_type();
     }
 
     // ObjectDesc
@@ -2583,7 +2581,7 @@ export class NamedObjectDescDecoder<T extends DescContent> implements RawDecode<
         //
         // ObjectDesc
         //
-        let dec_id = undefined;
+        let dec_id;
         if (ctx.has_dec_id()) {
             const r = new ObjectIdDecoder().raw_decode(buf);
             if (r.err) {
@@ -2595,7 +2593,7 @@ export class NamedObjectDescDecoder<T extends DescContent> implements RawDecode<
         }
         base_trace(`[desc(${this.trace_id()})]  raw_decode, buffer len dec_id : `, buf.length);
 
-        let ref_objects = undefined;
+        let ref_objects;
         if (ctx.has_ref_objects()) {
             const d = new VecDecoder(new ObjectLinkDecoder());
             const r = d.raw_decode(buf);
@@ -2609,7 +2607,7 @@ export class NamedObjectDescDecoder<T extends DescContent> implements RawDecode<
         }
         base_trace(`[desc(${this.trace_id()})] raw_decode, buffer ref_objects :`, buf.length);
 
-        let prev = undefined;
+        let prev;
         if (ctx.has_prev()) {
             const r = new ObjectIdDecoder().raw_decode(buf);
             if (r.err) {
@@ -2621,7 +2619,7 @@ export class NamedObjectDescDecoder<T extends DescContent> implements RawDecode<
         }
         base_trace(`[desc(${this.trace_id()})] raw_decode, buffer prev : `, buf.length);
 
-        let create_timestamp = undefined;
+        let create_timestamp;
         if (ctx.has_create_time_stamp()) {
             const r = new HashValueDecoder().raw_decode(buf);
             if (r.err) {
@@ -2633,7 +2631,7 @@ export class NamedObjectDescDecoder<T extends DescContent> implements RawDecode<
         }
         base_trace(`[desc(${this.trace_id()})] raw_decode, buffer create_timestamp :`, buf.length);
 
-        let create_time = undefined;
+        let create_time;
         if (ctx.has_create_time()) {
             const r = new BuckyNumberDecoder("u64").raw_decode(buf);
             if (r.err) {
@@ -2645,7 +2643,7 @@ export class NamedObjectDescDecoder<T extends DescContent> implements RawDecode<
         }
         base_trace(`[desc(${this.trace_id()})] raw_decode, buffer create_time : `, buf.length);
 
-        let expired_time = undefined;
+        let expired_time;
         if (ctx.has_expired_time()) {
             const r = new BuckyNumberDecoder("u64").raw_decode(buf);
             if (r.err) {
@@ -2660,7 +2658,7 @@ export class NamedObjectDescDecoder<T extends DescContent> implements RawDecode<
         //
         // OwnderObjectDesc/AreaObjectDesc/AuthorObjectDesc/PublicKeyObjectDesc
         //
-        let owner = undefined
+        let owner
         if (ctx.has_owner()) {
             const r = new ObjectIdDecoder().raw_decode(buf);
             if (r.err) {
@@ -2673,7 +2671,7 @@ export class NamedObjectDescDecoder<T extends DescContent> implements RawDecode<
         }
         base_trace(`[desc(${this.trace_id()})] raw_decode, buffer owner : `, buf.length);
 
-        let area = undefined;
+        let area;
         if (ctx.has_area()) {
             const r = new AreaDecoder().raw_decode(buf);
             if (r.err) {
@@ -2686,7 +2684,7 @@ export class NamedObjectDescDecoder<T extends DescContent> implements RawDecode<
         }
         base_trace(`[desc(${this.trace_id()})] raw_decode, buffer area :`, buf.length);
 
-        let author = undefined
+        let author;
         if (ctx.has_author()) {
             const r = new ObjectIdDecoder().raw_decode(buf);
             if (r.err) {
@@ -2879,11 +2877,6 @@ export class NamedObject<
         return this.m_obj_type_code;
     }
 
-    // 获取缓存的object_id
-    //get_cached_object_id(): ObjectId {
-    //   return this.m_object_id;
-    //}
-
     // 计算object_id并更新缓存
     calculate_id(): ObjectId {
         const id = this.desc().calculate_id();
@@ -2949,9 +2942,6 @@ export class NamedObject<
             size += r.unwrap();
         }
 
-        //this.m_obj_flags = Some(ctx.obj_flags);
-        //this.m_ctx = Some(ctx);
-
         const result: [number, NamedObjectContext] = [size, ctx];
         return Ok(result);
     }
@@ -2995,7 +2985,7 @@ export class NamedObject<
         return this.m_body;
     }
 
-    set_body(body?: ObjectMutBody<DC, BC>) {
+    set_body(body?: ObjectMutBody<DC, BC>): void {
         this.m_body = body;
     }
 
@@ -3120,9 +3110,9 @@ export class NamedObject<
 
         const buf = new Uint8Array(size);
         {
-            const r = this.raw_encode(buf, ctx, purpose);
-            if (r.err) {
-                return r;
+            const ret = this.raw_encode(buf, ctx, purpose);
+            if (ret.err) {
+                return ret;
             }
         }
 
@@ -3200,7 +3190,7 @@ export class NamedObjectDecoder<
         base_trace(`[named_object(${this.m_desc_decoder.trace_id()})] raw_decode, desc`);
 
         // body
-        let body = undefined;
+        let body;
         if (ctx.has_mut_body()) {
             const r = this.m_body_decoder.raw_decode(buf);
             if (r.err) {
@@ -3226,7 +3216,7 @@ export class NamedObjectDecoder<
         base_trace(`[named_object(${this.m_desc_decoder.trace_id()})] raw_decode, signs`);
 
         // nonce
-        let nonce = undefined;
+        let nonce;
         if (ctx.has_nonce()) {
             const r = new BuckyNumberDecoder("u128").raw_decode(buf);
             if (r.err) {

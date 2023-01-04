@@ -426,8 +426,6 @@ export class SharedCyfsStack {
         return new GlobalStateMetaStub(this.local_cache_meta(), undefined, dec_id);
     }
 
-    
-
     // state_storage
     global_state_storage(
         category: GlobalStateCategory,
