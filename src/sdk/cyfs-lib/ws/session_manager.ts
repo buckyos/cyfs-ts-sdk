@@ -1,6 +1,7 @@
+import { BuckyError, BuckyErrorCode, BuckyResult } from '../../cyfs-base';
 import { WebSocketRequestHandler } from "./request";
 import { WebSocketSession } from "./session";
-import { Err } from "ts-results";
+import { Err, Ok } from "ts-results";
 
 class WebSocketSessionManagerInner {
 
@@ -8,7 +9,7 @@ class WebSocketSessionManagerInner {
     list: WebSocketSession[] = [];
     next_sid: number;
 
-    constructor(private handler: WebSocketRequestHandler) {
+    constructor(protected handler: WebSocketRequestHandler | undefined) {
         this.next_sid = Math.floor(Math.random() * 1000);
         console.info(`ws sid start at ${this.next_sid}`);
     }
@@ -36,14 +37,20 @@ class WebSocketSessionManagerInner {
         }
     }
 
-    new_session(source: string): WebSocketSession {
+    new_session(source: string): BuckyResult<WebSocketSession> {
+        if (this.handler == null) {
+            const msg = `new ws session but request handler is empty! source=${source}`;
+            console.error(msg);
+            return Err(new BuckyError(BuckyErrorCode.ErrorState, msg));
+        }
+
         const sid = this.next_sid;
         this.next_sid += 1;
-        const session = new WebSocketSession(sid, source, this.handler);
+        const session = new WebSocketSession(sid, source, this.handler!);
 
         this.list.push(session);
 
-        return session;
+        return Ok(session);
     }
 
     remove_session(sid: number): WebSocketSession | undefined {
@@ -66,16 +73,20 @@ export class WebSocketSessionManager extends WebSocketSessionManagerInner {
         super(handler);
     }
 
-    async run_client_session(service_url: string, ws: WebSocket): Promise<WebSocketSession> {
-        console.info(`will run client session ${service_url}`);
+    async run_client_session(service_url: string, session: WebSocketSession, ws: WebSocket): Promise<BuckyResult<void>> {
+        console.info(`will run client session ${service_url}, sid=${session.sid}`);
 
-        const session = this.new_session(service_url);
-        await WebSocketSession.run_client(session, ws);
+        const ret = await WebSocketSession.run_client(session, ws);
 
-        const ret = this.remove_session(session.sid);
-        if (ret == null) {
+        if (this.remove_session(session.sid) == null) {
             throw new Error(`session not exists! sid=${session.sid}`);
         }
+
         return ret;
+    }
+
+    public stop(): void {
+        console.assert(this.handler != null);
+        this.handler = undefined;
     }
 }

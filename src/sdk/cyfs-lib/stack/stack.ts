@@ -35,7 +35,6 @@ import { GlobalStateMetaStub } from "../rmeta/stub";
 
 
 export enum CyfsStackEventType {
-    Http,
     WebSocket,
 }
 
@@ -61,7 +60,7 @@ export class SharedCyfsStackParam {
         public service_url: string,
         public event_type: CyfsStackEventType,
         public dec_id: ObjectId,
-        public ws_url?: string,
+        public ws_url: string,
         public requestor_config?: CyfsStackRequestorConfig
     ) {
         if (this.requestor_config == null) {
@@ -127,26 +126,6 @@ export class SharedCyfsStackParam {
             dec_id,
             ws_url,
         );
-    }
-
-    // 使用指定的url打开协议栈，并使用http事件系统
-    static new_with_http_event(service_url: string, dec_id: ObjectId): BuckyResult<SharedCyfsStackParam> {
-        return Ok(new SharedCyfsStackParam(
-            service_url,
-            CyfsStackEventType.Http,
-            dec_id
-        ));
-    }
-
-    // 使用指定的端口打开协议栈，并使用http事件系统
-    static new_with_http_event_ports(service_http_port: number, dec_id: ObjectId): BuckyResult<SharedCyfsStackParam> {
-        const service_url = `http://127.0.0.1:${service_http_port}`;
-
-        return Ok(new SharedCyfsStackParam(
-            service_url,
-            CyfsStackEventType.Http,
-            dec_id
-        ));
     }
 
     // 使用指定的url打开协议栈，并使用websocket事件系统
@@ -278,6 +257,12 @@ export class SharedCyfsStack {
 
     static open(param: SharedCyfsStackParam): SharedCyfsStack {
         return new SharedCyfsStack(param);
+    }
+
+    public async stop(): Promise<void> {
+        this.m_router_handlers.stop();
+
+        this.m_router_events.stop();
     }
 
     fork_with_new_dec(dec_id?: ObjectId): SharedCyfsStack {

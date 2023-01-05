@@ -1,4 +1,4 @@
-import { BuckyError, BuckyErrorCode, BuckyResult, Err, EventListenerAsyncRoutineT, ObjectId, Ok} from "../../../cyfs-base";
+import { BuckyError, BuckyErrorCode, BuckyResult, Err, EventListenerAsyncRoutineT, ObjectId, Ok } from "../../../cyfs-base";
 import { JsonCodec } from "../../base/codec";
 import { ROUTER_WS_EVENT_CMD_ADD, ROUTER_WS_EVENT_CMD_EVENT, ROUTER_WS_EVENT_CMD_REMOVE } from "../../base/protocol";
 import { RouterWSHandlerResponseJsonCodec } from "../../router_handler/ws/request";
@@ -19,10 +19,10 @@ class RouterEventItem {
     constructor(
         public category: RouterEventCategory,
         public id: string,
-        public dec_id: ObjectId| undefined,
+        public dec_id: ObjectId | undefined,
         public index: number,
         public routine: RouterEventAnyRoutine,
-    ) {}
+    ) { }
 
     async emit(param: string): Promise<BuckyResult<string>> {
         return await this.routine.emit(param)
@@ -66,7 +66,7 @@ class RouterEventItem {
                 `add ws router event failed! category=${req.category}, id=${req.id}, err=${resp.err}, msg=${resp.msg}`
             );
 
-            return Err(new BuckyError(resp.err, resp.msg||""))
+            return Err(new BuckyError(resp.err, resp.msg || ""))
         }
     }
 }
@@ -76,8 +76,8 @@ class RouterEventUnregisterItem {
         public category: RouterEventCategory,
         public id: string,
         public dec_id?: ObjectId,
-    ){}
-    
+    ) { }
+
     async unregister(requestor: WebSocketRequestManager): Promise<BuckyResult<boolean>> {
         console.info(
             `ws will remove event: category=${this.category}, id=${this.id}, sid=${requestor.sid}`
@@ -133,7 +133,15 @@ class RouterWSEventManagerImpl {
         this.unregister_events = {};
     }
 
-    get_event(id: RouterEventId): RouterEventItem|undefined {
+    sid(): number | undefined {
+        if (this.session) {
+            return this.session.sid;
+        } else {
+            return undefined;
+        }
+    }
+
+    get_event(id: RouterEventId): RouterEventItem | undefined {
         const full_id = RouterWSEventManagerImpl.gen_full_id(id.category, id.id);
         return this.events[full_id]
     }
@@ -142,12 +150,12 @@ class RouterWSEventManagerImpl {
         const full_id = RouterWSEventManagerImpl.gen_full_id(event_item.category, event_item.id);
 
         if (this.events[full_id]) {
-            console.error(`router event already exists! id=${event_item.id}`, );
+            console.error(`router event already exists! id=${event_item.id}`,);
             return Err(BuckyError.from(BuckyErrorCode.AlreadyExists));
         }
 
         this.events[full_id] = event_item
-        
+
         if (this.session) {
             await event_item.register(this.session.requestor)
         }
@@ -190,7 +198,7 @@ class RouterWSEventManagerImpl {
         }
 
         // 添加到反注册队列等待处理
-        const unregister_item = new RouterEventUnregisterItem (category, id, dec_id);
+        const unregister_item = new RouterEventUnregisterItem(category, id, dec_id);
 
         this.unregister_events[full_id] = unregister_item
 
@@ -200,7 +208,7 @@ class RouterWSEventManagerImpl {
     static async on_event(
         manager: RouterWSEventManagerImpl,
         content: string,
-    ): Promise<BuckyResult<string|undefined>> {
+    ): Promise<BuckyResult<string | undefined>> {
         const event_r = new RouterWSEventEmitParamJsonCodec().decode_string(content);
         if (event_r.err) {
             return event_r;
@@ -298,12 +306,12 @@ class RouterWSEventManagerImpl {
 }
 
 class RouterWSEventRequestEvent extends WebSocketRequestHandler {
-    constructor(private owner: RouterWSEventManagerImpl) {super()}
+    constructor(private owner: RouterWSEventManagerImpl) { super() }
     async on_string_request(
         requestor: WebSocketRequestManager,
         cmd: number,
         content: string,
-    ): Promise<BuckyResult<string|undefined>> {
+    ): Promise<BuckyResult<string | undefined>> {
         if (cmd === ROUTER_WS_EVENT_CMD_EVENT) {
             return await RouterWSEventManagerImpl.on_event(this.owner, content)
         } else {
@@ -322,13 +330,13 @@ class RouterWSEventRequestEvent extends WebSocketRequestHandler {
     clone_handler(): WebSocketRequestHandler {
         return this;
     }
-    
+
 }
 
 export class RouterWSEventManager {
     manager: RouterWSEventManagerImpl
     client: WebSocketClient
-    constructor(service_url: string){
+    constructor(service_url: string) {
         this.manager = new RouterWSEventManagerImpl()
         const event = new RouterWSEventRequestEvent(this.manager);
 
@@ -339,19 +347,25 @@ export class RouterWSEventManager {
         this.client.start()
     }
 
+    stop(): void {
+        console.info(`will stop router event manager! sid=${this.manager.sid()}`);
+
+        this.client.stop();
+    }
+
     async add_event<REQ, RESP>(
-        id: string, 
-        dec_id: ObjectId|undefined, 
+        id: string,
+        dec_id: ObjectId | undefined,
         index: number,
         category: RouterEventCategory,
         req_codec: JsonCodec<REQ>,
         resp_codec: JsonCodec<RESP>,
         routine: EventListenerAsyncRoutineT<RouterEventRequest<REQ>, RouterEventResponse<RESP>>): Promise<BuckyResult<void>> {
-            const event_routine = new RouterEventRoutineT(req_codec, resp_codec, routine)
+        const event_routine = new RouterEventRoutineT(req_codec, resp_codec, routine)
 
-            const event_item = new RouterEventItem(category, id, dec_id, index, event_routine);
+        const event_item = new RouterEventItem(category, id, dec_id, index, event_routine);
 
-            return await this.manager.add_event(event_item)
+        return await this.manager.add_event(event_item)
     }
 
     async remove_event(
