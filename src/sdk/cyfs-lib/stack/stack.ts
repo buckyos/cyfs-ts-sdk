@@ -160,6 +160,42 @@ export class SharedCyfsStackParam {
     }
 }
 
+class RequestorHolder {
+    http?: HttpRequestor;
+    ws?: WSHttpRequestor;
+
+    select_requestor(param: SharedCyfsStackParam, requestor_type: CyfsStackRequestorType,): BaseRequestor {
+        if (requestor_type === CyfsStackRequestorType.WebSocket) {
+            if (this.ws == null) {
+                console.assert(param.ws_url != null);
+
+                const requestor = new WSHttpRequestor(param.ws_url!);
+                this.ws = requestor;
+            }
+
+            return this.ws;
+        } else {
+            if (this.http == null) {
+                console.assert(requestor_type === CyfsStackRequestorType.Http);
+                console.assert(param.service_url != null);
+
+                const url = new URL(param.service_url);
+                const addr = `${url.host}`;
+                const requestor = new HttpRequestor(addr);
+                this.http = requestor;
+            }
+
+            return this.http;
+        }
+    }
+
+    stop() {
+        if (this.ws) {
+            this.ws.stop();
+        }
+    }
+}
+
 export class SharedCyfsStack {
     // 所属的dec_id
     public dec_id: ObjectId;
@@ -171,8 +207,8 @@ export class SharedCyfsStack {
     private m_root_state: GlobalStateRequestor;
     private m_local_cache: GlobalStateRequestor;
 
-    private m_root_state_accessor :GlobalStateAccessorRequestor;
-    private m_local_cache_accessor :GlobalStateAccessorRequestor;
+    private m_root_state_accessor: GlobalStateAccessorRequestor;
+    private m_local_cache_accessor: GlobalStateAccessorRequestor;
 
     private m_root_state_meta: GlobalStateMetaRequestor;
     private m_local_cache_meta: GlobalStateMetaRequestor;
@@ -191,6 +227,8 @@ export class SharedCyfsStack {
 
     private m_param: SharedCyfsStackParam;
 
+    private m_requestor_holder: RequestorHolder;
+
     private constructor(param: SharedCyfsStackParam) {
         this.m_param = param;
         const ws_url = param.ws_url;
@@ -199,42 +237,29 @@ export class SharedCyfsStack {
 
         this.dec_id = param.dec_id;
 
-        this.m_util_service = new UtilRequestor(SharedCyfsStack.select_requestor(param, param.requestor_config!.util_service), this.dec_id);
-        this.m_non_service = new NONRequestor(SharedCyfsStack.select_requestor(param, param.requestor_config!.non_service), this.dec_id);
-        this.m_ndn_service = new NDNRequestor(SharedCyfsStack.select_requestor(param, param.requestor_config!.ndn_service), this.dec_id);
-        this.m_trans_service = new TransRequestor(SharedCyfsStack.select_requestor(param, param.requestor_config!.trans_service), this.dec_id);
-        this.m_crypto = new CryptoRequestor(SharedCyfsStack.select_requestor(param, param.requestor_config!.crypto_service), this.dec_id);
-        this.m_root_state = new GlobalStateRequestor(GlobalStateCategory.RootState, SharedCyfsStack.select_requestor(param, param.requestor_config!.root_state), this.dec_id);
-        this.m_local_cache = new GlobalStateRequestor(GlobalStateCategory.LocalCache, SharedCyfsStack.select_requestor(param, param.requestor_config!.local_cache), this.dec_id);
+        const requestor_holder = new RequestorHolder();
 
-        this.m_root_state_accessor = GlobalStateAccessorRequestor.new_root_state_accessor(SharedCyfsStack.select_requestor(param, param.requestor_config!.root_state), this.dec_id);
-        this.m_local_cache_accessor = GlobalStateAccessorRequestor.new_local_cache_accessor(SharedCyfsStack.select_requestor(param, param.requestor_config!.local_cache), this.dec_id);
+        this.m_util_service = new UtilRequestor(requestor_holder.select_requestor(param, param.requestor_config!.util_service), this.dec_id);
+        this.m_non_service = new NONRequestor(requestor_holder.select_requestor(param, param.requestor_config!.non_service), this.dec_id);
+        this.m_ndn_service = new NDNRequestor(requestor_holder.select_requestor(param, param.requestor_config!.ndn_service), this.dec_id);
+        this.m_trans_service = new TransRequestor(requestor_holder.select_requestor(param, param.requestor_config!.trans_service), this.dec_id);
+        this.m_crypto = new CryptoRequestor(requestor_holder.select_requestor(param, param.requestor_config!.crypto_service), this.dec_id);
+        this.m_root_state = new GlobalStateRequestor(GlobalStateCategory.RootState, requestor_holder.select_requestor(param, param.requestor_config!.root_state), this.dec_id);
+        this.m_local_cache = new GlobalStateRequestor(GlobalStateCategory.LocalCache, requestor_holder.select_requestor(param, param.requestor_config!.local_cache), this.dec_id);
 
-        this.m_root_state_meta = GlobalStateMetaRequestor.new_root_state(SharedCyfsStack.select_requestor(param, param.requestor_config!.root_state), this.dec_id);
-        this.m_local_cache_meta = GlobalStateMetaRequestor.new_local_cache(SharedCyfsStack.select_requestor(param, param.requestor_config!.root_state), this.dec_id);
+        this.m_root_state_accessor = GlobalStateAccessorRequestor.new_root_state_accessor(requestor_holder.select_requestor(param, param.requestor_config!.root_state), this.dec_id);
+        this.m_local_cache_accessor = GlobalStateAccessorRequestor.new_local_cache_accessor(requestor_holder.select_requestor(param, param.requestor_config!.local_cache), this.dec_id);
+
+        this.m_root_state_meta = GlobalStateMetaRequestor.new_root_state(requestor_holder.select_requestor(param, param.requestor_config!.root_state), this.dec_id);
+        this.m_local_cache_meta = GlobalStateMetaRequestor.new_local_cache(requestor_holder.select_requestor(param, param.requestor_config!.root_state), this.dec_id);
 
         this.m_router_handlers = new RouterHandlerManager(CyfsStackEventType.WebSocket, ws_url, this.dec_id);
 
         this.m_router_events = new RouterEventManager(CyfsStackEventType.WebSocket, ws_url, this.dec_id);
 
-        this.m_sync_service = new SyncRequestor(SharedCyfsStack.select_requestor(param, param.requestor_config!.sync_service), this.dec_id);
-    }
+        this.m_sync_service = new SyncRequestor(requestor_holder.select_requestor(param, param.requestor_config!.sync_service), this.dec_id);
 
-    private static select_requestor(param: SharedCyfsStackParam, requestor_type: CyfsStackRequestorType,): BaseRequestor {
-        if (requestor_type === CyfsStackRequestorType.WebSocket) {
-            console.assert(param.ws_url != null);
-
-            const requestor = new WSHttpRequestor(param.ws_url!);
-            return requestor;
-        } else {
-            console.assert(requestor_type === CyfsStackRequestorType.Http);
-            console.assert(param.service_url != null);
-
-            const url = new URL(param.service_url);
-            const addr = `${url.host}`;
-            const requestor = new HttpRequestor(addr);
-            return requestor;
-        }
+        this.m_requestor_holder = requestor_holder;
     }
 
     static default_with_ws_event(dec_id: ObjectId): SharedCyfsStack {
@@ -260,6 +285,8 @@ export class SharedCyfsStack {
     }
 
     public async stop(): Promise<void> {
+        this.m_requestor_holder.stop();
+
         this.m_router_handlers.stop();
 
         this.m_router_events.stop();
@@ -411,7 +438,7 @@ export class SharedCyfsStack {
         return new GlobalStateMetaStub(this.local_cache_meta(), undefined, dec_id);
     }
 
-    
+
 
     // state_storage
     global_state_storage(

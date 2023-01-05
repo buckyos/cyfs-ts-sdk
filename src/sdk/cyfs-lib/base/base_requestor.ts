@@ -94,6 +94,11 @@ export class WSHttpRequestor extends BaseRequestor {
         this.client.start();
     }
 
+    stop(): void {
+        console.log(`will stop ws http requestor! url=${this.service_url}`);
+        this.client.stop();
+    }
+
     remote_addr(): string {
         return this.service_url.host;
     }
