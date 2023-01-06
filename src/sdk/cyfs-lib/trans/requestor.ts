@@ -96,7 +96,7 @@ export class TransRequestor {
         const httpReq = new HttpRequest('POST', url);
         this.encode_common_headers(req.common, httpReq);
         if (req.access) {
-            httpReq.insert_header(CYFS_ACCESS, req.access.to_string())
+            httpReq.insert_header(CYFS_ACCESS, req.access.value.toString())
         }
         httpReq.set_body(req.context.to_vec().unwrap())
 
