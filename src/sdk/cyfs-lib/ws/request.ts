@@ -3,6 +3,8 @@ import { WebSocketSession } from "./session";
 import { WSPacket } from "./packet";
 import JSBI from 'jsbi';
 
+const WS_REQUEST_DEFAULT_TIMEOUT: JSBI = JSBI.BigInt(1000 * 1000 * 60 * 10 * 10);
+
 export abstract class WebSocketRequestHandler {
     async on_request(
         requestor: WebSocketRequestManager,
@@ -53,16 +55,8 @@ export abstract class WebSocketRequestHandler {
     abstract clone_handler(): WebSocketRequestHandler;
 }
 
-class AbortHandle {
-    abort() {
-        // 
-    }
-}
-
 export class RequestItem {
-
     resp?: BuckyResult<Uint8Array>;
-    isTimeout = false;
     resolve?: () => void;
     waker: Promise<void>;
 
@@ -72,20 +66,30 @@ export class RequestItem {
         });
     }
 
-    timeout() {
-        if (!this.resp) {
-            this.resp = Err(BuckyError.from(BuckyErrorCode.Timeout));
+    timeout(): void {
+        return this.complete_resp(BuckyErrorCode.Timeout);
+    }
+
+    abort(): void {
+        return this.complete_resp(BuckyErrorCode.Aborted);
+    }
+
+    complete_resp(code: BuckyErrorCode): void {
+        if (this.resolve != null) {
+            this.resp = Err(BuckyError.from(code));
+            const resolve = this.resolve;
+            this.resolve = undefined;
+            resolve();
+
         } else {
             console.warn(`ws request timeout but already has resp! send_tick=${this.send_tick}, seq=${this.seq}`);
         }
-        this.isTimeout = true;
     }
 }
 
 interface RequestResult {
     seq: number;
     req_item: RequestItem;
-    list: { [n: number]: RequestItem };
 }
 
 export class WebSocketRequestContainer {
@@ -109,7 +113,6 @@ export class WebSocketRequestContainer {
         return {
             seq,
             req_item,
-            list: {},
         };
     }
 
@@ -119,23 +122,39 @@ export class WebSocketRequestContainer {
         return ret;
     }
 
-    check_timeout() {
+    check_timeout(): RequestItem[] {
         // TODO: 直接清除过期的元素，不能迭代这些元素，否则会导致这些元素被更新时间戳
         // let (_, list) = self.list.notify_get(&0);
 
-        return {};
+        const now = bucky_time_now();
+        const list = [];
+        for (const seq in this.list) {
+            const item = this.list[seq];
+            const diff = JSBI.subtract(now, item.send_tick);
+            if (JSBI.greaterThan(diff, WS_REQUEST_DEFAULT_TIMEOUT)) {
+                delete this.list[seq];
+                list.push(item);
+            }
+        }
+
+        return list;
     }
 
-    clear() {
+    clear(): void {
+        for (const seq in this.list) {
+            console.warn(`will abort ws request: seq=${seq}`);
+            const item = this.list[seq];
+            item.abort();
+        }
+
         this.list = {};
     }
 
-    static on_timeout(sid: number, list: { [n: number]: RequestItem }) {
-        for (const seq of Object.keys(list)) {
-            const item = list[parseInt(seq, 10)];
+    static on_timeout(sid: number, list: RequestItem[]): void {
+        for (const item of list) {
+            console.warn(`ws request droped on timeout! sid=${sid}, seq=${item.seq}`);
 
-            console.warn(`ws request droped on timeout! sid=${sid}, seq=${seq}`);
-            // TODO: let mut item = item.lock().unwrap();
+            item.timeout();
         }
     }
 }
@@ -156,10 +175,12 @@ export class WebSocketRequestManager {
     bind_session(session: WebSocketSession): void {
         console.assert(!this.session, `bind_session ${this.session}`);
         this.session = session;
+        this.sid = session.sid;
         this.monitor();
     }
 
     unbind_session(): void {
+        console.log(`ws request manager unbind session! sid=${this.session!.sid}`);
         this.stop_monitor();
         this.reqs.clear();
         this.session = undefined;
@@ -196,10 +217,7 @@ export class WebSocketRequestManager {
     }
 
     async post_bytes_req(cmd: number, msg: Uint8Array): Promise<BuckyResult<Uint8Array>> {
-        const { seq, req_item: item, list } = this.reqs.new_request(this.sid);
-        if (Object.values(list).length) {
-            WebSocketRequestContainer.on_timeout(this.sid, list);
-        }
+        const { seq, req_item: item } = this.reqs.new_request(this.sid);
 
         const packet = WSPacket.new_from_buffer(seq, cmd, msg);
         const buf = packet.encode();
@@ -253,20 +271,20 @@ export class WebSocketRequestManager {
         return Ok(void (0));
     }
 
-    async monitor() {
+    async monitor(): Promise<void> {
         const reqs = this.reqs;
         const sid = this.sid;
 
         while (this.is_monitor) {
             await new Promise(resolve => setTimeout(resolve, 15 * 1000));
             const list = reqs.check_timeout();
-            if (Object.keys(list).length) {
+            if (list.length > 0) {
                 WebSocketRequestContainer.on_timeout(sid, list);
             }
         }
     }
 
-    stop_monitor() {
+    stop_monitor(): void {
         this.is_monitor = false;
     }
 

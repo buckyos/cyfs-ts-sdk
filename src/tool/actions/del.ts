@@ -35,7 +35,7 @@ export async function delete_object(object_id: ObjectId, target: ObjectId|undefi
 
 async function run(id: string, options: any, stack: SharedCyfsStack): Promise<void> {
     const object_id = ObjectId.from_base_58(id).unwrap()
-    let target: ObjectId|undefined = undefined;
+    let target: ObjectId|undefined;
     if (options.target) {
         if (options.target === "ood") {
             const reslove_ret = (await stack.util().resolve_ood({
