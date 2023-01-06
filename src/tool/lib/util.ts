@@ -89,7 +89,7 @@ export function check_channel(config: CyfsToolConfig): boolean {
         return false;
     }
     const sdk_channel = get_channel();
-    if (channel === sdk_channel) {
+    if (channel != sdk_channel) {
         console.error(`sdk channel "${sdk_channel}" mismatch runtime channel "${channel}"!`);
         return false;
     }
