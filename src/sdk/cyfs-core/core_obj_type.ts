@@ -28,7 +28,7 @@ export enum CoreObjectType {
     TopicPublishResp = 158,
     TopicMessageList = 159,
 
-    //meta相关
+    // meta相关
     BlockV1 = 300,
     MetaProto = 301,
     MetaMinerGroup = 302,

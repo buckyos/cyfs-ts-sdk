@@ -153,7 +153,7 @@ export class DeviceBodyContent extends ProtobufBodyContent {
         return this.m_name;
     }
 
-    set_name(name?: string) {
+    set_name(name?: string): void {
         this.m_name = name;
     }
 
@@ -281,9 +281,9 @@ export class DeviceIdDecoder extends NamedObjectIdDecoder<DeviceDescContent, Dev
 // 继承自NamedObject<DeviceDescContent, DeviceBodyContent>
 // 提供创建方法和其他自定义方法
 export class Device extends NamedObject<DeviceDescContent, DeviceBodyContent>{
-    static create(owner: ObjectId|undefined, unique_id: UniqueId, endpoints: Endpoint[], sn_list: DeviceId[], passive_sn_list: DeviceId[], public_key: PublicKey, area: Area, category: DeviceCategory, build?: (builder: DeviceBuilder) => void): Device {
+    static create(owner: ObjectId|undefined, unique_id: UniqueId, endpoints: Endpoint[], sn_list: DeviceId[], passive_pn_list: DeviceId[], public_key: PublicKey, area: Area, category: DeviceCategory, build?: (builder: DeviceBuilder) => void): Device {
         const desc_content = new DeviceDescContent(unique_id);
-        const body_content = new DeviceBodyContent(endpoints, sn_list, passive_sn_list);
+        const body_content = new DeviceBodyContent(endpoints, sn_list, passive_pn_list);
 
         const real_area = new Area(
             area.country,
@@ -316,7 +316,7 @@ export class Device extends NamedObject<DeviceDescContent, DeviceBodyContent>{
         return this.body_expect().content().name();
     }
 
-    set_name(name?: string) {
+    set_name(name?: string): void {
         return this.body_expect().content().set_name(name);
     }
 

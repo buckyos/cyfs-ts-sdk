@@ -66,7 +66,7 @@ export class DownloadTaskState {
 }
 
 export enum DownloadTaskControlState {
-    Normal = "Normal", 
-    Paused = "Paused", 
-    Canceled = "Canceled", 
+    Normal = "Normal",
+    Paused = "Paused",
+    Canceled = "Canceled",
 }
