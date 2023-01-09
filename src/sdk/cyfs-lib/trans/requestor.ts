@@ -237,8 +237,8 @@ export class TransRequestor {
             task_status: req.task_status,
         }
         if (req.range) {
-            body.offset = req.range[0]
-            body.length = req.range[1]
+            body.offset = req.range[0].toString()
+            body.length = req.range[1].toString()
         }
         httpReq.set_json_body(body);
 

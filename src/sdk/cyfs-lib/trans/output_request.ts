@@ -163,7 +163,7 @@ export interface FileDirRef {
 export interface TransQueryTasksOutputRequest {
     common: NDNOutputRequestCommon;
     task_status?: TransTaskStatus;
-    range?: [number, number];
+    range?: [JSBI|number, number];
 }
 
 export interface TransTaskInfo {
