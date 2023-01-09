@@ -354,6 +354,10 @@ export interface DeviceStaticInfo {
 
     // 当前协议栈的cyfs根目录
     cyfs_root: string;
+
+    // current sn list config
+    sn_list: DeviceId[],
+    known_sn_list: DeviceId[],
 }
 
 export class DeviceStaticInfoJsonCodec extends JsonCodec<DeviceStaticInfo> {
@@ -404,6 +408,24 @@ export class DeviceStaticInfoJsonCodec extends JsonCodec<DeviceStaticInfo> {
             owner_id = r.unwrap();
         }
 
+        const sn_list = [];
+        for (const id of o.sn_list) {
+            const r = DeviceId.from_base_58(id);
+            if (r.err) {
+                return r;
+            }
+            sn_list.push(r.unwrap())
+        }
+
+        const known_sn_list = [];
+        for (const id of o.known_sn_list) {
+            const r = DeviceId.from_base_58(id);
+            if (r.err) {
+                return r;
+            }
+            known_sn_list.push(r.unwrap())
+        }
+
 
         return Ok({
             device_id,
@@ -418,7 +440,9 @@ export class DeviceStaticInfoJsonCodec extends JsonCodec<DeviceStaticInfo> {
             ood_device_id,
             zone_id,
             owner_id,
-            cyfs_root: o.cyfs_root
+            cyfs_root: o.cyfs_root,
+            sn_list,
+            known_sn_list
         })
     }
 }
