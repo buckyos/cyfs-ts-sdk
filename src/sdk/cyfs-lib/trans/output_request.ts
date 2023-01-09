@@ -97,7 +97,7 @@ export interface TransCreateTaskOutputRequest {
 
     object_id: ObjectId;
 
-    // 保存到的本地目录or文件
+    // 保存到的本地文件全路径，路径为空字符串时，数据以chunk形式保存到chunk-cache
     local_path: string;
 
     // 源设备(hub)列表
