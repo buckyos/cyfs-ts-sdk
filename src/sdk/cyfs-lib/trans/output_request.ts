@@ -32,39 +32,26 @@ export class TransTaskStateInfo {
     // state == TransTaskState.Err
     error_code?: BuckyErrorCodeEx;
 
-    public static async from_respone(resp: Response): Promise<BuckyResult<TransTaskStateInfo>> {
-        const text = await resp.text();
-
+    public static from_obj(obj: any): BuckyResult<TransTaskStateInfo> {
         const ret = new TransTaskStateInfo();
 
-        let json;
-
-        // 解析json
-        try {
-            json = JSON.parse(text);
-        } catch (error) {
-            const msg = `parse TransTaskStateInfo from resp error! ${text}, ${error}`;
-            console.error(msg);
-            return Err(new BuckyError(BuckyErrorCode.InvalidFormat, msg));
-        }
-
-        if (json.Downloading != null) {
+        if (obj.Downloading != null) {
             ret.state = TransTaskState.Downloading;
-            ret.on_air_state = json.Downloading;
-        } else if (json.Finished != null) {
+            ret.on_air_state = obj.Downloading;
+        } else if (obj.Finished != null) {
             ret.state = TransTaskState.Finished;
-            ret.upload_speed = json.Finished;
-        } else if (json.Err != null) {
+            ret.upload_speed = obj.Finished;
+        } else if (obj.Err != null) {
             ret.state = TransTaskState.Err;
-            ret.error_code = error_code_from_number(json.Err);
-        } else if (json === 'Pending') {
+            ret.error_code = error_code_from_number(obj.Err);
+        } else if (obj === 'Pending') {
             ret.state = TransTaskState.Pending;
-        } else if (json === 'Paused') {
+        } else if (obj === 'Paused') {
             ret.state = TransTaskState.Paused;
-        } else if (json === 'Canceled') {
+        } else if (obj === 'Canceled') {
             ret.state = TransTaskState.Canceled;
         } else {
-            const msg = `unknown TransTaskStateInfo state! ${text}`;
+            const msg = `unknown TransTaskStateInfo state! ${JSON.stringify(obj)}`;
             console.error(msg);
             return Err(new BuckyError(BuckyErrorCode.InvalidFormat, msg));
         }
@@ -151,7 +138,7 @@ export interface TransGetTaskStateOutputRequest {
 }
 
 export interface TransGetTaskStateOutputResponse {
-    state: TransTaskState,
+    state: TransTaskStateInfo,
     group?: string,
 }
 

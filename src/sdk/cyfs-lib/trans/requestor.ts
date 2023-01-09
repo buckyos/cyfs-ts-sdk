@@ -17,7 +17,8 @@ import {
     TransControlTaskGroupOutputRequest,
     TransControlTaskGroupOutputResponse,
     TransGetTaskGroupStateOutputRequest,
-    TransGetTaskGroupStateOutputResponse
+    TransGetTaskGroupStateOutputResponse,
+    TransGetTaskStateOutputResponse
 } from './output_request';
 import {TransContextDecoder} from "../../cyfs-core/trans/trans_context";
 import { NDNOutputRequestCommon } from '../ndn/output_request';
@@ -203,7 +204,7 @@ export class TransRequestor {
     }
 
     // GET {serviceURL}/task/state
-    public async get_task_state(req: TransGetTaskStateOutputRequest): Promise<BuckyResult<TransTaskStateInfo>> {
+    public async get_task_state(req: TransGetTaskStateOutputRequest): Promise<BuckyResult<TransGetTaskStateOutputResponse>> {
         const url = `${this.serviceURL}task/state`;
         console.log('will get trans task state: ', url, req);
 
@@ -218,7 +219,15 @@ export class TransRequestor {
         const resp = ret.unwrap();
 
         if (resp.status === 200) {
-            return await TransTaskStateInfo.from_respone(resp);
+            const obj = await resp.json()
+            const info = TransTaskStateInfo.from_obj(obj.state);
+            if (info.err) {
+                return info;
+            }
+            return Ok({
+                state: info.unwrap(),
+                group: obj.group
+            })
         } else {
             const err = await RequestorHelper.error_from_resp(resp);
             console.error(`get_task_state to non stack failed, status=${resp.status}, err=${err}`);
