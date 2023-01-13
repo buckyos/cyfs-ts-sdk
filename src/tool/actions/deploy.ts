@@ -158,7 +158,7 @@ async function put_obj_file(obj_path: string, stack: SharedCyfsStack, target: Ob
 export async function put_app_obj(options: any, ctx: CyfsToolContext, stack: SharedCyfsStack): Promise<void> {
     const [app, app_buf] = await put_obj_file(ctx.get_app_obj_file(), stack, undefined);
     const id = app.calculate_id();
-    const owner = app.desc().owner()!.unwrap();
+    const owner = app.desc().owner()!;
     console.log(`decoded app_id is: ${id}`);
     await put_obj_file(ctx.get_app_ext_file(), stack, undefined);
 
@@ -170,7 +170,7 @@ export async function put_app_obj(options: any, ctx: CyfsToolContext, stack: Sha
 
 function check_owner(config: CyfsToolConfig, ctx: CyfsToolContext, stack: SharedCyfsStack): boolean {
     // 先检测本地project的owner和app obj的owner是不是同一个
-    const app_owner = ctx.get_app_obj().desc().owner()!.unwrap();
+    const app_owner = ctx.get_app_obj().desc().owner()!;
     const [cur_owner, cur_key] = load_desc_and_sec(get_owner_path(undefined, config, ctx)!);
 
     if (!cur_owner.calculate_id().eq(app_owner)) {
@@ -178,7 +178,7 @@ function check_owner(config: CyfsToolConfig, ctx: CyfsToolContext, stack: Shared
         return false;
     }
     // 再检测device的owner和app obj的owner是不是同一个
-    const device_owner = stack.local_device().desc().owner()!.unwrap()
+    const device_owner = stack.local_device().desc().owner()!
     if (!device_owner.eq(app_owner)) {
         console.error(`app obj's owner ${app_owner} not match current device's owner ${device_owner}`);
         return false;

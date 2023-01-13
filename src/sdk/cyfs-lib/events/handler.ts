@@ -13,7 +13,7 @@ export interface RouterEventAnyRoutine {
 export class RouterEventRoutineT<REQ, RESP> implements RouterEventAnyRoutine {
     private request_codec: RouterEventRequestJsonCodec<REQ>;
     private result_codec: RouterEventResponseJsonCodec<RESP>;
-   
+
     constructor(
         req_codec: JsonCodec<REQ>,
         resp_codec: JsonCodec<RESP>,
@@ -44,27 +44,32 @@ export class RouterEventRoutineT<REQ, RESP> implements RouterEventAnyRoutine {
 
 export class RouterEventManager {
     // http?: RouterEventHttpHandlerManager;
-    ws?: RouterWSEventManager;
+    ws: RouterWSEventManager;
+    started: boolean;
 
-    constructor(event_type: CyfsStackEventType, ws_url?: string, private dec_id?: ObjectId) {
-        switch (event_type) {
-            case CyfsStackEventType.Http:
-                // 暂时不支持http回调模式
-                throw new Error('ts sdk not support CyfsStackEventType.Http');
-            case CyfsStackEventType.WebSocket:
-                console.assert(ws_url);
-                const ws = new RouterWSEventManager(ws_url!);
-                ws.start();
-                this.ws = ws;
-                break;
-            default:
-                console.warn('unknown event type', event_type);
-                break;
+    constructor(event_type: CyfsStackEventType, ws_url: string, private dec_id?: ObjectId) {
+        console.assert(event_type === CyfsStackEventType.WebSocket);
+        console.assert(ws_url);
+
+        const ws = new RouterWSEventManager(ws_url!);
+        this.ws = ws;
+        this.started = false;
+    }
+
+    get_dec_id(): ObjectId | undefined {
+        return this.dec_id
+    }
+
+    try_start(): void {
+        if (!this.started) {
+            console.log("will start router event manager!");
+            this.started = true;
+            this.ws.start();
         }
     }
 
-    get_dec_id(): ObjectId|undefined {
-        return this.dec_id
+    stop(): void {
+        this.ws.stop();
     }
 
     async add_test_event(
@@ -97,18 +102,14 @@ export class RouterEventManager {
         resp_codec: JsonCodec<RESP>,
         routine: EventListenerAsyncRoutineT<RouterEventRequest<REQ>, RouterEventResponse<RESP>>
     ): Promise<BuckyResult<void>> {
-        if (this.ws) {
-            return await this.ws.add_event(id, this.get_dec_id(), index, category, req_codec, resp_codec, routine);
-        } else {
-            throw new Error('router handler require ws');
-        }
+        this.try_start();
+
+        return await this.ws.add_event(id, this.get_dec_id(), index, category, req_codec, resp_codec, routine);
     }
 
     async remove_event(category: RouterEventCategory, id: string): Promise<BuckyResult<boolean>> {
-        if (this.ws) {
-            return await this.ws.remove_event(category, id);
-        } else {
-            throw new Error('remove_handler require ws');
-        }
+        this.try_start();
+
+        return await this.ws.remove_event(category, id);
     }
 }

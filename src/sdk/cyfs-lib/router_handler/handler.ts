@@ -34,7 +34,7 @@ export interface RouterHandlerAnyRoutine {
 export class RouterHandlerEventRoutineT<REQ, RESP> implements RouterHandlerAnyRoutine {
     private request_codec: RouterHandlerRequestJsonCodec<REQ, RESP>;
     private result_codec: RouterHandlerResponseJsonCodec<REQ, RESP>;
-   
+
     constructor(
         req_codec: JsonCodec<REQ>,
         resp_codec: JsonCodec<RESP>,
@@ -66,31 +66,36 @@ export class RouterHandlerEventRoutineT<REQ, RESP> implements RouterHandlerAnyRo
 
 export class RouterHandlerManager {
     // http?: RouterHandlerHttpHandlerManager;
-    ws?: RouterHandlerWSHandlerManager;
+    ws: RouterHandlerWSHandlerManager;
+    started: boolean;
 
-    constructor(event_type: CyfsStackEventType, ws_url?: string, private dec_id?: ObjectId) {
-        switch (event_type) {
-            case CyfsStackEventType.Http:
-                // 暂时不支持http回调模式
-                throw new Error('ts sdk not support CyfsStackEventType.Http');
-            case CyfsStackEventType.WebSocket:
-                console.assert(ws_url);
-                const ws = new RouterHandlerWSHandlerManager(ws_url!, dec_id);
-                ws.start();
-                this.ws = ws;
-                break;
-            default:
-                console.warn('unknown event type', event_type);
-                break;
+    constructor(event_type: CyfsStackEventType, ws_url: string, private dec_id?: ObjectId) {
+        console.assert(event_type === CyfsStackEventType.WebSocket);
+        console.assert(ws_url);
+
+        const ws = new RouterHandlerWSHandlerManager(ws_url, dec_id);
+        this.ws = ws;
+        this.started = false;
+    }
+
+    private try_start(): void {
+        if (!this.started) {
+            console.log("will start router handler manager!");
+            this.started = true;
+            this.ws.start();
         }
+    }
+
+    stop(): void {
+        this.ws.stop();
     }
 
     add_put_object_handler(
         chain: RouterHandlerChain,
         id: string,
         index: number,
-        filter: string|undefined,
-        req_path: string|undefined,
+        filter: string | undefined,
+        req_path: string | undefined,
         default_action: RouterHandlerAction,
         routine?: RouterHandlerPutObjectRoutine
     ): Promise<BuckyResult<void>> {
@@ -105,8 +110,8 @@ export class RouterHandlerManager {
         chain: RouterHandlerChain,
         id: string,
         index: number,
-        filter: string|undefined,
-        req_path: string|undefined,
+        filter: string | undefined,
+        req_path: string | undefined,
         default_action: RouterHandlerAction,
         routine?: RouterHandlerGetObjectRoutine
     ): Promise<BuckyResult<void>> {
@@ -121,8 +126,8 @@ export class RouterHandlerManager {
         chain: RouterHandlerChain,
         id: string,
         index: number,
-        filter: string|undefined,
-        req_path: string|undefined,
+        filter: string | undefined,
+        req_path: string | undefined,
         default_action: RouterHandlerAction,
         routine?: RouterHandlerPostObjectRoutine
     ): Promise<BuckyResult<void>> {
@@ -137,8 +142,8 @@ export class RouterHandlerManager {
         chain: RouterHandlerChain,
         id: string,
         index: number,
-        filter: string|undefined,
-        req_path: string|undefined,
+        filter: string | undefined,
+        req_path: string | undefined,
         default_action: RouterHandlerAction,
         routine?: RouterHandlerDeleteObjectRoutine
     ): Promise<BuckyResult<void>> {
@@ -153,8 +158,8 @@ export class RouterHandlerManager {
         chain: RouterHandlerChain,
         id: string,
         index: number,
-        filter: string|undefined,
-        req_path: string|undefined,
+        filter: string | undefined,
+        req_path: string | undefined,
         default_action: RouterHandlerAction,
         routine?: RouterHandlerPutDataRoutine
     ): Promise<BuckyResult<void>> {
@@ -169,8 +174,8 @@ export class RouterHandlerManager {
         chain: RouterHandlerChain,
         id: string,
         index: number,
-        filter: string|undefined,
-        req_path: string|undefined,
+        filter: string | undefined,
+        req_path: string | undefined,
         default_action: RouterHandlerAction,
         routine?: RouterHandlerGetDataRoutine
     ): Promise<BuckyResult<void>> {
@@ -185,8 +190,8 @@ export class RouterHandlerManager {
         chain: RouterHandlerChain,
         id: string,
         index: number,
-        filter: string|undefined,
-        req_path: string|undefined,
+        filter: string | undefined,
+        req_path: string | undefined,
         default_action: RouterHandlerAction,
         routine?: RouterHandlerDeleteDataRoutine
     ): Promise<BuckyResult<void>> {
@@ -201,8 +206,8 @@ export class RouterHandlerManager {
         chain: RouterHandlerChain,
         id: string,
         index: number,
-        filter: string|undefined,
-        req_path: string|undefined,
+        filter: string | undefined,
+        req_path: string | undefined,
         default_action: RouterHandlerAction,
         routine?: RouterHandlerSignObjectRoutine
     ): Promise<BuckyResult<void>> {
@@ -217,8 +222,8 @@ export class RouterHandlerManager {
         chain: RouterHandlerChain,
         id: string,
         index: number,
-        filter: string|undefined,
-        req_path: string|undefined,
+        filter: string | undefined,
+        req_path: string | undefined,
         default_action: RouterHandlerAction,
         routine?: RouterHandlerVerifyObjectRoutine
     ): Promise<BuckyResult<void>> {
@@ -233,8 +238,8 @@ export class RouterHandlerManager {
         chain: RouterHandlerChain,
         id: string,
         index: number,
-        filter: string|undefined,
-        req_path: string|undefined,
+        filter: string | undefined,
+        req_path: string | undefined,
         default_action: RouterHandlerAction,
         routine?: RouterHandlerEncryptDataRoutine
     ): Promise<BuckyResult<void>> {
@@ -249,8 +254,8 @@ export class RouterHandlerManager {
         chain: RouterHandlerChain,
         id: string,
         index: number,
-        filter: string|undefined,
-        req_path: string|undefined,
+        filter: string | undefined,
+        req_path: string | undefined,
         default_action: RouterHandlerAction,
         routine?: RouterHandlerDecryptDataRoutine
     ): Promise<BuckyResult<void>> {
@@ -265,8 +270,8 @@ export class RouterHandlerManager {
         chain: RouterHandlerChain,
         id: string,
         index: number,
-        filter: string|undefined,
-        req_path: string|undefined,
+        filter: string | undefined,
+        req_path: string | undefined,
         default_action: RouterHandlerAction,
         routine?: RouterHandlerAclRoutine
     ): Promise<BuckyResult<void>> {
@@ -284,23 +289,19 @@ export class RouterHandlerManager {
         category: RouterHandlerCategory,
         req_codec: JsonCodec<REQ>,
         resp_codec: JsonCodec<RESP>,
-        filter: string|undefined,
-        req_path: string|undefined,
+        filter: string | undefined,
+        req_path: string | undefined,
         default_action: RouterHandlerAction,
         routine?: EventListenerAsyncRoutineT<RouterHandlerRequest<REQ, RESP>, RouterHandlerResponse<REQ, RESP>>
     ): Promise<BuckyResult<void>> {
-        if (this.ws) {
-            return this.ws.add_handler(chain, id, index, category, req_codec, resp_codec, filter, req_path, default_action, routine);
-        } else {
-            throw new Error('router handler require ws');
-        }
+        this.try_start();
+
+        return this.ws.add_handler(chain, id, index, category, req_codec, resp_codec, filter, req_path, default_action, routine);
     }
 
     async remove_handler(chain: RouterHandlerChain, category: RouterHandlerCategory, id: string): Promise<BuckyResult<boolean>> {
-        if (this.ws) {
-            return await this.ws.remove_handler(chain, category, id);
-        } else {
-            throw new Error('remove_handler require ws');
-        }
+        this.try_start();
+
+        return await this.ws.remove_handler(chain, category, id);
     }
 }

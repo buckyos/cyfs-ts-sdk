@@ -25,8 +25,8 @@ class RouterHandlerItem {
         public index: number,
         public id: string,
         public dec_id: ObjectId | undefined,
-        private filter: string|undefined,
-        private req_path: string|undefined,
+        private filter: string | undefined,
+        private req_path: string | undefined,
         private default_action: RouterHandlerAction,
         private routine?: RouterHandlerAnyRoutine,
     ) {
@@ -140,6 +140,14 @@ export class RouterWSHandlerHandlerManagerImpl {
         return `${chain}_${category}_${id}`;
     }
 
+    sid(): number | undefined {
+        if (this.session) {
+            return this.session.sid;
+        } else {
+            return undefined;
+        }
+    }
+
     private get_handler(full_id: string): RouterHandlerItem {
         return this.handlers[full_id];
     }
@@ -201,7 +209,7 @@ export class RouterWSHandlerHandlerManagerImpl {
         return unregister_item;
     }
 
-    static async on_event(manager: RouterWSHandlerHandlerManagerImpl, content: string): Promise<BuckyResult<string|undefined>> {
+    static async on_event(manager: RouterWSHandlerHandlerManagerImpl, content: string): Promise<BuckyResult<string | undefined>> {
         const event: RouterWSHandlerEventParam = JSON.parse(content);
         const full_id = RouterWSHandlerHandlerManagerImpl.gen_full_id(event.chain, event.category, event.id);
 
@@ -224,7 +232,7 @@ export class RouterWSHandlerHandlerManagerImpl {
 
 
     static async on_session_begin(manager: RouterWSHandlerHandlerManagerImpl,
-        session: WebSocketSession) {
+        session: WebSocketSession): Promise<void> {
         console.log(`ws router handler session begin: sid=${session.sid}`);
         console.assert(!manager.session);
         manager.session = session;
@@ -234,7 +242,7 @@ export class RouterWSHandlerHandlerManagerImpl {
     }
 
     static async register_all(manager: RouterWSHandlerHandlerManagerImpl,
-        session: WebSocketSession) {
+        session: WebSocketSession): Promise<void> {
         const handlers = manager.handlers;
         if (Object.keys(handlers).length === 0) {
             return;
@@ -247,7 +255,7 @@ export class RouterWSHandlerHandlerManagerImpl {
     }
 
     static async unregister_all(manager: RouterWSHandlerHandlerManagerImpl,
-        session: WebSocketSession) {
+        session: WebSocketSession): Promise<void> {
         const handlers = manager.handlers;
         if (Object.keys(handlers).length === 0) {
             return;
@@ -263,7 +271,7 @@ export class RouterWSHandlerHandlerManagerImpl {
     }
 
     static async on_session_end(manager: RouterWSHandlerHandlerManagerImpl,
-        session: WebSocketSession) {
+        session: WebSocketSession): Promise<void> {
         console.log(`ws handler session end: sid=${session.sid}`);
         console.assert(!!manager.session);
         manager.session = undefined;
@@ -277,7 +285,7 @@ class RouterWSHandlerRequestHandler extends WebSocketRequestHandler {
 
     async on_string_request(requestor: WebSocketRequestManager,
         cmd: number,
-        content: string): Promise<BuckyResult<string|undefined>> {
+        content: string): Promise<BuckyResult<string | undefined>> {
         switch (cmd) {
             case ROUTER_WS_HANDLER_CMD_EVENT:
                 return await RouterWSHandlerHandlerManagerImpl.on_event(this.owner, content);
@@ -309,11 +317,17 @@ export class RouterHandlerWSHandlerManager {
         this.client = new WebSocketClient(service_url, handler);
     }
 
-    start() {
+    start(): void {
         this.client.start();
     }
 
-    get_dec_id(): ObjectId|undefined {
+    stop(): void {
+        console.info(`will stop router handler manager! sid=${this.manager.sid()}`);
+
+        this.client.stop();
+    }
+
+    get_dec_id(): ObjectId | undefined {
         return this.dec_id;
     }
 
@@ -324,8 +338,8 @@ export class RouterHandlerWSHandlerManager {
         category: RouterHandlerCategory,
         req_codec: JsonCodec<REQ>,
         resp_codec: JsonCodec<RESP>,
-        filter: string|undefined,
-        req_path: string|undefined,
+        filter: string | undefined,
+        req_path: string | undefined,
         default_action: RouterHandlerAction,
         routine?: EventListenerAsyncRoutineT<RouterHandlerRequest<REQ, RESP>, RouterHandlerResponse<REQ, RESP>>): Promise<BuckyResult<void>> {
         const handler_item = new RouterHandlerItem(

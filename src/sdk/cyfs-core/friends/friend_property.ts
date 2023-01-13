@@ -27,7 +27,7 @@ export class FriendPropertyDescTypeInfo extends DescTypeInfo{
         return {
             owner_type: "option",
             area_type: "disable",
-            author_type: "disable",
+            author_type: "option",
             key_type: "disable"
         }
     }

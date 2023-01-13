@@ -59,6 +59,8 @@ export enum BuckyErrorCode {
     Ignored = 31,
     InvalidSignature = 32,
     AlreadyExistsAndSignatureMerged = 33,
+    TargetNotFound = 34,
+    Aborted = 35,
 
     ConnectFailed = 40,
     ConnectInterZoneFailed = 41,

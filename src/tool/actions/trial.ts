@@ -7,10 +7,10 @@ import * as cyfs from '../../sdk';
 const console_origin = (console as any).origin;
 
 function create_device(owner: cyfs.ObjectId, cat: cyfs.DeviceCategory): [cyfs.Device, cyfs.PrivateKey] {
-    let pk = cyfs.PrivateKey.generate_rsa(1024).unwrap();
-    let public_key = pk.public();
-    let unique = cyfs.UniqueId.copy_from_slice(stringToUint8Array(Date.now().toString()))
-    let device = cyfs.Device.create(cyfs.Some(owner), unique, [], [], [], public_key, cyfs.Area.default(), cat);
+    const pk = cyfs.PrivateKey.generate_rsa(1024).unwrap();
+    const public_key = pk.public();
+    const unique = cyfs.UniqueId.copy_from_slice(stringToUint8Array(Date.now().toString()))
+    const device = cyfs.Device.create(owner, unique, [], [], [], public_key, cyfs.Area.default(), cat);
 
     return [device, pk];
 }
@@ -35,14 +35,14 @@ async function run(option: any, config: CyfsToolConfig) {
     let owner_id = owner_desc.calculate_id();
     if (option.clean) {
         if (fs.existsSync(desc_path)) {
-            let desc = new cyfs.DeviceDecoder().from_raw(new Uint8Array(fs.readFileSync(desc_path))).unwrap();
-            let desc_owner = desc.desc().owner();
-            if (desc_owner && desc_owner.is_some() && desc_owner.unwrap().eq(owner_id)) {
+            const desc = new cyfs.DeviceDecoder().from_raw(new Uint8Array(fs.readFileSync(desc_path))).unwrap();
+            const desc_owner = desc.desc().owner();
+            if (desc_owner && desc_owner.eq(owner_id)) {
                 fs.rmSync(desc_path);
                 fs.rmSync(sec_path);
                 console_origin.log("clean trial runtime identity files complete.");
 
-                let orig_desc = path.join(config.runtime_desc_path, "device.desc.bak")
+                const orig_desc = path.join(config.runtime_desc_path, "device.desc.bak")
                 if (fs.existsSync(orig_desc)) {
                     fs.renameSync(orig_desc, desc_path)
                     fs.renameSync(path.join(config.runtime_desc_path, "device.sec.bak"), sec_path)
@@ -74,12 +74,11 @@ async function run(option: any, config: CyfsToolConfig) {
         cyfs.sign_and_push_named_object(owner_pk, runtime, new cyfs.SignatureRefIndex(254)).unwrap();
 
         if (!fs.existsSync(config.runtime_desc_path)) {
-            fs.mkdirSync(config.runtime_desc_path, {recursive: true});
+            fs.mkdirSync(config.runtime_desc_path, { recursive: true });
         }
-        
+
         cyfs.to_file(desc_path, runtime);
         cyfs.to_file(sec_path, runtime_pk);
         console_origin.log("init trial runtime identity files success")
     }
-    
 }

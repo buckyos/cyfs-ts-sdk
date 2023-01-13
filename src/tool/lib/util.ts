@@ -3,11 +3,13 @@ import path from 'path';
 import fs from 'fs';
 
 import readline from 'readline';
-import { BuckyResult, get_channel, MetaClient, 
-    NONAPILevel, None, NONGetObjectOutputRequest, 
-    NONGetObjectOutputResponse, ObjectId, Ok, PrivateKey, 
-    PrivatekeyDecoder, SavedMetaObject, SharedCyfsStack, 
-    StandardObject, StandardObjectDecoder, Data, TxId, BuckyErrorCode, AnyNamedObjectDecoder, Err, BuckyError, get_system_dec_app } from '../../sdk';
+import {
+    BuckyResult, get_channel, MetaClient,
+    NONAPILevel, NONGetObjectOutputRequest,
+    NONGetObjectOutputResponse, ObjectId, Ok, PrivateKey,
+    PrivatekeyDecoder, SavedMetaObject, SharedCyfsStack,
+    StandardObject, StandardObjectDecoder, Data, TxId, BuckyErrorCode, AnyNamedObjectDecoder, Err, BuckyError, get_system_dec_app
+} from '../../sdk';
 import { CyfsToolContext } from './ctx';
 import JSBI from 'jsbi';
 
@@ -42,16 +44,16 @@ export function exec(cmd: string, workspace: string): void {
     child_process.execSync(cmd, { stdio: 'inherit', cwd: workspace })
 }
 
-export function stringToUint8Array(str:string): Uint8Array{
+export function stringToUint8Array(str: string): Uint8Array {
     const arr: number[] = [];
     for (let i = 0, j = str.length; i < j; ++i) {
-      arr.push(str.charCodeAt(i));
+        arr.push(str.charCodeAt(i));
     }
-   
+
     return new Uint8Array(arr)
 }
 
-export function get_owner_path(option_value: any, config: CyfsToolConfig|undefined, ctx: CyfsToolContext): string|undefined {
+export function get_owner_path(option_value: any, config: CyfsToolConfig | undefined, ctx: CyfsToolContext): string | undefined {
     // 优先使用 option_value
     // 如果没有，使用ctx.owner
     // 如果还没有，使用default
@@ -108,8 +110,8 @@ export async function get_final_owner(id: ObjectId, stack: SharedCyfsStack): Pro
 
         const obj = r.unwrap().object.object!;
         // 如果obj没有owner，它就是最终owner了，返回这个id
-        if (obj.desc().owner() && obj.desc().owner()!.is_some()) {
-            obj_id = obj.desc().owner()!.unwrap()
+        if (obj.desc().owner()) {
+            obj_id = obj.desc().owner()!;
         } else {
             return Ok(obj_id);
         }
@@ -133,24 +135,24 @@ export function makeOLink(
 }
 
 // 时间格式转换
-export function formatDate(date: number | string | Date, isfoleder?: boolean): string{
+export function formatDate(date: number | string | Date, isfoleder?: boolean): string {
     if (Number(date) > 0) {
-      date = new Date(Number(date))
-      const years = date.getFullYear() > 9 ? date.getFullYear() : '0' + date.getFullYear();
-      const months = (date.getMonth() + 1) > 9 ? (date.getMonth() + 1) : '0' + (date.getMonth() + 1);
-      const dates = date.getDate() > 9 ? date.getDate() : '0' + date.getDate();
-      const hours = date.getHours() > 9 ? date.getHours() : '0' + date.getHours();
-      const minutes = date.getMinutes() > 9 ? date.getMinutes() : '0' + date.getMinutes();
-      const seconds = date.getSeconds() > 9 ? date.getSeconds() : '0' + date.getSeconds();
-      if (isfoleder) {
-        return years + '-' + months + '-' + dates + '<br/>' + hours + ':' + minutes + ':' + seconds;
-      } else {
-        return years + '-' + months + '-' + dates + ' ' + hours + ':' + minutes + ':' + seconds;
-      }
+        date = new Date(Number(date))
+        const years = date.getFullYear() > 9 ? date.getFullYear() : '0' + date.getFullYear();
+        const months = (date.getMonth() + 1) > 9 ? (date.getMonth() + 1) : '0' + (date.getMonth() + 1);
+        const dates = date.getDate() > 9 ? date.getDate() : '0' + date.getDate();
+        const hours = date.getHours() > 9 ? date.getHours() : '0' + date.getHours();
+        const minutes = date.getMinutes() > 9 ? date.getMinutes() : '0' + date.getMinutes();
+        const seconds = date.getSeconds() > 9 ? date.getSeconds() : '0' + date.getSeconds();
+        if (isfoleder) {
+            return years + '-' + months + '-' + dates + '<br/>' + hours + ':' + minutes + ':' + seconds;
+        } else {
+            return years + '-' + months + '-' + dates + ' ' + hours + ':' + minutes + ':' + seconds;
+        }
     } else {
-      return '-';
+        return '-';
     }
-  }
+}
 
 export async function getObject(params: {
     stack: SharedCyfsStack,
@@ -163,7 +165,7 @@ export async function getObject(params: {
 }): Promise<BuckyResult<NONGetObjectOutputResponse>> {
 
     let object_id: ObjectId;
-    if (typeof (params.id) == 'string') {
+    if (typeof (params.id) === 'string') {
         const idResult = ObjectId.from_base_58(params.id);
         if (idResult.err) {
             return idResult
@@ -175,12 +177,12 @@ export async function getObject(params: {
     const target = params.target ? params.target : undefined;
     const flags = params.flags ? params.flags : 0;
     const req: NONGetObjectOutputRequest = {
-        object_id: object_id,
+        object_id,
         inner_path: params.inner_path,
         common: {
             level: NONAPILevel.Router,
-            flags: flags,
-            target: target,
+            flags,
+            target,
             req_path: params.req_path,
             dec_id: params.dec_id
         }
@@ -208,7 +210,7 @@ export async function put_obj_to_meta(meta_client: MetaClient, id: ObjectId, buf
     const saved_data = SavedMetaObject.Data(new Data(id, buf));
     let r;
     if (update) {
-        r = await meta_client.update_desc(owner, saved_data, None, None, owner_sec);
+        r = await meta_client.update_desc(owner, saved_data, undefined, undefined, owner_sec);
     } else {
         r = await meta_client.create_desc(owner, saved_data, JSBI.BigInt(0), 0, 0, owner_sec);
     }
@@ -242,10 +244,17 @@ export async function upload_app_objs(ctx: CyfsToolContext, meta_client: MetaCli
         const app_receipt_ret = await meta_client.getReceipt(app_ret.unwrap());
         if (app_receipt_ret.err) {
             console.info('check meta receipt fail. wait 10 secs');
-            await sleep(10*1000);
-            continue
+            await sleep(10 * 1000);
+            continue;
         }
-        const [app_receipt, app_height] = app_receipt_ret.unwrap().unwrap();
+        const val = app_receipt_ret.unwrap();
+        if (val == null) {
+            console.info('check meta receipt but got null. wait 10 secs');
+            await sleep(10 * 1000);
+            continue;
+        }
+
+        const [app_receipt, app_height] = val;
 
         if (app_receipt.result !== 0) {
             console.error(`upload app obj err ${app_receipt.result} at height ${app_height}`);
@@ -257,10 +266,18 @@ export async function upload_app_objs(ctx: CyfsToolContext, meta_client: MetaCli
         const ext_receipt_ret = await meta_client.getReceipt(ext_ret.unwrap());
         if (ext_receipt_ret.err) {
             console.info('check meta receipt fail. wait 10 secs');
-            await sleep(10*1000);
+            await sleep(10 * 1000);
             continue
         }
-        const [ext_receipt, ext_height] = ext_receipt_ret.unwrap().unwrap();
+
+        const ext_val = ext_receipt_ret.unwrap();
+        if (ext_val == null) {
+            console.info('check meta receipt but got null. wait 10 secs');
+            await sleep(10 * 1000);
+            continue
+        }
+
+        const [ext_receipt, ext_height] = ext_val;
 
         if (ext_receipt.result !== 0) {
             console.error(`upload app ext obj err ${ext_receipt.result} at height ${ext_height}`);
@@ -317,7 +334,7 @@ function start_runtime(config: CyfsToolConfig) {
     if (anonymous) {
         cmd += ' --anonymous'
     }
-    child_runtime = child_process.spawn(cmd, {windowsHide: true, stdio: 'ignore', shell: false});
+    child_runtime = child_process.spawn(cmd, { windowsHide: true, stdio: 'ignore', shell: false });
     console.log("start cyfs runtime. pid", child_runtime.pid);
 }
 
@@ -345,14 +362,14 @@ export async function create_stack(endpoint: string, config: CyfsToolConfig, dec
 
         console.error('cannot start cyfs-runtime, please check cyfs-runtime status')
         process.exit(1)
-        
+
     } else {
         console.error('invalid endpoint:', endpoint);
         throw Error("invalid endpoint")
     }
 }
 
-export function stop_runtime():void {
+export function stop_runtime(): void {
     if (child_runtime) {
         child_runtime.kill()
         child_runtime = undefined;
@@ -389,8 +406,8 @@ export function convert_cyfs_url(cyfs_url: string, stack: SharedCyfsStack, json:
     } else {
         url.searchParams.set("mode", "object");
     }
-    
+
     url.searchParams.set("dec_id", get_system_dec_app().object_id.toString());
 
-    return [url.toString(), {CYFS_REMOTE_DEVICE: local_device_id.toString()}, uri];
+    return [url.toString(), { CYFS_REMOTE_DEVICE: local_device_id.toString() }, uri];
 }
