@@ -184,6 +184,9 @@ export interface TransPublishFileOutputRequest {
     // chunk大小
     chunk_size: number,
 
+    // access string for target object
+    access?: AccessString;
+
     file_id?: ObjectId,
 
     // 关联的dirs

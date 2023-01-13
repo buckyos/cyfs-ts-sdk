@@ -1,7 +1,7 @@
-import {HttpRequest} from "../base/http_request";
-import {BaseRequestor, RequestorHelper} from "../base/base_requestor";
-import {Err, Ok} from "ts-results";
-import {BuckyResult, CYFS_ACCESS, CYFS_API_LEVEL, CYFS_DEC_ID, CYFS_FLAGS, CYFS_REFERER_OBJECT, CYFS_REQ_PATH, CYFS_TARGET, ObjectId} from "../../cyfs-base";
+import { HttpRequest } from "../base/http_request";
+import { BaseRequestor, RequestorHelper } from "../base/base_requestor";
+import { Err, Ok } from "ts-results";
+import { BuckyResult, CYFS_ACCESS, CYFS_API_LEVEL, CYFS_DEC_ID, CYFS_FLAGS, CYFS_REFERER_OBJECT, CYFS_REQ_PATH, CYFS_TARGET, ObjectId } from "../../cyfs-base";
 import {
     TransPublishFileOutputResponse,
     TransControlTaskOutputRequest,
@@ -20,7 +20,7 @@ import {
     TransGetTaskGroupStateOutputResponse,
     TransGetTaskStateOutputResponse
 } from './output_request';
-import {TransContextDecoder} from "../../cyfs-core/trans/trans_context";
+import { TransContextDecoder } from "../../cyfs-core/trans/trans_context";
 import { NDNOutputRequestCommon } from '../ndn/output_request';
 
 
@@ -82,7 +82,7 @@ export class TransRequestor {
             if (context.err) {
                 return context;
             }
-            return Ok({context: context.unwrap()});
+            return Ok({ context: context.unwrap() });
         } else {
             const err = await RequestorHelper.error_from_resp(resp);
             console.error(`get context failed, status=${resp.status}, err=${err}`);
@@ -267,13 +267,22 @@ export class TransRequestor {
     }
 
     // POST {serviceURL}/task/file
-    public async publish_file(req: &TransPublishFileOutputRequest): Promise<BuckyResult<TransPublishFileOutputResponse>> {
+    public async publish_file(req: TransPublishFileOutputRequest): Promise<BuckyResult<TransPublishFileOutputResponse>> {
         const url = `${this.serviceURL}file`;
         const httpReq = new HttpRequest('POST', url);
         this.encode_common_headers(req.common, httpReq);
 
         console.info(`publish_file: ${JSON.stringify(req)}`);
-        httpReq.set_json_body(req);
+        const body = {
+            common: req.common,
+            owner: req.owner,
+            local_path: req.local_path,
+            chunk_size: req.chunk_size,
+            access: req.access ? req.access.value : undefined,
+            file_id: req.file_id,
+            dirs: req.dirs,
+        };
+        httpReq.set_json_body(body);
 
         const ret = await this.requestor.request(httpReq);
         if (ret.err) {
