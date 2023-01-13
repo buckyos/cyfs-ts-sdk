@@ -469,16 +469,12 @@ async function object_detail(stack: SharedCyfsStack, target: ObjectId, objects: 
         object.object_type = obj.desc().obj_type();
 
         //所有者
-        if (obj.desc().owner()) {
-            object.owner_info = obj.desc().owner();
-        }
+        object.owner_info = obj.desc().owner();
 
         //创建时间
         object.create_time = formatDate(bucky_time_2_js_time(obj.desc().create_time()))
 
-        if (obj.desc().dec_id()) {
-            object.dec_id = obj.desc().dec_id();
-        }
+        object.dec_id = obj.desc().dec_id();
     }
 }
 

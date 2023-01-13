@@ -3,7 +3,7 @@ import { BaseRequestor, RequestorHelper } from "../base/base_requestor";
 import { UtilGetDeviceRequest, UtilGetDeviceResponse, UtilGetDeviceStaticInfoRequest, UtilGetDeviceStaticInfoResponse, UtilGetNetworkAccessInfoRequest, UtilGetNetworkAccessInfoResponse, UtilGetNOCInfoRequest, UtilGetNOCInfoResponse, UtilGetOODStatusRequest, UtilGetOODStatusResponse, UtilGetSystemInfoRequest, UtilGetSystemInfoResponse, UtilGetVersionInfoRequest, UtilGetVersionInfoResponse, UtilGetZoneRequest, UtilGetZoneResponse, UtilRequestCommon, UtilResolveOODRequest, UtilResolveOODResponse } from "./request";
 import { BuckyResult, CYFS_DEC_ID, CYFS_FLAGS, CYFS_OOD_DEVICE_ID, CYFS_TARGET, CYFS_ZONE_ID, DeviceDecoder, DeviceId, ObjectId, Err, Ok, CYFS_REQ_PATH, CYFS_OBJECT_ID, CYFS_OWNER_ID } from "../../cyfs-base";
 import { ZoneDecoder, ZoneId } from "../../cyfs-core";
-import { UtilBuildDirFromObjectMapOutputRequest, UtilBuildDirFromObjectMapOutputResponse, UtilGetDeviceStaticInfoOutputResponseJsonCodec, UtilGetNetworkAccessInfoOutputResponseJsonCodec, UtilGetOODStatusOutputResponseJsonCodec, UtilGetZoneOutputResponse, UtilResolveOODOutputResponseJsonCodec, UtilBuildDirFromObjectMapOutputRequestCodec, UtilBuildDirFromObjectMapOutputResponseJsonCodec } from "./output_request";
+import { UtilBuildDirFromObjectMapOutputRequest, UtilBuildDirFromObjectMapOutputResponse, UtilGetDeviceStaticInfoOutputResponseJsonCodec, UtilGetNetworkAccessInfoOutputResponseJsonCodec, UtilGetOODStatusOutputResponseJsonCodec, UtilGetZoneOutputResponse, UtilResolveOODOutputResponseJsonCodec, UtilBuildDirFromObjectMapOutputRequestCodec, UtilBuildDirFromObjectMapOutputResponseJsonCodec, UtilBuildFileOutputRequest, UtilBuildFileOutputResponse, UtilBuildFileOutputResponseJsonCodec } from "./output_request";
 
 export class UtilRequestor {
     service_url: string;
@@ -390,6 +390,34 @@ export class UtilRequestor {
             return Ok(resp_obj.unwrap())
         } else {
             const e = await RequestorHelper.error_from_resp(resp);
+            return Err(e);
+        }
+    }
+
+    public async build_file_object(
+        req: UtilBuildFileOutputRequest
+    ): Promise<BuckyResult<UtilBuildFileOutputResponse>> {
+        const url = this.service_url + "build_file";
+        const http_req = new HttpRequest("Post", url);
+        this.encode_common_headers(req.common, http_req);
+        http_req.set_json_body(req);
+
+        const r = await this.requestor.request(http_req);
+        if (r.err) {
+            return r;
+        }
+        const resp = r.unwrap();
+        if (resp.status === 200) {
+            const json = await resp.json();
+            const resp_obj = new UtilBuildFileOutputResponseJsonCodec().decode_object(json);
+            if (resp_obj.err) {
+                return resp_obj
+            }
+
+            return Ok(resp_obj.unwrap())
+        } else {
+            const e = await RequestorHelper.error_from_resp(resp);
+            console.error(`util build_file_object failed: status=${resp.status}, ${e.toString()}`)
             return Err(e);
         }
     }
