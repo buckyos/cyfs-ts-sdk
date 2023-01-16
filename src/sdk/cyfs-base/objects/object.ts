@@ -2619,7 +2619,7 @@ export class NamedObjectDescDecoder<T extends DescContent> implements RawDecode<
         //
         // ObjectDesc
         //
-        let dec_id = undefined;
+        let dec_id;
         if (ctx.has_dec_id()) {
             const r = new ObjectIdDecoder().raw_decode(buf);
             if (r.err) {
@@ -2631,7 +2631,7 @@ export class NamedObjectDescDecoder<T extends DescContent> implements RawDecode<
         }
         base_trace(`[desc(${this.trace_id()})]  raw_decode, buffer len dec_id : `, buf.length);
 
-        let ref_objects = undefined;
+        let ref_objects;
         if (ctx.has_ref_objects()) {
             const d = new VecDecoder(new ObjectLinkDecoder());
             const r = d.raw_decode(buf);
@@ -2645,7 +2645,7 @@ export class NamedObjectDescDecoder<T extends DescContent> implements RawDecode<
         }
         base_trace(`[desc(${this.trace_id()})] raw_decode, buffer ref_objects :`, buf.length);
 
-        let prev = undefined;
+        let prev;
         if (ctx.has_prev()) {
             const r = new ObjectIdDecoder().raw_decode(buf);
             if (r.err) {
@@ -2657,7 +2657,7 @@ export class NamedObjectDescDecoder<T extends DescContent> implements RawDecode<
         }
         base_trace(`[desc(${this.trace_id()})] raw_decode, buffer prev : `, buf.length);
 
-        let create_timestamp = undefined;
+        let create_timestamp;
         if (ctx.has_create_time_stamp()) {
             const r = new HashValueDecoder().raw_decode(buf);
             if (r.err) {
@@ -2669,7 +2669,7 @@ export class NamedObjectDescDecoder<T extends DescContent> implements RawDecode<
         }
         base_trace(`[desc(${this.trace_id()})] raw_decode, buffer create_timestamp :`, buf.length);
 
-        let create_time = undefined;
+        let create_time;
         if (ctx.has_create_time()) {
             const r = new BuckyNumberDecoder("u64").raw_decode(buf);
             if (r.err) {
@@ -2681,7 +2681,7 @@ export class NamedObjectDescDecoder<T extends DescContent> implements RawDecode<
         }
         base_trace(`[desc(${this.trace_id()})] raw_decode, buffer create_time : `, buf.length);
 
-        let expired_time = undefined;
+        let expired_time;
         if (ctx.has_expired_time()) {
             const r = new BuckyNumberDecoder("u64").raw_decode(buf);
             if (r.err) {
@@ -2696,7 +2696,7 @@ export class NamedObjectDescDecoder<T extends DescContent> implements RawDecode<
         //
         // OwnderObjectDesc/AreaObjectDesc/AuthorObjectDesc/PublicKeyObjectDesc
         //
-        let owner = undefined
+        let owner;
         if (ctx.has_owner()) {
             const r = new ObjectIdDecoder().raw_decode(buf);
             if (r.err) {
@@ -2709,7 +2709,7 @@ export class NamedObjectDescDecoder<T extends DescContent> implements RawDecode<
         }
         base_trace(`[desc(${this.trace_id()})] raw_decode, buffer owner : `, buf.length);
 
-        let area = undefined;
+        let area;
         if (ctx.has_area()) {
             const r = new AreaDecoder().raw_decode(buf);
             if (r.err) {
@@ -2722,7 +2722,7 @@ export class NamedObjectDescDecoder<T extends DescContent> implements RawDecode<
         }
         base_trace(`[desc(${this.trace_id()})] raw_decode, buffer area :`, buf.length);
 
-        let author = undefined
+        let author;
         if (ctx.has_author()) {
             const r = new ObjectIdDecoder().raw_decode(buf);
             if (r.err) {
@@ -2845,7 +2845,7 @@ export class NamedObjectDescDecoder<T extends DescContent> implements RawDecode<
 
             // 正确编码完毕，应该消耗完整个buf
             if (remain_buf.byteOffset - buf.byteOffset !== desc_content_size) {
-                console.warn(`decode desc content but return nonempty remain buf! obj_type=${this.m_desc_content_decoder.type_info().obj_type()}, remain = ${remain_buf.byteOffset - buf.length},`);
+                console.warn(`decode desc content but return nonempty remain buf! obj_type=${this.m_desc_content_decoder.type_info().obj_type()}, remain = ${remain_buf.byteOffset - buf.byteOffset}`);
             }
         }
 
