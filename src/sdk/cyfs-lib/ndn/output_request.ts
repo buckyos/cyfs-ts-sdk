@@ -218,7 +218,8 @@ export interface NDNGetDataOutputResponse {
 
     // content
     length: number,
-    data: Uint8Array,
+    data?: Uint8Array,
+    stream?: ReadableStream
 }
 
 export class NDNGetDataOutputResponseJsonCodec extends JsonCodec<NDNGetDataOutputResponse> {
@@ -227,7 +228,7 @@ export class NDNGetDataOutputResponseJsonCodec extends JsonCodec<NDNGetDataOutpu
         const o:any = {
             object_id: param.object_id.to_base_58(),
             length: param.length,
-            data: param.data.toHex()
+            data: param.data?.toHex()
         }
         if (param.attr) {
             o.attr = param.attr.flags;
