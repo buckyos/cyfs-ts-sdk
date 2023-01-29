@@ -1,6 +1,6 @@
-import { BuckyResult, CYFS_DEC_ID, CYFS_FLAGS, CYFS_META_ACTION, CYFS_TARGET, CYFS_TARGET_DEC_ID, Err, error, ObjectId, Ok } from "../../cyfs-base";
+import { BuckyResult, CYFS_DEC_ID, CYFS_FLAGS, CYFS_META_ACTION, CYFS_TARGET, CYFS_TARGET_DEC_ID, Err, ObjectId, Ok } from "../../cyfs-base";
+import { http_status_code_ok } from "../../util";
 import { BaseRequestor, RequestorHelper } from "../base/base_requestor";
-import { JsonCodec } from "../base/codec";
 import { HttpRequest } from "../base/http_request";
 import { GlobalStateCategory } from "../root_state/def";
 import { GlobalStatePathAccessItem, GlobalStatePathGroupAccess, MetaAction } from "./def";
@@ -61,7 +61,7 @@ export class GlobalStateMetaRequestor {
         }
         const resp = resp_r.unwrap()
 
-        if (resp.status === 200) {
+        if (http_status_code_ok(resp.status)) {
             let p;
             if (decoder) {
                 p = await decoder(resp)

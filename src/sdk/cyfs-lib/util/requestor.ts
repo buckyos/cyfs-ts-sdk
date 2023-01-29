@@ -4,6 +4,7 @@ import { UtilGetDeviceRequest, UtilGetDeviceResponse, UtilGetDeviceStaticInfoReq
 import { BuckyResult, CYFS_DEC_ID, CYFS_FLAGS, CYFS_OOD_DEVICE_ID, CYFS_TARGET, CYFS_ZONE_ID, DeviceDecoder, DeviceId, ObjectId, Err, Ok, CYFS_REQ_PATH, CYFS_OBJECT_ID, CYFS_OWNER_ID } from "../../cyfs-base";
 import { ZoneDecoder, ZoneId } from "../../cyfs-core";
 import { UtilBuildDirFromObjectMapOutputRequest, UtilBuildDirFromObjectMapOutputResponse, UtilGetDeviceStaticInfoOutputResponseJsonCodec, UtilGetNetworkAccessInfoOutputResponseJsonCodec, UtilGetOODStatusOutputResponseJsonCodec, UtilGetZoneOutputResponse, UtilResolveOODOutputResponseJsonCodec, UtilBuildDirFromObjectMapOutputRequestCodec, UtilBuildDirFromObjectMapOutputResponseJsonCodec, UtilBuildFileOutputRequest, UtilBuildFileOutputResponse, UtilBuildFileOutputResponseJsonCodec } from "./output_request";
+import { http_status_code_ok } from "../../util";
 
 export class UtilRequestor {
     service_url: string;
@@ -63,7 +64,7 @@ export class UtilRequestor {
         }
         const resp = r.unwrap();
 
-        if (resp.status === 200) {
+        if (http_status_code_ok(resp.status)) {
             return await this.decode_get_device_response(resp)
         } else {
             const e = await RequestorHelper.error_from_resp(resp);
@@ -125,7 +126,7 @@ export class UtilRequestor {
         }
         const resp = r.unwrap();
 
-        if (resp.status === 200) {
+        if (http_status_code_ok(resp.status)) {
             const zone_resp = await this.decode_get_zone_response(resp);
             if (zone_resp.err) {
                 return zone_resp;
@@ -164,7 +165,7 @@ export class UtilRequestor {
         }
         const resp = r.unwrap();
 
-        if (resp.status === 200) {
+        if (http_status_code_ok(resp.status)) {
             const json = await resp.json();
             const r = new UtilResolveOODOutputResponseJsonCodec().decode_object(json);
             if (r.err) {
@@ -197,7 +198,7 @@ export class UtilRequestor {
         }
         const resp = r.unwrap();
 
-        if (resp.status === 200) {
+        if (http_status_code_ok(resp.status)) {
             const json = await resp.json();
             const r = new UtilGetOODStatusOutputResponseJsonCodec().decode_object(json);
             if (r.err) {
@@ -230,7 +231,7 @@ export class UtilRequestor {
         }
         const resp = r.unwrap();
 
-        if (resp.status === 200) {
+        if (http_status_code_ok(resp.status)) {
             const json = await resp.json();
             return Ok(json as UtilGetNOCInfoResponse);
         } else {
@@ -258,7 +259,7 @@ export class UtilRequestor {
         }
         const resp = r.unwrap();
 
-        if (resp.status === 200) {
+        if (http_status_code_ok(resp.status)) {
             const json = await resp.json();
             const r = new UtilGetNetworkAccessInfoOutputResponseJsonCodec().decode_object(json);
             if (r.err) {
@@ -291,7 +292,7 @@ export class UtilRequestor {
         }
         const resp = r.unwrap();
 
-        if (resp.status === 200) {
+        if (http_status_code_ok(resp.status)) {
             const json = await resp.json();
             const r = new UtilGetDeviceStaticInfoOutputResponseJsonCodec().decode_object(json);
             if (r.err) {
@@ -324,7 +325,7 @@ export class UtilRequestor {
         }
         const resp = r.unwrap();
 
-        if (resp.status === 200) {
+        if (http_status_code_ok(resp.status)) {
             const json = await resp.json();
             return Ok(json as UtilGetSystemInfoResponse);
         } else {
@@ -352,7 +353,7 @@ export class UtilRequestor {
         }
         const resp = r.unwrap();
 
-        if (resp.status === 200) {
+        if (http_status_code_ok(resp.status)) {
             const json = await resp.json();
             return Ok(json as UtilGetVersionInfoResponse);
         } else {
@@ -380,7 +381,7 @@ export class UtilRequestor {
             return r;
         }
         const resp = r.unwrap();
-        if (resp.status === 200) {
+        if (http_status_code_ok(resp.status)) {
             const json = await resp.json();
             const resp_obj = new UtilBuildDirFromObjectMapOutputResponseJsonCodec().decode_object(json);
             if (resp_obj.err) {
@@ -407,7 +408,7 @@ export class UtilRequestor {
             return r;
         }
         const resp = r.unwrap();
-        if (resp.status === 200) {
+        if (http_status_code_ok(resp.status)) {
             const json = await resp.json();
             const resp_obj = new UtilBuildFileOutputResponseJsonCodec().decode_object(json);
             if (resp_obj.err) {

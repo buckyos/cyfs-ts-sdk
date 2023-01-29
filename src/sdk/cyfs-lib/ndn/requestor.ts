@@ -1,10 +1,11 @@
 import { Attributes, CYFS_ATTRIBUTES, CYFS_OBJECT_ID, BuckyResult, CYFS_API_LEVEL, CYFS_DEC_ID, CYFS_FLAGS, CYFS_NDN_ACTION, CYFS_REFERER_OBJECT, CYFS_RESULT, CYFS_TARGET, Err, ObjectId, Ok, CYFS_REQ_PATH, CYFS_INNER_PATH, CYFS_OWNER_ID, CYFS_DATA_RANGE, CYFS_CONTEXT, CYFS_TASK_GROUP } from "../../cyfs-base";
+import { http_status_code_ok } from "../../util";
 import { BaseRequestor, RequestorHelper } from "../base/base_requestor";
 import { HttpRequest } from "../base/http_request";
 import { NDNDataResponseRange } from "../base/range";
 import { NDNAction, NDNPutDataResult } from "./def";
 import { NDNQueryFileInputResponseJsonCodec, ndn_query_file_param_to_key_pair } from './input_request';
-import { NDNDeleteDataOutputRequest, NDNDeleteDataOutputResponse, NDNGetDataOutputRequest, NDNGetDataOutputResponse, NDNOutputRequestCommon, NDNPutDataOutputRequest, NDNPutDataOutputResponse, NDNQueryFileOutputRequest, NDNQueryFileOutputResponse, NDNQueryFileOutputResponseJsonCodec } from "./output_request";
+import { NDNDeleteDataOutputRequest, NDNDeleteDataOutputResponse, NDNGetDataOutputRequest, NDNGetDataOutputResponse, NDNOutputRequestCommon, NDNPutDataOutputRequest, NDNPutDataOutputResponse, NDNQueryFileOutputRequest, NDNQueryFileOutputResponse } from "./output_request";
 
 export class NDNRequestor {
     service_url: string
@@ -122,7 +123,7 @@ export class NDNRequestor {
         }
         const resp = r.unwrap();
 
-        if (resp.status === 200) {
+        if (http_status_code_ok(resp.status)) {
             console.debug("put data to ndn service success:", req.object_id);
             return await this.decode_put_data_response(resp);
         } else {
@@ -141,7 +142,7 @@ export class NDNRequestor {
         }
         const resp = r.unwrap();
 
-        if (resp.status === 200) {
+        if (http_status_code_ok(resp.status)) {
             console.debug("put data to ndn service success:", req.object_id);
             return await this.decode_put_shared_data_response(resp);
         } else {
@@ -235,7 +236,7 @@ export class NDNRequestor {
         }
         const resp = r.unwrap();
 
-        if (resp.status === 200) {
+        if (http_status_code_ok(resp.status)) {
             console.debug("get data from ndn service success:", req.object_id);
             return await this.decode_get_data_response(resp, return_stream);
         } else {
@@ -255,7 +256,7 @@ export class NDNRequestor {
         }
         const resp = r.unwrap();
 
-        if (resp.status === 200) {
+        if (http_status_code_ok(resp.status)) {
             console.debug("get data from ndn service success:", req.object_id);
             return await this.decode_get_data_response(resp, return_stream);
         } else {
@@ -293,7 +294,7 @@ export class NDNRequestor {
         }
         const resp = r.unwrap();
 
-        if (resp.status === 200) {
+        if (http_status_code_ok(resp.status)) {
             console.debug("delete data from ndn service success:", req.object_id);
             return await this.decode_delete_data_response(resp);
         } else {
@@ -325,7 +326,7 @@ export class NDNRequestor {
         }
         const resp = r.unwrap();
 
-        if (resp.status === 200) {
+        if (http_status_code_ok(resp.status)) {
             const json = await resp.json();
             const r = (new NDNQueryFileInputResponseJsonCodec()).decode_object(json);
             if (r.err) {

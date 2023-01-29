@@ -5,7 +5,7 @@ import { DeviceId } from "../../cyfs-base/objects/device";
 import { WebSocketRequestHandler, WebSocketRequestManager } from '../ws/request';
 import { WebSocketSession } from '../ws/session';
 import { WebSocketClient } from '../ws/client';
-import { decodeResponse, encodeRequest, HTTP_CMD_REQUEST } from "../..";
+import { decodeResponse, encodeRequest, HTTP_CMD_REQUEST, http_status_code_ok } from "../..";
 
 export abstract class BaseRequestor {
     abstract remote_addr(): string;
@@ -189,7 +189,7 @@ export class RequestorHelper {
             return error;
         } catch (e) {
             // statuscode成功情况下，如果读取body失败，那么错误码默认都是Ok
-            if (resp.status >= 200 && resp.status < 300) {
+            if (http_status_code_ok(resp.status)) {
                 return new BuckyError(BuckyErrorCode.Ok, `success resp: status=${resp.status}`);
             }
 

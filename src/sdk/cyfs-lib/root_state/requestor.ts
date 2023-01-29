@@ -89,6 +89,7 @@ import { HttpRequest } from "../base/http_request";
 import { RootStateAction, ObjectMapOpEnvType, OpEnvAction, GlobalStateCategory } from "./def";
 import { NONRequestorHelper } from "../non/requestor";
 import JSBI from "jsbi";
+import { http_status_code_ok } from "../../util";
 
 export class GlobalStateRequestor {
     private category_: GlobalStateCategory;
@@ -169,7 +170,7 @@ export class GlobalStateRequestor {
         }
         const resp = r.unwrap();
 
-        if (resp.status === 200) {
+        if (http_status_code_ok(resp.status)) {
             const result =
                 new RootStateGetCurrentRootOutputResponseJsonCodec().decode_object(
                     await resp.json()
@@ -237,7 +238,7 @@ export class GlobalStateRequestor {
         }
         const resp = r.unwrap();
 
-        if (resp.status === 200) {
+        if (http_status_code_ok(resp.status)) {
             const ret = await resp.json();
             const result =
                 new RootStateCreateOpEnvOutputResponseJsonCodec().decode_object(ret);
@@ -343,7 +344,7 @@ export class OpEnvRequestor {
         }
 
         const resp = r.unwrap();
-        if (resp.status === 200) {
+        if (http_status_code_ok(resp.status)) {
             console.info(
                 `load for path_op_env success: sid=${this.sid_}, target=${req.target}`
             );
@@ -392,7 +393,7 @@ export class OpEnvRequestor {
         }
 
         const resp = r.unwrap();
-        if (resp.status === 200) {
+        if (http_status_code_ok(resp.status)) {
             console.log(
                 `load_by_path for single_op_env success: path=${req.path}, sid=${this.sid_}`
             );
@@ -440,7 +441,7 @@ export class OpEnvRequestor {
         }
 
         const resp = r.unwrap();
-        if (resp.status === 200) {
+        if (http_status_code_ok(resp.status)) {
             console.log(`create_new for single_op_env success: sid=${this.sid_}`);
 
             return Ok(undefined);
@@ -485,7 +486,7 @@ export class OpEnvRequestor {
         }
 
         const resp = r.unwrap();
-        if (resp.status === 200) {
+        if (http_status_code_ok(resp.status)) {
             console.log(`lock for path_op_env success: sid=${this.sid_}`);
 
             return Ok(undefined);
@@ -523,7 +524,7 @@ export class OpEnvRequestor {
         }
 
         const resp = r.unwrap();
-        if (resp.status === 200) {
+        if (http_status_code_ok(resp.status)) {
             const result = new OpEnvGetCurrentRootOutputResponseJsonCodec().decode_object(
                 await resp.json()
             );
@@ -567,7 +568,7 @@ export class OpEnvRequestor {
         }
 
         const resp = r.unwrap();
-        if (resp.status === 200) {
+        if (http_status_code_ok(resp.status)) {
             const result = new OpEnvCommitOutputResponseJsonCodec().decode_object(
                 await resp.json()
             );
@@ -614,7 +615,7 @@ export class OpEnvRequestor {
         }
 
         const resp = r.unwrap();
-        if (resp.status === 200) {
+        if (http_status_code_ok(resp.status)) {
             console.log(`abort for path_op_env success: sid=${this.sid_}`);
 
             return Ok(undefined);
@@ -651,7 +652,7 @@ export class OpEnvRequestor {
         }
 
         const resp = r.unwrap();
-        if (resp.status === 200) {
+        if (http_status_code_ok(resp.status)) {
             const result = new OpEnvMetadataOutputResponseJsonCodec().decode_object(
                 await resp.json()
             );
@@ -699,7 +700,7 @@ export class OpEnvRequestor {
         }
 
         const resp = r.unwrap();
-        if (resp.status === 200) {
+        if (http_status_code_ok(resp.status)) {
             const result = new OpEnvGetByKeyOutputResponseJsonCodec().decode_object(
                 await resp.json()
             );
@@ -747,7 +748,7 @@ export class OpEnvRequestor {
         }
 
         const resp = r.unwrap();
-        if (resp.status === 200) {
+        if (http_status_code_ok(resp.status)) {
             console.log(`insert_with_key for op_env success: sid=${this.sid_}, key=${req.path ? req.path : req.key}`);
             return Ok(undefined);
         } else {
@@ -786,7 +787,7 @@ export class OpEnvRequestor {
         }
 
         const resp = r.unwrap();
-        if (resp.status === 200) {
+        if (http_status_code_ok(resp.status)) {
             const result = new OpEnvSetWithKeyOutputResponseJsonCodec().decode_object(
                 await resp.json()
             );
@@ -835,7 +836,7 @@ export class OpEnvRequestor {
         }
 
         const resp = r.unwrap();
-        if (resp.status === 200) {
+        if (http_status_code_ok(resp.status)) {
             console.log(`remove_with_key for op_env success: sid=${this.sid_}`);
             const result =
                 new OpEnvRemoveWithKeyOutputResponseJsonCodec().decode_object(
@@ -885,7 +886,7 @@ export class OpEnvRequestor {
         }
 
         const resp = r.unwrap();
-        if (resp.status === 200) {
+        if (http_status_code_ok(resp.status)) {
             const result = new OpEnvSetResponseJsonCodec().decode_object(
                 await resp.json()
             );
@@ -934,7 +935,7 @@ export class OpEnvRequestor {
         }
 
         const resp = r.unwrap();
-        if (resp.status === 200) {
+        if (http_status_code_ok(resp.status)) {
             const result = new OpEnvSetResponseJsonCodec().decode_object(
                 await resp.json()
             );
@@ -981,7 +982,7 @@ export class OpEnvRequestor {
         }
 
         const resp = r.unwrap();
-        if (resp.status === 200) {
+        if (http_status_code_ok(resp.status)) {
             console.log(`remove for op_env success: sid=${this.sid_}`);
             const result = new OpEnvSetResponseJsonCodec().decode_object(
                 await resp.json()
@@ -1028,7 +1029,7 @@ export class OpEnvRequestor {
         }
 
         const resp = r.unwrap();
-        if (resp.status === 200) {
+        if (http_status_code_ok(resp.status)) {
             const result = new OpEnvNextOutputResponseJsonCodec().decode_object(
                 await resp.json()
             );
@@ -1072,7 +1073,7 @@ export class OpEnvRequestor {
         }
 
         const resp = r.unwrap();
-        if (resp.status === 200) {
+        if (http_status_code_ok(resp.status)) {
             console.info(`reset success, sid=${this.sid_}`);
 
             return Ok(undefined);
@@ -1114,7 +1115,7 @@ export class OpEnvRequestor {
         }
 
         const resp = r.unwrap();
-        if (resp.status === 200) {
+        if (http_status_code_ok(resp.status)) {
             const result = new OpEnvListOutputResponseJsonCodec().decode_object(
                 await resp.json()
             );
@@ -1211,7 +1212,7 @@ export class GlobalStateAccessorRequestor {
         }
 
         const resp = r.unwrap();
-        if (resp.status === 200) {
+        if (http_status_code_ok(resp.status)) {
             console.info(`get_object_by_path success`);
             return await this.decode_get_object_response(resp);
         } else {
@@ -1284,7 +1285,7 @@ export class GlobalStateAccessorRequestor {
         }
 
         const resp = r.unwrap();
-        if (resp.status === 200) {
+        if (http_status_code_ok(resp.status)) {
             const result = new RootStateAccessListOutputSlimResponseJsonCodec().decode_object(
                 await resp.json()
             );

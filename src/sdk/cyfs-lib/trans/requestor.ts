@@ -22,6 +22,7 @@ import {
 } from './output_request';
 import { TransContextDecoder } from "../../cyfs-core/trans/trans_context";
 import { NDNOutputRequestCommon } from '../ndn/output_request';
+import { http_status_code_ok } from "../../util";
 
 
 export class TransRequestor {
@@ -77,7 +78,7 @@ export class TransRequestor {
         }
         const resp = ret.unwrap();
 
-        if (resp.status === 200) {
+        if (http_status_code_ok(resp.status)) {
             const context = new TransContextDecoder().from_raw(new Uint8Array(await resp.arrayBuffer()));
             if (context.err) {
                 return context;
@@ -107,7 +108,7 @@ export class TransRequestor {
         }
         const resp = ret.unwrap();
 
-        if (resp.status === 200) {
+        if (http_status_code_ok(resp.status)) {
             return Ok(null);
         } else {
             const err = await RequestorHelper.error_from_resp(resp);
@@ -130,7 +131,7 @@ export class TransRequestor {
         }
         const resp = ret.unwrap();
 
-        if (resp.status === 200) {
+        if (http_status_code_ok(resp.status)) {
             return await TransCreateTaskOutputResponse.from_response(resp);
         } else {
             const err = await RequestorHelper.error_from_resp(resp);
@@ -194,7 +195,7 @@ export class TransRequestor {
         }
         const resp = ret.unwrap();
 
-        if (resp.status === 200) {
+        if (http_status_code_ok(resp.status)) {
             return Ok(null);
         } else {
             const err = await RequestorHelper.error_from_resp(resp);
@@ -218,7 +219,7 @@ export class TransRequestor {
         }
         const resp = ret.unwrap();
 
-        if (resp.status === 200) {
+        if (http_status_code_ok(resp.status)) {
             const obj = await resp.json()
             const info = TransTaskStateInfo.from_obj(obj.state);
             if (info.err) {
@@ -257,7 +258,7 @@ export class TransRequestor {
         }
         const resp = ret.unwrap();
 
-        if (resp.status === 200) {
+        if (http_status_code_ok(resp.status)) {
             return await TransQueryTaskOutputResponse.from_response(resp);
         } else {
             const err = await RequestorHelper.error_from_resp(resp);
@@ -290,7 +291,7 @@ export class TransRequestor {
         }
         const resp = ret.unwrap();
 
-        if (resp.status === 200) {
+        if (http_status_code_ok(resp.status)) {
             return await TransPublishFileOutputResponse.from_respone(resp);
         } else {
             const err = await RequestorHelper.error_from_resp(resp);
@@ -313,7 +314,7 @@ export class TransRequestor {
         }
         const resp = ret.unwrap()
 
-        if (resp.status === 200) {
+        if (http_status_code_ok(resp.status)) {
             return Ok(await TransGetTaskGroupStateOutputResponse.from_response(resp))
         } else {
             const err = await RequestorHelper.error_from_resp(resp);
@@ -338,7 +339,7 @@ export class TransRequestor {
 
         const resp = ret.unwrap()
 
-        if (resp.status === 200) {
+        if (http_status_code_ok(resp.status)) {
             return Ok(await resp.json() as TransControlTaskGroupOutputResponse);
         } else {
             const err = await RequestorHelper.error_from_resp(resp);
