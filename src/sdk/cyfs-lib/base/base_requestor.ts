@@ -104,10 +104,16 @@ export class WSHttpRequestor extends BaseRequestor {
     }
 
     async request(req: HttpRequest): Promise<BuckyResult<Response>> {
-        const session = this.client.select_session();
+        let session = this.client.select_session();
         if (session == null) {
-            console.error("local ws disconnected! now will end with error");
-            return Err(BuckyError.from(BuckyErrorCode.ErrorState));
+            console.error("local ws disconnected! now will wait");
+            await new Promise((resolve) => setTimeout(resolve, 2 * 1000));
+            
+            session = this.client.select_session();
+            if (!session) {
+                console.error("local ws disconnected! now will end with error");
+                return Err(BuckyError.from(BuckyErrorCode.ErrorState));
+            }
         }
         const req_buf = encodeRequest(req);
         const resp_r = await session.requestor.post_bytes_req(HTTP_CMD_REQUEST, req_buf);
