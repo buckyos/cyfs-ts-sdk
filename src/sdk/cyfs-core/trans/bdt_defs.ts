@@ -32,10 +32,10 @@ export class ChunkCodecDesc {
 }
 
 export class DownloadTaskState {
-    private constructor(public Downloading?: [number/*速度*/, number/*进度*/], public Paused?: boolean, public Error?: BuckyError/*被cancel的原因*/, public Finished?: boolean) {}
+    private constructor(public Downloading?: boolean, public Paused?: boolean, public Error?: BuckyError/*被cancel的原因*/, public Finished?: boolean) {}
 
-    static Downloading(speed: number, progress: number): DownloadTaskState {
-        return new DownloadTaskState([speed, progress])
+    static Downloading(): DownloadTaskState {
+        return new DownloadTaskState()
     }
 
     static Paused(): DownloadTaskState {
@@ -51,14 +51,14 @@ export class DownloadTaskState {
     }
 
     static from_obj(obj: any): DownloadTaskState {
-        if (typeof obj === "object" && obj.Downloading) {
-            return new DownloadTaskState(obj.Downloading)
+        if (obj === "Downloading") {
+            return DownloadTaskState.Downloading()
         } else if (obj === "Paused") {
-            return new DownloadTaskState(undefined, true)
+            return DownloadTaskState.Paused()
         } else if (typeof obj === "object" && obj.Error) {
-            return new DownloadTaskState(undefined, undefined, new BuckyError(obj.Error.code, obj.Error.msg))
+            return DownloadTaskState.Error(new BuckyError(obj.Error.code, obj.Error.msg))
         } else if (obj === "Finished") {
-            return new DownloadTaskState(undefined, undefined, undefined, true)
+            return DownloadTaskState.Finished()
         }
 
         throw new Error(`invalid DownloadTaskState: ${JSON.stringify(obj)}`)
