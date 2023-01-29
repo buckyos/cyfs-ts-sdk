@@ -2694,7 +2694,7 @@ export class NamedObjectDescDecoder<T extends DescContent> implements RawDecode<
         //
         // OwnderObjectDesc/AreaObjectDesc/AuthorObjectDesc/PublicKeyObjectDesc
         //
-        let owner
+        let owner;
         if (ctx.has_owner()) {
             const r = new ObjectIdDecoder().raw_decode(buf);
             if (r.err) {
@@ -2843,7 +2843,7 @@ export class NamedObjectDescDecoder<T extends DescContent> implements RawDecode<
 
             // 正确编码完毕，应该消耗完整个buf
             if (remain_buf.byteOffset - buf.byteOffset !== desc_content_size) {
-                console.warn(`decode desc content but return nonempty remain buf! obj_type=${this.m_desc_content_decoder.type_info().obj_type()}, remain = ${remain_buf.byteOffset - buf.length},`);
+                console.warn(`decode desc content but return nonempty remain buf! obj_type=${this.m_desc_content_decoder.type_info().obj_type()}, remain = ${remain_buf.byteOffset - buf.byteOffset}`);
             }
         }
 

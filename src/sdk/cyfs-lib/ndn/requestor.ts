@@ -172,10 +172,8 @@ export class NDNRequestor {
     }
 
     private async decode_get_data_response(
-        resp: Response,
+        resp: Response, return_stream?: boolean
     ): Promise<BuckyResult<NDNGetDataOutputResponse>> {
-        const data = await resp.arrayBuffer();
-
         const attr = RequestorHelper.decode_optional_header(resp, CYFS_ATTRIBUTES, s => new Attributes(parseInt(s, 10)));
 
         const object_id = RequestorHelper.decode_header(resp, CYFS_OBJECT_ID, s => ObjectId.from_base_58(s).unwrap());
@@ -203,6 +201,14 @@ export class NDNRequestor {
         const group = RequestorHelper.decode_optional_header(resp, CYFS_TASK_GROUP, (s) => {
             return decodeURIComponent(s)
         });
+
+        let data, stream;
+        if (return_stream) {
+            stream = resp.body!
+        } else {
+            data = new Uint8Array(await resp.arrayBuffer());
+        }
+
         const ret = {
             object_id: object_id.unwrap(),
             attr,
@@ -210,7 +216,8 @@ export class NDNRequestor {
             range: range?range.unwrap():undefined,
 
             length: length.unwrap(),
-            data: new Uint8Array(data),
+            data,
+            stream,
             group
         };
 
@@ -218,7 +225,7 @@ export class NDNRequestor {
     }
 
     async get_data(
-        req: NDNGetDataOutputRequest,
+        req: NDNGetDataOutputRequest, return_stream?: boolean
     ): Promise<BuckyResult<NDNGetDataOutputResponse>> {
         const http_req = this.encode_get_data_request(NDNAction.GetData, req);
 
@@ -230,7 +237,7 @@ export class NDNRequestor {
 
         if (resp.status === 200) {
             console.debug("get data from ndn service success:", req.object_id);
-            return await this.decode_get_data_response(resp);
+            return await this.decode_get_data_response(resp, return_stream);
         } else {
             const e = await RequestorHelper.error_from_resp(resp);
             return Err(e);
@@ -238,7 +245,7 @@ export class NDNRequestor {
     }
 
     async get_shared_data(
-        req: NDNGetDataOutputRequest,
+        req: NDNGetDataOutputRequest, return_stream?: boolean
     ): Promise<BuckyResult<NDNGetDataOutputResponse>> {
         const http_req = this.encode_get_data_request(NDNAction.GetSharedData, req);
 
@@ -250,7 +257,7 @@ export class NDNRequestor {
 
         if (resp.status === 200) {
             console.debug("get data from ndn service success:", req.object_id);
-            return await this.decode_get_data_response(resp);
+            return await this.decode_get_data_response(resp, return_stream);
         } else {
             const e = await RequestorHelper.error_from_resp(resp);
             return Err(e);
