@@ -98,7 +98,8 @@ export class WebSocketRequestContainer {
 
     new_request(sid: number): RequestResult {
         const seq = this.next_seq;
-        if (this.next_seq === 0) {
+        this.next_seq += 1;
+        if (this.next_seq === 65535) {
             console.warn(`ws request seq roll back! sid=${sid}`);
             this.next_seq = 1;
         }
