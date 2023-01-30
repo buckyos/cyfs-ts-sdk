@@ -204,7 +204,7 @@ class SocketAddrDecoder implements RawDecode<SocketAddr>{
     }
 }
 
-const ENDPOINT_PROTOCOL_UNK: number = 0;
+const ENDPOINT_PROTOCOL_UNK = 0;
 const ENDPOINT_PROTOCOL_TCP: number	= 1<<1;
 const ENDPOINT_PROTOCOL_UDP: number	= 1<<2;
 
