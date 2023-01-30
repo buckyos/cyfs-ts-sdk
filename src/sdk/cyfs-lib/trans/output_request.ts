@@ -235,9 +235,9 @@ export class TransGetTaskGroupStateOutputResponse {
 }
 
 export enum TransTaskGroupControlAction {
-    Resume,
-    Cancel,
-    Pause,
+    Resume = "Resume",
+    Cancel = "Cancel",
+    Pause = "Pause",
 }
 
 
