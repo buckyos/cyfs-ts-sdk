@@ -198,4 +198,24 @@ export class RequestorHelper {
             return error;
         }
     }
+
+    public static async parse_resp<T>(ret: BuckyResult<Response>, action_msg: string, parser?: (resp: Response) => Promise<BuckyResult<T>>, no_resp?: boolean): Promise<BuckyResult<T>> {
+        if (ret.err) {
+            return ret;
+        }
+
+        const resp = ret.unwrap()
+
+        if (http_status_code_ok(resp.status)) {
+            if (parser) {
+                return await parser(resp)
+            } else {
+                return Ok(await resp.json() as T);
+            }
+        } else {
+            const err = await RequestorHelper.error_from_resp(resp);
+            console.error(`${action_msg} failed, status=${resp.status}, err=${err}`);
+            return Err(err);
+        }
+    }
 }

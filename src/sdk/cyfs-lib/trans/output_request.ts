@@ -1,7 +1,7 @@
 
 import { BuckyError, BuckyErrorCodeEx, BuckyErrorCode, BuckyResult, Err, ObjectId, Ok, DirId, DeviceId, error_code_from_number, AccessString } from "../../cyfs-base";
 import { NDNOutputRequestCommon } from "../ndn/output_request";
-import {TransContext} from "../../cyfs-core/trans/trans_context";
+import { TransContext } from "../../cyfs-core/trans/trans_context";
 import JSBI from "jsbi";
 import { DownloadTaskControlState, DownloadTaskState } from "../../cyfs-core";
 
@@ -137,9 +137,22 @@ export interface TransGetTaskStateOutputRequest {
     task_id: string;
 }
 
-export interface TransGetTaskStateOutputResponse {
-    state: TransTaskStateInfo,
-    group?: string,
+export class TransGetTaskStateOutputResponse {
+    constructor(
+        public state: TransTaskStateInfo,
+        public group?: string) { }
+
+    static async from_response(resp: Response): Promise<BuckyResult<TransGetTaskStateOutputResponse>> {
+        const obj = await resp.json()
+        const info = TransTaskStateInfo.from_obj(obj.state);
+        if (info.err) {
+            return info;
+        }
+        return Ok(new TransGetTaskStateOutputResponse(
+            info.unwrap(),
+            obj.group
+        ))
+    }
 }
 
 export interface FileDirRef {
@@ -150,7 +163,7 @@ export interface FileDirRef {
 export interface TransQueryTasksOutputRequest {
     common: NDNOutputRequestCommon;
     task_status?: TransTaskStatus;
-    range?: [JSBI|number, number];
+    range?: [JSBI | number, number];
 }
 
 export interface TransTaskInfo {
@@ -200,7 +213,7 @@ export class TransPublishFileOutputResponse {
         this.file_id = id;
     }
 
-    public static async from_respone(resp: Response): Promise<BuckyResult<TransPublishFileOutputResponse>> {
+    public static async from_response(resp: Response): Promise<BuckyResult<TransPublishFileOutputResponse>> {
         const root = await resp.json();
 
         const r = ObjectId.from_base_58(root.file_id);
@@ -223,14 +236,14 @@ export interface TransGetTaskGroupStateOutputRequest {
 export class TransGetTaskGroupStateOutputResponse {
     constructor(public state: DownloadTaskState,
         public control_state: DownloadTaskControlState,
-        public speed: number|undefined,
+        public speed: number | undefined,
         public cur_speed: number,
-        public history_speed: number) {}
+        public history_speed: number) { }
 
-    static async from_response(resp: Response): Promise<TransGetTaskGroupStateOutputResponse> {
+    static async from_response(resp: Response): Promise<BuckyResult<TransGetTaskGroupStateOutputResponse>> {
         const root = await resp.json();
         const state = DownloadTaskState.from_obj(root.state);
-        return new TransGetTaskGroupStateOutputResponse(state, root.control_state, root.speed, root.cur_speed, root.history_speed);
+        return Ok(new TransGetTaskGroupStateOutputResponse(state, root.control_state, root.speed, root.cur_speed, root.history_speed));
     }
 }
 

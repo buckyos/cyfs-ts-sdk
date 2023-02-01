@@ -126,18 +126,7 @@ export class TransRequestor {
         httpReq.set_json_body(req);
 
         const ret = await this.requestor.request(httpReq);
-        if (ret.err) {
-            return ret;
-        }
-        const resp = ret.unwrap();
-
-        if (http_status_code_ok(resp.status)) {
-            return await TransCreateTaskOutputResponse.from_response(resp);
-        } else {
-            const err = await RequestorHelper.error_from_resp(resp);
-            console.error(`start_task to non stack failed, status=${resp.status}, err=${err}`);
-            return Err(err);
-        }
+        return await RequestorHelper.parse_resp(ret, "get task state", TransCreateTaskOutputResponse.from_response)
     }
 
     // PUT {serviceURL}/trans/task
@@ -214,26 +203,7 @@ export class TransRequestor {
         httpReq.set_json_body(req);
 
         const ret = await this.requestor.request(httpReq);
-        if (ret.err) {
-            return ret;
-        }
-        const resp = ret.unwrap();
-
-        if (http_status_code_ok(resp.status)) {
-            const obj = await resp.json()
-            const info = TransTaskStateInfo.from_obj(obj.state);
-            if (info.err) {
-                return info;
-            }
-            return Ok({
-                state: info.unwrap(),
-                group: obj.group
-            })
-        } else {
-            const err = await RequestorHelper.error_from_resp(resp);
-            console.error(`get_task_state to non stack failed, status=${resp.status}, err=${err}`);
-            return Err(err);
-        }
+        return await RequestorHelper.parse_resp(ret, "get task state", TransGetTaskStateOutputResponse.from_response)
     }
 
     public async query_tasks(req: TransQueryTasksOutputRequest): Promise<BuckyResult<TransQueryTaskOutputResponse>> {
@@ -253,18 +223,7 @@ export class TransRequestor {
         httpReq.set_json_body(body);
 
         const ret = await this.requestor.request(httpReq);
-        if (ret.err) {
-            return ret;
-        }
-        const resp = ret.unwrap();
-
-        if (http_status_code_ok(resp.status)) {
-            return await TransQueryTaskOutputResponse.from_response(resp);
-        } else {
-            const err = await RequestorHelper.error_from_resp(resp);
-            console.error(`get_task_state to non stack failed, status=${resp.status}, err=${err}`);
-            return Err(err);
-        }
+        return await RequestorHelper.parse_resp(ret, "query tasks", TransQueryTaskOutputResponse.from_response)
     }
 
     // POST {serviceURL}/task/file
@@ -286,18 +245,7 @@ export class TransRequestor {
         httpReq.set_json_body(body);
 
         const ret = await this.requestor.request(httpReq);
-        if (ret.err) {
-            return ret;
-        }
-        const resp = ret.unwrap();
-
-        if (http_status_code_ok(resp.status)) {
-            return await TransPublishFileOutputResponse.from_respone(resp);
-        } else {
-            const err = await RequestorHelper.error_from_resp(resp);
-            console.error(`publish_file to non stack failed, status=${resp.status}, err=${err}`);
-            return Err(err);
-        }
+        return await RequestorHelper.parse_resp(ret, "publish_file to non stack", TransPublishFileOutputResponse.from_response)
     }
 
     public async get_task_group_state(req: TransGetTaskGroupStateOutputRequest): Promise<BuckyResult<TransGetTaskGroupStateOutputResponse>> {
@@ -309,18 +257,7 @@ export class TransRequestor {
         http_req.set_json_body(req);
 
         const ret = await this.requestor.request(http_req);
-        if (ret.err) {
-            return ret;
-        }
-        const resp = ret.unwrap()
-
-        if (http_status_code_ok(resp.status)) {
-            return Ok(await TransGetTaskGroupStateOutputResponse.from_response(resp))
-        } else {
-            const err = await RequestorHelper.error_from_resp(resp);
-            console.error(`publish_file to non stack failed, task_group=${req.group}, status=${resp.status}, err=${err}`);
-            return Err(err);
-        }
+        return await RequestorHelper.parse_resp(ret, "get task group state", TransGetTaskGroupStateOutputResponse.from_response)
     }
 
     public async control_task_group(req: TransControlTaskGroupOutputRequest): Promise<BuckyResult<TransControlTaskGroupOutputResponse>> {
@@ -333,18 +270,6 @@ export class TransRequestor {
         http_req.set_json_body(req);
 
         const ret = await this.requestor.request(http_req);
-        if (ret.err) {
-            return ret;
-        }
-
-        const resp = ret.unwrap()
-
-        if (http_status_code_ok(resp.status)) {
-            return Ok(await resp.json() as TransControlTaskGroupOutputResponse);
-        } else {
-            const err = await RequestorHelper.error_from_resp(resp);
-            console.error(`trans control task failed, status=${resp.status}, err=${err}`);
-            return Err(err);
-        }
+        return await RequestorHelper.parse_resp(ret, "trans control task")
     }
 }
