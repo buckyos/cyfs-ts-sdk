@@ -204,6 +204,7 @@ export class NONRequestor {
     async get_object(
         req: NONGetObjectOutputRequest,
     ): Promise<BuckyResult<NONGetObjectOutputResponse>> {
+        console.debug("get object request:", JSON.stringify(req))
         const http_req = this.encode_get_object_request(req);
 
         const r = await this.requestor.request(http_req);
