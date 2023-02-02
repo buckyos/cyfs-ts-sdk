@@ -45,4 +45,5 @@ export * from './rmeta/request';
 export * from './rmeta/requestor';
 export * from './rmeta/stub';
 export * from './prelude/global_state_common';
-export * from './access/source'
+export * from './access/source';
+export * from './base/range';
