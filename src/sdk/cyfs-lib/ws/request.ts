@@ -207,11 +207,11 @@ export class WebSocketRequestManager {
 
                 const resp_packet = WSPacket.new_from_buffer(seq, 0, resp);
                 const buf = resp_packet.encode();
-                (await requestor.post_to_session(buf)).unwrap();
+                return await requestor.post_to_session(buf)
             }
         } else {
             // console.debug(`recv ws resp packet: sid=${requestor.session.unwrap().sid}, seq=${packet.header.seq}`);
-            (await requestor.on_resp(packet)).unwrap();
+            return await requestor.on_resp(packet);
         }
 
         return Ok(void (0));

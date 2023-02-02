@@ -539,7 +539,7 @@ export class OpEnvCommitOutputResponseJsonCodec extends JsonCodec<OpEnvCommitOut
         if (dec_root.err) {
             return dec_root;
         }
-        const root = ObjectId.from_base_58(o.dec_root);
+        const root = ObjectId.from_base_58(o.root);
         if (root.err) {
             return root;
         }
