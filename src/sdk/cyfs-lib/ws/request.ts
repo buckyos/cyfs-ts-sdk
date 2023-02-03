@@ -229,7 +229,7 @@ export class WebSocketRequestManager {
         }
 
         await item.waker!;
-        return Ok(item.resp!.unwrap());
+        return item.resp!;
     }
 
     async post_req(cmd: number, msg: string): Promise<BuckyResult<string>> {
