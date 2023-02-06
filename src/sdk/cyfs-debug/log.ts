@@ -36,17 +36,7 @@ function patch_console(log: any) {
 
     console.trace = log.trace;
     console.debug = log.debug;
-    console.log = (...args: any[]) => {
-        const print_args = [];
-        for (const arg of args) {
-            if (arg.toString && arg.toString === {}.toString) {
-                print_args.push(JSON.stringify(arg))
-            } else {
-                print_args.push(arg)
-            }
-        }
-        log.info(print_args)
-    };
+    console.log = log.info;
     console.info = log.info;
 
     console.warn = log.warn;
