@@ -1,6 +1,6 @@
 import { Attributes, CYFS_ATTRIBUTES, CYFS_OBJECT_ID, BuckyResult, CYFS_API_LEVEL, CYFS_DEC_ID, CYFS_FLAGS, CYFS_NDN_ACTION, CYFS_REFERER_OBJECT, CYFS_RESULT, CYFS_TARGET, Err, ObjectId, Ok, CYFS_REQ_PATH, CYFS_INNER_PATH, CYFS_OWNER_ID, CYFS_DATA_RANGE, CYFS_CONTEXT, CYFS_TASK_GROUP } from "../../cyfs-base";
 import { http_status_code_ok } from "../../util";
-import { BaseRequestor, RequestorHelper } from "../base/base_requestor";
+import { BaseRequestor, HttpRequestor, RequestorHelper } from "../base/base_requestor";
 import { HttpRequest } from "../base/http_request";
 import { NDNDataResponseRange } from "../base/range";
 import { NDNAction, NDNPutDataResult } from "./def";
@@ -9,9 +9,13 @@ import { NDNDeleteDataOutputRequest, NDNDeleteDataOutputResponse, NDNGetDataOutp
 
 export class NDNRequestor {
     service_url: string
+    data_requestor: BaseRequestor
+    data_url: string
 
-    constructor(private requestor: BaseRequestor, private dec_id?: ObjectId) {
+    constructor(private requestor: BaseRequestor, private dec_id?: ObjectId, data_requestor?:BaseRequestor) {
         this.service_url = `http://${requestor.remote_addr()}/ndn/`;
+        this.data_requestor = data_requestor?data_requestor:requestor
+        this.data_url = `http://${this.data_requestor.remote_addr()}/ndn/`;
     }
 
     encode_common_headers(
@@ -82,7 +86,7 @@ export class NDNRequestor {
     }
 
     encode_put_data_request(action: NDNAction, req: NDNPutDataOutputRequest): HttpRequest {
-        const http_req = new HttpRequest("Put", this.service_url);
+        const http_req = new HttpRequest("Put", this.data_url);
 
         this.encode_common_headers(action, req.common, http_req);
 
@@ -117,7 +121,7 @@ export class NDNRequestor {
         const http_req = this.encode_put_data_request(NDNAction.PutData, req);
 
         http_req.set_body(req.data);
-        const r = await this.requestor.request(http_req);
+        const r = await this.data_requestor.request(http_req);
         if (r.err) {
             return r;
         }
@@ -136,7 +140,7 @@ export class NDNRequestor {
         const http_req = this.encode_put_data_request(NDNAction.PutSharedData, req);
 
         http_req.set_body(req.data);
-        const r = await this.requestor.request(http_req);
+        const r = await this.data_requestor.request(http_req);
         if (r.err) {
             return r;
         }
@@ -152,7 +156,7 @@ export class NDNRequestor {
     }
 
     private encode_get_data_request(action: NDNAction, req: NDNGetDataOutputRequest): HttpRequest {
-        const http_req = new HttpRequest("Get", this.service_url);
+        const http_req = new HttpRequest("Get", this.data_url);
         this.encode_common_headers(action, req.common, http_req);
 
         http_req.insert_header(CYFS_OBJECT_ID, req.object_id.toString());
@@ -230,7 +234,7 @@ export class NDNRequestor {
     ): Promise<BuckyResult<NDNGetDataOutputResponse>> {
         const http_req = this.encode_get_data_request(NDNAction.GetData, req);
 
-        const r = await this.requestor.request(http_req);
+        const r = await this.data_requestor.request(http_req);
         if (r.err) {
             return r;
         }
@@ -250,7 +254,7 @@ export class NDNRequestor {
     ): Promise<BuckyResult<NDNGetDataOutputResponse>> {
         const http_req = this.encode_get_data_request(NDNAction.GetSharedData, req);
 
-        const r = await this.requestor.request(http_req);
+        const r = await this.data_requestor.request(http_req);
         if (r.err) {
             return r;
         }
