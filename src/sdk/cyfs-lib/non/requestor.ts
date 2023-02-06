@@ -1,5 +1,5 @@
 import JSBI from "jsbi";
-import { BuckyResult, CYFS_API_LEVEL, CYFS_DEC_ID, CYFS_FLAGS, CYFS_NON_ACTION, CYFS_OBJECT_EXPIRES_TIME, CYFS_OBJECT_ID, CYFS_OBJECT_UPDATE_TIME, CYFS_RESULT, CYFS_TARGET, Err, ObjectId, Ok, Attributes, CYFS_ATTRIBUTES, CYFS_ACCESS, CYFS_REQ_PATH, CYFS_INNER_PATH } from "../../cyfs-base"
+import { BuckyResult, CYFS_API_LEVEL, CYFS_DEC_ID, CYFS_FLAGS, CYFS_NON_ACTION, CYFS_OBJECT_EXPIRES_TIME, CYFS_OBJECT_ID, CYFS_OBJECT_UPDATE_TIME, CYFS_RESULT, CYFS_TARGET, Err, ObjectId, Ok, Attributes, CYFS_ATTRIBUTES, CYFS_ACCESS, CYFS_REQ_PATH, CYFS_INNER_PATH, BuckyBuffer, BuckyError, BuckyErrorCode } from "../../cyfs-base"
 import { http_status_code_ok } from "../../util";
 import { BaseRequestor, RequestorHelper } from "../base/base_requestor";
 import { HttpRequest } from "../base/http_request";
@@ -20,6 +20,13 @@ export class NONRequestorHelper {
         }
 
         const object_raw = await req.arrayBuffer();
+
+        // 兼容object_raw为空的情况，此种情况表示没有可返回的Object对象本身,id可能是个data id或是个ChunkId
+        if (object_raw.byteLength === 0) {
+            const msg = `object id ${id} not a valid object`;
+            console.warn(msg)
+            return Err(new BuckyError(BuckyErrorCode.InvalidInput, msg))
+        }
 
         const info = new NONObjectInfo(object_id.unwrap(), new Uint8Array(object_raw));
         const r = info.decode_and_verify();
