@@ -339,6 +339,7 @@ export interface OpEnvLoadOutputRequest {
     common: OpEnvOutputRequestCommon;
 
     target: ObjectId;
+    inner_path?: string;
 }
 
 export class OpEnvLoadOutputRequestJsonCodec extends JsonCodec<OpEnvLoadOutputRequest> {
@@ -351,6 +352,7 @@ export class OpEnvLoadOutputRequestJsonCodec extends JsonCodec<OpEnvLoadOutputRe
                 param.common
             ),
             target: param.target.to_base_58(),
+            inner_path: param.inner_path
         };
     }
 
@@ -367,7 +369,7 @@ export class OpEnvLoadOutputRequestJsonCodec extends JsonCodec<OpEnvLoadOutputRe
             return dec_id;
         }
 
-        return Ok({ common: common.unwrap(), target: dec_id.unwrap() });
+        return Ok({ common: common.unwrap(), target: dec_id.unwrap(), inner_path: o.inner_path });
     }
 }
 
@@ -539,7 +541,7 @@ export class OpEnvCommitOutputResponseJsonCodec extends JsonCodec<OpEnvCommitOut
         if (dec_root.err) {
             return dec_root;
         }
-        const root = ObjectId.from_base_58(o.dec_root);
+        const root = ObjectId.from_base_58(o.root);
         if (root.err) {
             return root;
         }

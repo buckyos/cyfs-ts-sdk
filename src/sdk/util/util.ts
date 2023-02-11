@@ -132,3 +132,7 @@ export function decodeResponse(buf: Uint8Array): Response {
 
     return resp;
 }
+
+export function http_status_code_ok(status: number): boolean {
+    return status >= 200 && status < 300
+}

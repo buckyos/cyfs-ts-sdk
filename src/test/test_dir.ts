@@ -1,4 +1,5 @@
 import * as cyfs from '../sdk';
+import { get_system_dec_app } from '../sdk';
 
 interface TreeNode {
     // 只有根节点没有名字
@@ -78,11 +79,11 @@ async function build_dir(stack: cyfs.SharedCyfsStack, dir_id: cyfs.DirId) {
 }
 
 export async function test_dir() {
-    const stack = cyfs.SharedCyfsStack.open_runtime();
+    const stack = cyfs.SharedCyfsStack.open_runtime(get_system_dec_app().object_id);
     (await stack.online()).unwrap();
 
     console.info("device_id=", stack.local_device_id(), stack.local_device_id().toString());
-    const owner = stack.local_device().desc().owner()!.unwrap();
+    const owner = stack.local_device().desc().owner()!;
     console.info("owner=", owner.toString());
 
     const dir_id = cyfs.DirId.from_base_58('7jMmeXZWRh8u3qHTEsujtLrTXRpJn6EziWQRsY9qbNEB').unwrap();

@@ -18,3 +18,5 @@ export * from './friends/remove_friend';
 export * from './im/msg';
 export * from './nft/nft_list';
 export * from './core_obj_type';
+export * from './trans/bdt_defs';
+export * from './trans/trans_context';

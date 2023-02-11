@@ -174,7 +174,13 @@ export interface NDNGetDataOutputRequest {
     // 对dir_id有效
     inner_path?: string,
 
-    range?: NDNDataRequestRange
+    range?: NDNDataRequestRange,
+
+    // get data from context instead of common.target
+    context?: string,
+
+    // trans data task's group
+    group?: string,
 }
 
 export class NDNGetDataOutputRequestJsonCodec extends JsonCodec<NDNGetDataOutputRequest> {
@@ -184,6 +190,8 @@ export class NDNGetDataOutputRequestJsonCodec extends JsonCodec<NDNGetDataOutput
             common: new NDNOutputRequestCommonJsonCodec().encode_object(param.common),
             object_id: param.object_id.to_base_58(),
             inner_path: param.inner_path,
+            context: param.context,
+            group: param.group
         }
     }
     decode_object(o: any): BuckyResult<NDNGetDataOutputRequest>{
@@ -200,7 +208,9 @@ export class NDNGetDataOutputRequestJsonCodec extends JsonCodec<NDNGetDataOutput
         return Ok({
             common: common.unwrap(),
             object_id: id.unwrap(),
-            inner_path: o.inner_path
+            inner_path: o.inner_path,
+            context: o.context,
+            group: o.group
         })
     }
 }
@@ -216,9 +226,13 @@ export interface NDNGetDataOutputResponse {
     attr?: Attributes,
     range?: NDNDataResponseRange,
 
+    // task group
+    group?: string,
+
     // content
     length: number,
-    data: Uint8Array,
+    data?: Uint8Array,
+    stream?: ReadableStream
 }
 
 export class NDNGetDataOutputResponseJsonCodec extends JsonCodec<NDNGetDataOutputResponse> {
@@ -227,7 +241,8 @@ export class NDNGetDataOutputResponseJsonCodec extends JsonCodec<NDNGetDataOutpu
         const o:any = {
             object_id: param.object_id.to_base_58(),
             length: param.length,
-            data: param.data.toHex()
+            data: param.data?.toHex(),
+            group: param.group
         }
         if (param.attr) {
             o.attr = param.attr.flags;
@@ -252,7 +267,8 @@ export class NDNGetDataOutputResponseJsonCodec extends JsonCodec<NDNGetDataOutpu
             object_id: id.unwrap(),
             attr,
             length: o.length,
-            data: data.unwrap()
+            data: data.unwrap(),
+            group: o.group
         })
     }
 }

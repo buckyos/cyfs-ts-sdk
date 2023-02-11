@@ -1,5 +1,6 @@
 import JSBI from "jsbi";
-import { BuckyResult, CYFS_API_LEVEL, CYFS_DEC_ID, CYFS_FLAGS, CYFS_NON_ACTION, CYFS_OBJECT_EXPIRES_TIME, CYFS_OBJECT_ID, CYFS_OBJECT_UPDATE_TIME, CYFS_RESULT, CYFS_TARGET, Err, ObjectId, Ok, Attributes, CYFS_ATTRIBUTES, CYFS_ACCESS, CYFS_REQ_PATH, CYFS_INNER_PATH } from "../../cyfs-base"
+import { BuckyResult, CYFS_API_LEVEL, CYFS_DEC_ID, CYFS_FLAGS, CYFS_NON_ACTION, CYFS_OBJECT_EXPIRES_TIME, CYFS_OBJECT_ID, CYFS_OBJECT_UPDATE_TIME, CYFS_RESULT, CYFS_TARGET, Err, ObjectId, Ok, Attributes, CYFS_ATTRIBUTES, CYFS_ACCESS, CYFS_REQ_PATH, CYFS_INNER_PATH, BuckyBuffer, BuckyError, BuckyErrorCode } from "../../cyfs-base"
+import { http_status_code_ok } from "../../util";
 import { BaseRequestor, RequestorHelper } from "../base/base_requestor";
 import { HttpRequest } from "../base/http_request";
 import { CYFS_REQUEST_FLAG_DELETE_WITH_QUERY } from "../base/request";
@@ -19,6 +20,13 @@ export class NONRequestorHelper {
         }
 
         const object_raw = await req.arrayBuffer();
+
+        // 兼容object_raw为空的情况，此种情况表示没有可返回的Object对象本身,id可能是个data id或是个ChunkId
+        if (object_raw.byteLength === 0) {
+            const msg = `object id ${id} not a valid object`;
+            console.warn(msg)
+            return Err(new BuckyError(BuckyErrorCode.InvalidInput, msg))
+        }
 
         const info = new NONObjectInfo(object_id.unwrap(), new Uint8Array(object_raw));
         const r = info.decode_and_verify();
@@ -177,7 +185,7 @@ export class NONRequestor {
         }
         const resp = r.unwrap();
 
-        if (resp.status === 200) {
+        if (http_status_code_ok(resp.status)) {
             console.debug("put object to non service success:", req.object.object_id);
             return await this.decode_put_object_response(resp)
         } else {
@@ -203,6 +211,7 @@ export class NONRequestor {
     async get_object(
         req: NONGetObjectOutputRequest,
     ): Promise<BuckyResult<NONGetObjectOutputResponse>> {
+        console.debug("get object request:", JSON.stringify(req))
         const http_req = this.encode_get_object_request(req);
 
         const r = await this.requestor.request(http_req);
@@ -211,7 +220,7 @@ export class NONRequestor {
         }
         const resp = r.unwrap();
 
-        if (resp.status === 200) {
+        if (http_status_code_ok(resp.status)) {
             console.debug("get object from non service success:", req.object_id);
             return await NONRequestorHelper.decode_get_object_response(resp);
         } else {
@@ -261,7 +270,7 @@ export class NONRequestor {
         }
         const resp = r.unwrap();
 
-        if (resp.status === 200) {
+        if (http_status_code_ok(resp.status)) {
             console.debug("post object to non service success:", req.object.object_id);
             return await this.decode_post_object_response(req.object.object_id, resp)
         } else {
@@ -309,7 +318,7 @@ export class NONRequestor {
         }
         const resp = r.unwrap();
 
-        if (resp.status === 200) {
+        if (http_status_code_ok(resp.status)) {
             console.debug("delete object from non service success:", req.object_id);
             return await this.decode_delete_object_response(req, resp);
         } else {

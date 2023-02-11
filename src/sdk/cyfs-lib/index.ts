@@ -23,6 +23,7 @@ export * from './stack/stack';
 export * from './util/request';
 export * from './util/requestor';
 export * from './trans/request';
+export * from './trans/output_request';
 export * from './trans/requestor';
 export * from './router_handler/ws/handler';
 export * from './router_handler/ws/request';
@@ -44,4 +45,5 @@ export * from './rmeta/request';
 export * from './rmeta/requestor';
 export * from './rmeta/stub';
 export * from './prelude/global_state_common';
-export * from './access/source'
+export * from './access/source';
+export * from './base/range';

@@ -2,7 +2,7 @@ import JSBI from 'jsbi';
 import * as util from 'util';
 const sleep = util.promisify(setTimeout);
 import * as cyfs from '../sdk';
-import {ObjectId} from "../sdk";
+import { ObjectId, get_system_dec_app } from "../sdk";
 
 async function test_get_data(stack: cyfs.SharedCyfsStack) {
     const dir_id = cyfs.ObjectId.from_base_58('7jMmeXZqmEro3y46GBdYBhJPPxaGsq2oLg8pqi3mGMBz').unwrap();
@@ -24,7 +24,7 @@ async function test_get_data(stack: cyfs.SharedCyfsStack) {
 }
 
 async function test_trans_file(stack: cyfs.SharedCyfsStack, local_path: string, file_id: cyfs.ObjectId) {
-    const req: cyfs.TransCreateTaskRequest = {
+    const req: cyfs.TransCreateTaskOutputRequest = {
         common: {
             dec_id: ObjectId.default(),
             level: cyfs.NDNAPILevel.Router,
@@ -84,8 +84,8 @@ async function add_file(stack: cyfs.SharedCyfsStack, local_path: string) {
 
     let owner;
     const ret = stack.local_device().desc().owner();
-    if (ret && ret.is_some()) {
-        owner = ret.unwrap();
+    if (ret) {
+        owner = ret;
     } else {
         owner = stack.local_device_id().object_id;
     }
@@ -122,11 +122,11 @@ async function add_file(stack: cyfs.SharedCyfsStack, local_path: string) {
 }
 
 export async function test_file() {
-    const stack = cyfs.SharedCyfsStack.open_runtime();
+    const stack = cyfs.SharedCyfsStack.open_runtime(get_system_dec_app().object_id);
     (await stack.wait_online(JSBI.BigInt(60 * 1000 * 1000))).unwrap();
 
     console.info("device_id=", stack.local_device_id(), stack.local_device_id().toString());
-    const owner = stack.local_device().desc().owner()!.unwrap();
+    const owner = stack.local_device().desc().owner()!;
     console.info("owner=", owner.toString());
 
     //const local_file = `G:\\bing\\BingPics\\AdelaideVineyard_2020_05_21.jpg`;
@@ -137,12 +137,12 @@ export async function test_file() {
 
 export async function test_trans() {
     // 打开两个栈，一个runtime，一个ood，从runtime传文件到ood
-    const runtime_stack = cyfs.SharedCyfsStack.open(cyfs.SharedCyfsStackParam.new_with_ws_event_ports(21002, 21003).unwrap())
-    const ood_stack = cyfs.SharedCyfsStack.open(cyfs.SharedCyfsStackParam.new_with_ws_event_ports(21000, 21001).unwrap())
+    const runtime_stack = cyfs.SharedCyfsStack.open(cyfs.SharedCyfsStackParam.new_with_ws_event_ports(21002, 21003, get_system_dec_app().object_id).unwrap())
+    const ood_stack = cyfs.SharedCyfsStack.open(cyfs.SharedCyfsStackParam.new_with_ws_event_ports(21000, 21001, get_system_dec_app().object_id).unwrap())
     await runtime_stack.online();
     await ood_stack.online();
 
-    const owner = runtime_stack.local_device().desc().owner()!.unwrap()
+    const owner = runtime_stack.local_device().desc().owner()!;
 
     const context = (await ood_stack.trans().get_context({
         common: {
@@ -150,7 +150,8 @@ export async function test_trans() {
             level: cyfs.NDNAPILevel.Router,
             flags: 0,
             referer_object: []
-        }, context_name: "test"})).unwrap();
+        }, context_path: "/test"
+    })).unwrap();
 
     const local_path = "/cyfs/log/gateway/gateway_19212_r00010.log"
     // 先添加文件到runtime
@@ -190,7 +191,7 @@ export async function test_trans() {
             dec_id: ObjectId.default(),
             level: cyfs.NDNAPILevel.Router,
             flags: 0,
-            referer_object: [new cyfs.NDNDataRefererObject(file_resp.file_id)]
+            referer_object: [new cyfs.NDNDataRefererObject(undefined, file_resp.file_id)]
         },
         object_id: file_resp.file_id,
         local_path: "c:\\cyfs\\gateway_19212_r00010.log",
@@ -204,7 +205,7 @@ export async function test_trans() {
             dec_id: ObjectId.default(),
             level: cyfs.NDNAPILevel.Router,
             flags: 0,
-            referer_object: [new cyfs.NDNDataRefererObject(file_resp.file_id)]
+            referer_object: [new cyfs.NDNDataRefererObject(undefined, file_resp.file_id)]
         },
         task_id: task_resp.task_id
     })).unwrap()
@@ -248,7 +249,8 @@ export async function test_trans() {
                 flags: 0,
                 referer_object: []
             },
-        task_id: task.task_id});
+            task_id: task.task_id
+        });
     }
     console.log("test file trans finished")
 }

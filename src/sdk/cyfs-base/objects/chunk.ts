@@ -170,7 +170,7 @@ export class ChunkId implements RawEncode {
     }
 
     to_string(): string {
-        return this.m_buf.toString();
+        return this.toString();
     }
 
     to_base_58(): string {

@@ -1,7 +1,6 @@
 import { Err, Ok, BuckyResult, BuckyError, BuckyErrorCode } from "../base/results";
 import { RawEncode, RawDecode } from "../base/raw_encode";
 import { } from "../base/buffer";
-import { BuckyNumber } from "../base/bucky_number";
 import { get_area_info } from "../base/world_area";
 
 export class Area implements RawEncode {
@@ -34,7 +33,7 @@ export class Area implements RawEncode {
         return this.m_inner;
     }
 
-    static default() {
+    static default(): Area {
         return new Area(0, 0, 0, 0);
     }
 
@@ -54,7 +53,7 @@ export class Area implements RawEncode {
 
     raw_measure(): BuckyResult<number> {
         return Ok(5);
-    };
+    }
 
     raw_encode(buf: Uint8Array): BuckyResult<Uint8Array> {
         if (buf.length < this.raw_measure().unwrap()) {
@@ -96,10 +95,10 @@ export class AreaDecoder implements RawDecode<Area> {
     }
 
     raw_decode(buf: Uint8Array): BuckyResult<[Area, Uint8Array]> {
-        let country = buf[0] | (buf[2] >> 7 << 8);
-        let carrier = buf[1];
-        let city = ((buf[2]) << 9 >> 1) | (buf[3]);
-        let inner = buf[4];;
+        const country = buf[0] | (buf[2] >> 7 << 8);
+        const carrier = buf[1];
+        const city = ((buf[2]) << 9 >> 1) | (buf[3]);
+        const inner = buf[4];
         buf = buf.offset(5);
 
         const ret: [Area, Uint8Array] = [new Area(country, carrier, city, inner), buf];

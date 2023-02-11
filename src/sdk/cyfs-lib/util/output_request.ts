@@ -1,5 +1,5 @@
 import JSBI from "jsbi";
-import { BuckyResult, CyfsChannel, Device, DeviceDecoder, DeviceId, Endpoint, ObjectId, Ok, OODWorkMode } from "../../cyfs-base";
+import { AccessString, BuckyResult, CyfsChannel, Device, DeviceDecoder, DeviceId, Endpoint, ObjectId, Ok, OODWorkMode } from "../../cyfs-base";
 import { Zone, ZoneId } from "../../cyfs-core";
 import { JsonCodec, JsonCodecHelper } from "../base/codec";
 import { GlobalStateAccessMode } from '../root_state/def';
@@ -659,6 +659,39 @@ export class UtilBuildDirFromObjectMapOutputResponseJsonCodec extends JsonCodec<
 
         return Ok({
             object_id
+        })
+    }
+}
+
+export interface UtilBuildFileOutputRequest {
+    common: UtilOutputRequestCommon,
+    local_path: string,
+    owner: ObjectId,
+    chunk_size: number,
+    access?: AccessString,
+}
+
+export interface UtilBuildFileOutputResponse {
+    object_id: ObjectId,
+    object_raw: Uint8Array,
+}
+
+export class UtilBuildFileOutputResponseJsonCodec extends JsonCodec<UtilBuildFileOutputResponse> {
+    constructor() { super(); }
+    decode_object(o: any): BuckyResult<UtilBuildFileOutputResponse> {
+        const r = ObjectId.from_base_58(o.object_id);
+        if (r.err) {
+            return r;
+        }
+
+        const raw = JsonCodecHelper.decode_hex_to_buffer(o.object_raw);
+        if (raw.err) {
+            return raw;
+        }
+
+        return Ok({
+            object_id: r.unwrap(),
+            object_raw: raw.unwrap()
         })
     }
 }

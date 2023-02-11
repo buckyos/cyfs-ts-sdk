@@ -42,16 +42,16 @@ export class AccessPermissions {
     private constructor(public value: number){}
 
     as_str(): string {
-        let can_call = AccessPermission.Call.test(this.value);
-        let can_read = AccessPermission.Read.test(this.value);
-        let can_write = AccessPermission.Write.test(this.value);
+        const can_call = AccessPermission.Call.test(this.value);
+        const can_read = AccessPermission.Read.test(this.value);
+        const can_write = AccessPermission.Write.test(this.value);
 
         return `${can_read?"r":"-"}${can_write?"w":"-"}${can_call?"x":"-"}`
     }
 
     static from_u8(value: number): BuckyResult<AccessPermissions> {
         if (value > AccessPermissions.Full.value) {
-            let msg = `invalid AccessPermissions value: ${value}`
+            const msg = `invalid AccessPermissions value: ${value}`
             console.error(msg);
             return Err(new BuckyError(BuckyErrorCode.InvalidParam, msg))
         }
@@ -60,7 +60,7 @@ export class AccessPermissions {
     }
 
     format_u8(v: number): string {
-        let ret = AccessPermissions.from_u8(v);
+        const ret = AccessPermissions.from_u8(v);
         if (ret.err) {
             return v.toString()
         } else {
@@ -114,7 +114,7 @@ export class AccessString {
     constructor(public value: number) {}
 
     static make(list: AccessPair[]): AccessString {
-        let ret = new AccessString(0);
+        const ret = new AccessString(0);
         list.forEach((p)  => ret.set_group_permissions(p.group, p.permissions));
         return ret
     }
@@ -132,15 +132,15 @@ export class AccessString {
     }
 
     get_group_permissions(group: AccessGroup): AccessPermissions {
-        let range = group.range();
-        let perm = parseInt(new BitSet(this.value).slice(range.start, range.end-1).toString(10))
+        const range = group.range();
+        const perm = parseInt(new BitSet(this.value).slice(range.start, range.end-1).toString(10))
         return AccessPermissions.from_u8(perm).unwrap()
     }
 
     set_group_permissions(group: AccessGroup, permissions: AccessPermissions): void {
-        let range = group.range();
+        const range = group.range();
         let bits = new BitSet(this.value);
-        let perm_bits = new BitSet(permissions.value)
+        const perm_bits = new BitSet(permissions.value)
         for (let index = range.start; index < range.end; index++) {
             bits = bits.set(index, perm_bits.get(index - range.start))
             
@@ -149,7 +149,7 @@ export class AccessString {
     }
 
     clear_group_permissions(group: AccessGroup): void {
-        let range = group.range();
+        const range = group.range();
         this.value = parseInt(new BitSet(this.value).setRange(range.start, range.end-1, 0).toString(10))
     }
 

@@ -108,7 +108,7 @@ export class ObjectId implements RawEncode, Compareable<ObjectId> {
         this.m_buf = buf;
     }
 
-    get object_id() {
+    get object_id(): ObjectId {
         throw new Error(`.object_id not support on ObjectId!`);
     }
 
@@ -182,7 +182,6 @@ export class ObjectId implements RawEncode, Compareable<ObjectId> {
     to_base_36(): string {
         return basex.to_base_36(this.as_slice());
     }
-    
 
     hashCode(): symbol {
         return Symbol.for(this.to_base_58());
@@ -279,7 +278,7 @@ export class ObjectId implements RawEncode, Compareable<ObjectId> {
     info(): ObjectIdInfo {
         const buf = this.as_slice();
         const flag = buf[0];
-        if (flag >> 6 == 0) {
+        if (flag >> 6 === 0) {
             const data_len = flag & 0b00111111;
             return new DataObjectIdInfo(this.as_slice().subarray(1, 1+data_len));
         }
@@ -361,7 +360,7 @@ export class ObjectId implements RawEncode, Compareable<ObjectId> {
                 // 核心对象
                 const [has_area, has_single_key, has_mn_key, has_owner] = decode_flag(buf);
 
-                let area = undefined;
+                let area;
                 if (has_area) {
                     area = decode_area(buf)
                 }
@@ -376,7 +375,7 @@ export class ObjectId implements RawEncode, Compareable<ObjectId> {
             case OBJECT_ID_DEC_APP: {
                 // Dec App 对象
                 const [has_area, has_single_key, has_mn_key, has_owner] = decode_flag(buf);
-                let area = undefined;
+                let area;
                 if (has_area) {
                     area = decode_area(buf)
                 }

@@ -1,5 +1,5 @@
-import { Err, Ok, BuckyResult, BuckyError, BuckyErrorCode } from "./results";
-import { RawEncode, RawDecode, DecodeBuilder, RawEncodePurpose} from "./raw_encode";
+import { Ok, BuckyResult } from "./results";
+import { RawEncode, RawDecode, RawEncodePurpose} from "./raw_encode";
 import {} from "./buffer";
 import { BuckySize, BuckySizeDecoder} from "./bucky_usize";
 
@@ -30,7 +30,6 @@ export class BuckyFixedBufferDecoder implements RawDecode<BuckyFixedBuffer> {
 
         return Ok(ret);
     }
-    
 }
 
 // BuckyBuffer

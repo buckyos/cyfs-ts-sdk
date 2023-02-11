@@ -34,7 +34,6 @@ function patch_console(log: any) {
 
     (console as any).origin.assert = console.assert;
 
-
     console.trace = log.trace;
     console.debug = log.debug;
     console.log = log.info;

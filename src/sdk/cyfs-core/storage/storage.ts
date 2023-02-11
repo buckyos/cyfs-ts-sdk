@@ -1,6 +1,6 @@
 import {
     SubDescType,
-    DescTypeInfo, 
+    DescTypeInfo,
     NamedObjectId, NamedObjectIdDecoder,
     NamedObjectDesc, NamedObjectDescDecoder,
     NamedObject, NamedObjectBuilder, NamedObjectDecoder,
@@ -9,7 +9,7 @@ import {
     named_id_try_from_object_id,
 } from "../../cyfs-base/objects/object"
 
-import { Ok, BuckyResult} from "../../cyfs-base/base/results";
+import { Ok, BuckyResult } from "../../cyfs-base/base/results";
 import { BuckyBuffer } from "../../cyfs-base/base/bucky_buffer";
 import { ObjectId } from "../../cyfs-base/objects/object_id";
 import { DeviceId } from "../../cyfs-base/objects/device";
@@ -158,7 +158,7 @@ export class Storage extends NamedObject<StorageDescContent, StorageBodyContent>
         return this.body_expect().content().value();
     }
 
-    storage_id() {
+    storage_id(): StorageId {
         return new StorageId(this.desc().calculate_id());
     }
 }

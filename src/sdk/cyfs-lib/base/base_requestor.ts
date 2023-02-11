@@ -5,7 +5,7 @@ import { DeviceId } from "../../cyfs-base/objects/device";
 import { WebSocketRequestHandler, WebSocketRequestManager } from '../ws/request';
 import { WebSocketSession } from '../ws/session';
 import { WebSocketClient } from '../ws/client';
-import { decodeResponse, encodeRequest, HTTP_CMD_REQUEST } from "../..";
+import { decodeResponse, encodeRequest, HTTP_CMD_REQUEST, http_status_code_ok } from "../..";
 
 export abstract class BaseRequestor {
     abstract remote_addr(): string;
@@ -104,10 +104,16 @@ export class WSHttpRequestor extends BaseRequestor {
     }
 
     async request(req: HttpRequest): Promise<BuckyResult<Response>> {
-        const session = this.client.select_session();
+        let session = this.client.select_session();
         if (session == null) {
-            console.error("local ws disconnected! now will end with error");
-            return Err(BuckyError.from(BuckyErrorCode.ErrorState));
+            console.error("local ws disconnected! now will wait");
+            await new Promise((resolve) => setTimeout(resolve, 2 * 1000));
+            
+            session = this.client.select_session();
+            if (!session) {
+                console.error("local ws disconnected! now will end with error");
+                return Err(BuckyError.from(BuckyErrorCode.ErrorState));
+            }
         }
         const req_buf = encodeRequest(req);
         const resp_r = await session.requestor.post_bytes_req(HTTP_CMD_REQUEST, req_buf);
@@ -183,13 +189,33 @@ export class RequestorHelper {
             return error;
         } catch (e) {
             // statuscode成功情况下，如果读取body失败，那么错误码默认都是Ok
-            if (resp.status >= 200 && resp.status < 300) {
+            if (http_status_code_ok(resp.status)) {
                 return new BuckyError(BuckyErrorCode.Ok, `success resp: status=${resp.status}`);
             }
 
             console.error(`read error resp failed! status=${resp.status}`, e);
             const error = new BuckyError(BuckyErrorCode.Failed, `error resp, status=${resp.status}, ${resp.statusText}`);
             return error;
+        }
+    }
+
+    public static async parse_resp<T>(ret: BuckyResult<Response>, action_msg: string, parser?: (resp: Response) => Promise<BuckyResult<T>>, no_resp?: boolean): Promise<BuckyResult<T>> {
+        if (ret.err) {
+            return ret;
+        }
+
+        const resp = ret.unwrap()
+
+        if (http_status_code_ok(resp.status)) {
+            if (parser) {
+                return await parser(resp)
+            } else {
+                return Ok(await resp.json() as T);
+            }
+        } else {
+            const err = await RequestorHelper.error_from_resp(resp);
+            console.error(`${action_msg} failed, status=${resp.status}, err=${err}`);
+            return Err(err);
         }
     }
 }

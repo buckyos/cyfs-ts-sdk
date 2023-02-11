@@ -153,7 +153,7 @@ export class DeviceBodyContent extends ProtobufBodyContent {
         return this.m_name;
     }
 
-    set_name(name?: string) {
+    set_name(name?: string): void {
         this.m_name = name;
     }
 
@@ -316,7 +316,7 @@ export class Device extends NamedObject<DeviceDescContent, DeviceBodyContent>{
         return this.body_expect().content().name();
     }
 
-    set_name(name?: string) {
+    set_name(name?: string): void {
         return this.body_expect().content().set_name(name);
     }
 

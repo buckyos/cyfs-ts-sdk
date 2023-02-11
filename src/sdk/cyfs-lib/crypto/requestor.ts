@@ -19,17 +19,14 @@ import {
     CYFS_DECRYPT_RET,
     CYFS_DECRYPT_TYPE,
     CYFS_ENCRYPT_TYPE,
-    error
 } from "../../cyfs-base";
-import { Err, Ok, Some } from "ts-results";
+import { Err, Ok } from "ts-results";
 import { BuckyError, BuckyResult } from "../../cyfs-base";
 import { ObjectId } from "../../cyfs-base/objects/object_id";
 import { CryptoSignObjectRequest, CryptoVerifyObjectRequest } from './request';
 import { CryptoDecryptDataOutputRequest, CryptoDecryptDataOutputResponse, CryptoEncryptDataOutputRequest, CryptoEncryptDataOutputResponse, CryptoOutputRequestCommon, CryptoSignObjectOutputResponse, CryptoVerifyObjectOutputRequest, CryptoVerifyObjectOutputResponse, CryptoVerifyObjectOutputResponseJsonCodec, DecryptDataResult, SignObjectResult, VerifySignsJsonCodec } from "./output_request";
 import { NONObjectInfo } from "../non/def";
-import { match } from "assert";
-import { info } from "console";
-import { format } from "path";
+import { http_status_code_ok } from "../../util"
 
 
 export class CryptoRequestor {
@@ -115,7 +112,7 @@ export class CryptoRequestor {
         }
         const resp = r.unwrap();
 
-        if (resp.status === 200) {
+        if (http_status_code_ok(resp.status)) {
             const r = await this.decode_verify_object_response(req.object.object_id, resp);
             if (r.err) {
                 return r;
@@ -178,7 +175,7 @@ export class CryptoRequestor {
         }
         const resp = r.unwrap()
 
-        if (resp.status === 200) {
+        if (http_status_code_ok(resp.status)) {
             const r = await this.decode_sign_object_response(req.object.object_id, resp);
             if (r.err) {
                 return r;
@@ -235,7 +232,7 @@ export class CryptoRequestor {
         }
         const resp = resp_r.unwrap();
 
-        if (resp.status === 200) {
+        if (http_status_code_ok(resp.status)) {
             const eresp_r = await this.decode_encrypt_data_response(resp);
             if (eresp_r.err) {
                 return eresp_r;
@@ -290,7 +287,7 @@ export class CryptoRequestor {
         }
         const resp = resp_r.unwrap();
 
-        if (resp.status === 200) {
+        if (http_status_code_ok(resp.status)) {
             const dresp_r = await this.decode_decrypt_data_response(resp);
             if (dresp_r.err) {
                 return dresp_r;

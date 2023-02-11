@@ -179,7 +179,7 @@ export class SingleOpEnvStub {
         return Ok(undefined);
     }
 
-    public async load(target: ObjectId): Promise<BuckyResult<void>> {
+    public async load(target: ObjectId, inner_path?: string): Promise<BuckyResult<void>> {
         const req: OpEnvLoadOutputRequest = {
             common: {
                 flags: 0,
@@ -188,6 +188,7 @@ export class SingleOpEnvStub {
                 sid: this.sid_,
             },
             target,
+            inner_path
         };
         const r = await this.requestor.load(req);
         if (r.err) {

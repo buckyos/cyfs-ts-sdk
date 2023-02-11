@@ -30,13 +30,13 @@ class PostObjectHandler implements cyfs.RouterHandlerPostObjectRoutine {
         const codec = new cyfs.NONPostObjectOutputRequestJsonCodec();
         console.info('post_object param: ', JSON.stringify(codec.encode_object(param.request)));
 
-        console.info("source=", param.request.common.source.to_base_58());
+        console.info("source=", param.request.common.source);
 
         const [text, buf] = new cyfs.TextObjectDecoder().raw_decode(param.request.object.object_raw).unwrap();
         console.info(`put_object text_object: id=${text.id}, header=${text.header}, body=${text.body}`);
 
         if (text.id === 'request') {
-            const obj = cyfs.TextObject.create(cyfs.None, 'response', "test_header", "hello!");
+            const obj = cyfs.TextObject.create(undefined, 'response', "test_header", "hello!");
             const object_id = obj.desc().calculate_id();
             console.info(`will response put_object: ${param.request.object.object_id} ---> ${object_id}`);
 
@@ -66,7 +66,7 @@ class PutObjectHandler implements cyfs.RouterHandlerPutObjectRoutine {
         console.info(`put_object text_object: id=${text.id}, header=${text.header}, body=${text.body}`);
 
         if (text.id === 'normal') {
-            const obj = cyfs.TextObject.create(cyfs.None, 'question2', "test_header", "hello!");
+            const obj = cyfs.TextObject.create(undefined, 'question2', "test_header", "hello!");
             const object_id = obj.desc().calculate_id();
             console.info(`will change put_object: ${param.request.object.object_id} -> ${object_id}`);
 
@@ -83,7 +83,7 @@ class PutObjectHandler implements cyfs.RouterHandlerPutObjectRoutine {
 
             return cyfs.Ok(result)
         } else if (text.id === 'request') {
-            const obj = cyfs.TextObject.create(cyfs.None, 'response', "test_header", "hello!");
+            const obj = cyfs.TextObject.create(undefined, 'response', "test_header", "hello!");
             const object_id = obj.desc().calculate_id();
             console.info(`will response put_object: ${param.request.object.object_id} ---> ${object_id}`);
 
@@ -136,7 +136,7 @@ class GetObjectHandler implements cyfs.RouterHandlerGetObjectRoutine {
         const obj_type_code = param.request.object_id.obj_type_code();
         if (obj_type_code === cyfs.ObjectTypeCode.Custom) {
             // 创建一个新对象并应答
-            const obj = cyfs.TextObject.create(cyfs.None, 'answer', "test_header", "hello!");
+            const obj = cyfs.TextObject.create(undefined, 'answer', "test_header", "hello!");
             const object_id = obj.desc().calculate_id();
             const object_raw = obj.to_vec().unwrap();
 
@@ -166,16 +166,18 @@ class GetObjectHandler implements cyfs.RouterHandlerGetObjectRoutine {
 }
 
 async function test_put_object(stack: cyfs.SharedCyfsStack, dec_id: cyfs.ObjectId, owner_id: cyfs.ObjectId) {
-    const handler = new PutObjectHandler();
-
+    
     // 添加一个处理器
     {
+        const handler = new PutObjectHandler();
         const ret = await stack.router_handlers().add_put_object_handler(cyfs.RouterHandlerChain.PreNOC,
             'put-object-handler',
             0,
             `dec_id == ${dec_id.to_base_58()}`,
+            undefined,
             cyfs.RouterHandlerAction.Drop,
-            cyfs.Some(handler));
+            handler,
+        );
 
         console.info(ret);
     }
@@ -187,8 +189,10 @@ async function test_put_object(stack: cyfs.SharedCyfsStack, dec_id: cyfs.ObjectI
             'put-object-watcher',
             -1,
             `obj_type == ${cyfs.CoreObjectType.Text} && dec_id == ${dec_id.to_base_58()}`,
+            undefined,
             cyfs.RouterHandlerAction.Pass,
-            cyfs.Some(handler));
+            handler
+        );
 
         console.info(ret);
     }
@@ -200,15 +204,17 @@ async function test_put_object(stack: cyfs.SharedCyfsStack, dec_id: cyfs.ObjectI
             'post-object-handler',
             -1,
             `obj_type == ${cyfs.CoreObjectType.Text} && dec_id == ${dec_id.to_base_58()} && req_path == '/qa/request/'`,
+            undefined,
             cyfs.RouterHandlerAction.Pass,
-            cyfs.Some(handler));
+            handler,
+        );
 
         console.info(ret);
     }
 
     // 创建一个使用传统put_object的对象
     {
-        const obj = cyfs.TextObject.create(cyfs.Some(owner_id), 'normal', "test_header", "hello!");
+        const obj = cyfs.TextObject.create(owner_id, 'normal', "test_header", "hello!");
         const object_id = obj.desc().calculate_id();
         console.info(`will put_object: id=${object_id}`);
 
@@ -229,7 +235,7 @@ async function test_put_object(stack: cyfs.SharedCyfsStack, dec_id: cyfs.ObjectI
 
     // 标准的QA流程
     {
-        const obj = cyfs.TextObject.create(cyfs.Some(owner_id), 'request', "test_header", "hello!");
+        const obj = cyfs.TextObject.create(owner_id, 'request', "test_header", "hello!");
         const object_id = obj.desc().calculate_id();
         console.info(`will post_object: id=${object_id}`);
 
@@ -256,7 +262,7 @@ async function test_put_object(stack: cyfs.SharedCyfsStack, dec_id: cyfs.ObjectI
     }
 
     {
-        const obj = cyfs.TextObject.create(cyfs.Some(owner_id), 'question_reject', "test_header", "hello!");
+        const obj = cyfs.TextObject.create(owner_id, 'question_reject', "test_header", "hello!");
         const object_id = obj.desc().calculate_id();
         console.info(`will put_object: id=${object_id}`);
 
@@ -280,7 +286,7 @@ async function test_put_object(stack: cyfs.SharedCyfsStack, dec_id: cyfs.ObjectI
     }
 
     {
-        const obj = cyfs.TextObject.create(cyfs.Some(owner_id), 'question_resp', "test_header", "hello!");
+        const obj = cyfs.TextObject.create(owner_id, 'question_resp', "test_header", "hello!");
         const object_id = obj.desc().calculate_id();
         console.info(`will put_object: id=${object_id}`);
 
@@ -291,8 +297,7 @@ async function test_put_object(stack: cyfs.SharedCyfsStack, dec_id: cyfs.ObjectI
                 flags: 0,
                 level: cyfs.NONAPILevel.Router
             },
-            object: new cyfs.NONObjectInfo(object_id, object_raw)
-            
+            object: new cyfs.NONObjectInfo(object_id, object_raw),
         };
 
         const put_ret = await stack.non_service().put_object(req);
@@ -311,8 +316,10 @@ async function test_get_object(stack: cyfs.SharedCyfsStack, dec_id: cyfs.ObjectI
             'get_another_object',
             1,
             `dec_id == ${dec_id.to_base_58()} && req_path==/qa/*`,
+            undefined,
             cyfs.RouterHandlerAction.Reject,
-            cyfs.Some(handler));
+            handler,
+        );
 
         console.info(ret);
     }
@@ -323,15 +330,17 @@ async function test_get_object(stack: cyfs.SharedCyfsStack, dec_id: cyfs.ObjectI
             'get_text_object',
             0,
             `dec_id == ${dec_id.to_base_58()} && req_path==/qa/*`,
+            undefined,
             cyfs.RouterHandlerAction.Reject,
-            cyfs.Some(handler));
+            handler,
+        );
 
         console.info(ret);
     }
 
     // 使用text_object_id发起一次get
     {
-        const obj = cyfs.TextObject.create(cyfs.Some(owner_id), 'get_request', "test_header", "hello!");
+        const obj = cyfs.TextObject.create(owner_id, 'get_request', "test_header", "hello!");
         const object_id = obj.desc().calculate_id();
 
         const req = {
@@ -363,7 +372,7 @@ async function test_get_object(stack: cyfs.SharedCyfsStack, dec_id: cyfs.ObjectI
                 flags: 0,
                 level: cyfs.NONAPILevel.Router
             }
-            
+
         };
 
         const get_ret = await stack.non_service().get_object(req);

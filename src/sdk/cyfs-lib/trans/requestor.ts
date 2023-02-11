@@ -1,21 +1,28 @@
-import {HttpRequest} from "../base/http_request";
-import {BaseRequestor} from "../base/base_requestor";
-import {Err, Ok} from "ts-results";
-import {BuckyError, BuckyResult, CYFS_API_LEVEL, CYFS_DEC_ID, CYFS_FLAGS, CYFS_REFERER_OBJECT, CYFS_REQ_PATH, CYFS_TARGET, ObjectId} from "../../cyfs-base";
+import { HttpRequest } from "../base/http_request";
+import { BaseRequestor, RequestorHelper } from "../base/base_requestor";
+import { Err, Ok } from "ts-results";
+import { BuckyResult, CYFS_ACCESS, CYFS_API_LEVEL, CYFS_DEC_ID, CYFS_FLAGS, CYFS_REFERER_OBJECT, CYFS_REQ_PATH, CYFS_TARGET, ObjectId } from "../../cyfs-base";
 import {
-    TransAddFileResponse,
-    TransControlTaskRequest,
-    TransCreateTaskRequest, TransCreateTaskResponse,
-    TransGetContextRequest,
-    TransGetTaskStateRequest,
-    TransPublishFileRequest,
-    TransPutContextRequest, TransQueryTaskResponse, TransQueryTasksRequest,
+    TransPublishFileOutputResponse,
+    TransControlTaskOutputRequest,
+    TransCreateTaskOutputRequest, TransCreateTaskOutputResponse,
+    TransGetContextOutputRequest,
+    TransGetTaskStateOutputRequest,
+    TransPublishFileOutputRequest,
+    TransPutContextOutputRequest, TransQueryTaskOutputResponse, TransQueryTasksOutputRequest,
     TransTaskControlAction,
-    TransTaskRequest,
-    TransTaskStateInfo
-} from './request';
-import {TransContext, TransContextDecoder} from "../../cyfs-core/trans/trans_context";
+    TransTaskOutputRequest,
+    TransTaskStateInfo,
+    TransGetContextOutputResponse,
+    TransControlTaskGroupOutputRequest,
+    TransControlTaskGroupOutputResponse,
+    TransGetTaskGroupStateOutputRequest,
+    TransGetTaskGroupStateOutputResponse,
+    TransGetTaskStateOutputResponse
+} from './output_request';
+import { TransContextDecoder } from "../../cyfs-core/trans/trans_context";
 import { NDNOutputRequestCommon } from '../ndn/output_request';
+import { http_status_code_ok } from "../../util";
 
 
 export class TransRequestor {
@@ -58,14 +65,12 @@ export class TransRequestor {
     }
 
     // POST {serviceURL}/trans/get_context
-    public async get_context(req: TransGetContextRequest): Promise<BuckyResult<TransContext>> {
+    public async get_context(req: TransGetContextOutputRequest): Promise<BuckyResult<TransGetContextOutputResponse>> {
         const url = `${this.serviceURL}get_context`;
         console.log('will get context', url, req);
         const httpReq = new HttpRequest('POST', url);
         this.encode_common_headers(req.common, httpReq);
-        httpReq.set_json_body({
-            context_name: req.context_name
-        });
+        httpReq.set_json_body(req);
 
         const ret = await this.requestor.request(httpReq);
         if (ret.err) {
@@ -73,24 +78,29 @@ export class TransRequestor {
         }
         const resp = ret.unwrap();
 
-        if (resp.status === 200) {
-            return new TransContextDecoder().from_hex(await resp.text());
+        if (http_status_code_ok(resp.status)) {
+            const context = new TransContextDecoder().from_raw(new Uint8Array(await resp.arrayBuffer()));
+            if (context.err) {
+                return context;
+            }
+            return Ok({ context: context.unwrap() });
         } else {
-            const e: { code: number; msg: string } = await resp.json();
-            console.error(`get context failed, status=${resp.status}, err=${JSON.stringify((e))}`);
-            return new Err(new BuckyError(e.code, e.msg));
+            const err = await RequestorHelper.error_from_resp(resp);
+            console.error(`get context failed, status=${resp.status}, err=${err}`);
+            return Err(err);
         }
     }
 
     // POST {serviceURL}/trans/put_context
-    public async put_context(req: TransPutContextRequest): Promise<BuckyResult<null>> {
+    public async put_context(req: TransPutContextOutputRequest): Promise<BuckyResult<null>> {
         const url = `${this.serviceURL}put_context`;
         console.log('will put context', url, req);
         const httpReq = new HttpRequest('POST', url);
         this.encode_common_headers(req.common, httpReq);
-        httpReq.set_json_body( {
-            context: req.context.to_hex().unwrap()
-        });
+        if (req.access) {
+            httpReq.insert_header(CYFS_ACCESS, req.access.value.toString())
+        }
+        httpReq.set_body(req.context.to_vec().unwrap())
 
         const ret = await this.requestor.request(httpReq);
         if (ret.err) {
@@ -98,53 +108,32 @@ export class TransRequestor {
         }
         const resp = ret.unwrap();
 
-        if (resp.status === 200) {
+        if (http_status_code_ok(resp.status)) {
             return Ok(null);
         } else {
-            const e: { code: number; msg: string } = await resp.json();
-            console.error(`put context failed, status=${resp.status}, err=${JSON.stringify((e))}`);
-            return new Err(new BuckyError(e.code, e.msg));
+            const err = await RequestorHelper.error_from_resp(resp);
+            console.error(`put context failed, status=${resp.status}, err=${err}`);
+            return new Err(err);
         }
     }
 
     // POST {serviceURL}/trans/task
-    public async create_task(req: TransCreateTaskRequest): Promise<BuckyResult<TransCreateTaskResponse>> {
+    public async create_task(req: TransCreateTaskOutputRequest): Promise<BuckyResult<TransCreateTaskOutputResponse>> {
         const url = `${this.serviceURL}task`;
         console.log('will start trans task', url, req);
         const httpReq = new HttpRequest('POST', url);
         this.encode_common_headers(req.common, httpReq);
-        httpReq.set_json_body({
-            object_id: req.object_id,
-
-            // 保存到的本地目录or文件
-            local_path: req.local_path,
-
-            // 源设备(hub)列表
-            device_list: req.device_list,
-            context_id: req.context_id,
-            auto_start: req.auto_start,
-        });
+        httpReq.set_json_body(req);
 
         const ret = await this.requestor.request(httpReq);
-        if (ret.err) {
-            return ret;
-        }
-        const resp = ret.unwrap();
-
-        if (resp.status === 200) {
-            return await TransCreateTaskResponse.from_response(resp);
-        } else {
-            const e: { code: number; msg: string } = await resp.json();
-            console.error(`start_task to non stack failed, status=${resp.status}, err=${JSON.stringify((e))}`);
-            return new Err(new BuckyError(e.code, e.msg));
-        }
+        return await RequestorHelper.parse_resp(ret, "get task state", TransCreateTaskOutputResponse.from_response)
     }
 
     // PUT {serviceURL}/trans/task
-    public async start_task(req: TransTaskRequest): Promise<BuckyResult<null>> {
+    public async start_task(req: TransTaskOutputRequest): Promise<BuckyResult<null>> {
         const url = `${this.serviceURL}task`;
         console.log('will start trans task', url, req);
-        const control_req: TransControlTaskRequest = {
+        const control_req: TransControlTaskOutputRequest = {
             common: req.common,
             task_id: req.task_id,
             action: TransTaskControlAction.Start
@@ -154,10 +143,10 @@ export class TransRequestor {
     }
 
     // PUT {serviceURL}/trans/task
-    public async stop_task(req: TransTaskRequest): Promise<BuckyResult<null>> {
+    public async stop_task(req: TransTaskOutputRequest): Promise<BuckyResult<null>> {
         const url = `${this.serviceURL}task`;
         console.log('will stop trans task', url, req);
-        const control_req: TransControlTaskRequest = {
+        const control_req: TransControlTaskOutputRequest = {
             common: req.common,
             task_id: req.task_id,
             action: TransTaskControlAction.Stop
@@ -167,10 +156,10 @@ export class TransRequestor {
     }
 
     // PUT {serviceURL}/trans/task
-    public async delete_task(req: TransTaskRequest): Promise<BuckyResult<null>> {
+    public async delete_task(req: TransTaskOutputRequest): Promise<BuckyResult<null>> {
         const url = `${this.serviceURL}task`;
         console.log('will start trans task', url, req);
-        const control_req: TransControlTaskRequest = {
+        const control_req: TransControlTaskOutputRequest = {
             common: req.common,
             task_id: req.task_id,
             action: TransTaskControlAction.Delete
@@ -179,18 +168,15 @@ export class TransRequestor {
         return await this.control_task(control_req);
     }
 
-    // DELETE {serviceURL}/task
-    async control_task(req: TransControlTaskRequest): Promise<BuckyResult<null>> {
+    // PUT {serviceURL}/task
+    async control_task(req: TransControlTaskOutputRequest): Promise<BuckyResult<null>> {
 
         const url = `${this.serviceURL}task`;
         console.log('will control trans task: ', url, req);
 
         const httpReq = new HttpRequest('PUT', url);
         this.encode_common_headers(req.common, httpReq);
-        httpReq.set_json_body({
-            task_id: req.task_id,
-            action: req.action
-        });
+        httpReq.set_json_body(req);
 
         const ret = await this.requestor.request(httpReq);
         if (ret.err) {
@@ -198,107 +184,92 @@ export class TransRequestor {
         }
         const resp = ret.unwrap();
 
-        if (resp.status === 200) {
+        if (http_status_code_ok(resp.status)) {
             return Ok(null);
         } else {
-            const e: { code: number; msg: string } = await resp.json();
-            console.error(`control_task to non stack failed, status=${resp.status}, err=${JSON.stringify((e))}`);
-            return new Err(new BuckyError(e.code, e.msg));
+            const err = await RequestorHelper.error_from_resp(resp);
+            console.error(`control_task to non stack failed, status=${resp.status}, err=${err}`);
+            return Err(err);
         }
     }
 
     // GET {serviceURL}/task/state
-    public async get_task_state(req: TransGetTaskStateRequest): Promise<BuckyResult<TransTaskStateInfo>> {
+    public async get_task_state(req: TransGetTaskStateOutputRequest): Promise<BuckyResult<TransGetTaskStateOutputResponse>> {
         const url = `${this.serviceURL}task/state`;
         console.log('will get trans task state: ', url, req);
 
         const httpReq = new HttpRequest('POST', url);
         this.encode_common_headers(req.common, httpReq);
-        httpReq.set_json_body({
-            task_id: req.task_id
-        });
+        httpReq.set_json_body(req);
 
         const ret = await this.requestor.request(httpReq);
-        if (ret.err) {
-            return ret;
-        }
-        const resp = ret.unwrap();
-
-        if (resp.status === 200) {
-            return await TransTaskStateInfo.from_respone(resp);
-        } else {
-            const e: { code: number; msg: string } = await resp.json();
-            console.error(`get_task_state to non stack failed, status=${resp.status}, err=${JSON.stringify((e))}`);
-            return new Err(new BuckyError(e.code, e.msg));
-        }
+        return await RequestorHelper.parse_resp(ret, "get task state", TransGetTaskStateOutputResponse.from_response)
     }
 
-    public async query_tasks(req: TransQueryTasksRequest): Promise<BuckyResult<TransQueryTaskResponse>> {
+    public async query_tasks(req: TransQueryTasksOutputRequest): Promise<BuckyResult<TransQueryTaskOutputResponse>> {
         const url = `${this.serviceURL}query`;
         console.log('will query task: ', url, req);
 
         const httpReq = new HttpRequest('POST', url);
         this.encode_common_headers(req.common, httpReq);
         const body: any = {
-            context_id: req.context_id,
+            common: req.common,
             task_status: req.task_status,
         }
         if (req.range) {
-            body.offset = req.range[0]
-            body.length = req.range[1]
+            body.offset = req.range[0].toString()
+            body.length = req.range[1].toString()
         }
         httpReq.set_json_body(body);
 
         const ret = await this.requestor.request(httpReq);
-        if (ret.err) {
-            return ret;
-        }
-        const resp = ret.unwrap();
-
-        if (resp.status === 200) {
-            return await TransQueryTaskResponse.from_response(resp);
-        } else {
-            const e: { code: number; msg: string } = await resp.json();
-            console.error(`get_task_state to non stack failed, status=${resp.status}, err=${JSON.stringify((e))}`);
-            return new Err(new BuckyError(e.code, e.msg));
-        }
+        return await RequestorHelper.parse_resp(ret, "query tasks", TransQueryTaskOutputResponse.from_response)
     }
 
     // POST {serviceURL}/task/file
-    public async publish_file(req: &TransPublishFileRequest): Promise<BuckyResult<TransAddFileResponse>> {
+    public async publish_file(req: TransPublishFileOutputRequest): Promise<BuckyResult<TransPublishFileOutputResponse>> {
         const url = `${this.serviceURL}file`;
         const httpReq = new HttpRequest('POST', url);
         this.encode_common_headers(req.common, httpReq);
 
         console.info(`publish_file: ${JSON.stringify(req)}`);
-        httpReq.set_json_body({
-            // 文件所属者
+        const body = {
+            common: req.common,
             owner: req.owner,
-
-            // 文件的本地路径
             local_path: req.local_path,
-
-            // chunk大小
             chunk_size: req.chunk_size,
-
+            access: req.access ? req.access.value : undefined,
             file_id: req.file_id,
-
-            // 关联的dirs
-            dirs: req.dirs
-        });
+            dirs: req.dirs,
+        };
+        httpReq.set_json_body(body);
 
         const ret = await this.requestor.request(httpReq);
-        if (ret.err) {
-            return ret;
-        }
-        const resp = ret.unwrap();
+        return await RequestorHelper.parse_resp(ret, "publish_file to non stack", TransPublishFileOutputResponse.from_response)
+    }
 
-        if (resp.status === 200) {
-            return await TransAddFileResponse.from_respone(resp);
-        } else {
-            const e: { code: number; msg: string } = await resp.json();
-            console.error(`publish_file to non stack failed, status=${resp.status}, err=${JSON.stringify((e))}`);
-            return new Err(new BuckyError(e.code, e.msg));
-        }
+    public async get_task_group_state(req: TransGetTaskGroupStateOutputRequest): Promise<BuckyResult<TransGetTaskGroupStateOutputResponse>> {
+        console.log("will get trans task group state:", req);
+        const url = `${this.serviceURL}task_group/state`;
+        const http_req = new HttpRequest("Post", url);
+
+        this.encode_common_headers(req.common, http_req);
+        http_req.set_json_body(req);
+
+        const ret = await this.requestor.request(http_req);
+        return await RequestorHelper.parse_resp(ret, "get task group state", TransGetTaskGroupStateOutputResponse.from_response)
+    }
+
+    public async control_task_group(req: TransControlTaskGroupOutputRequest): Promise<BuckyResult<TransControlTaskGroupOutputResponse>> {
+        console.log("will control trans task group:", req);
+
+        const url = `${this.serviceURL}task_group`;
+        const http_req = new HttpRequest("Put", url);
+
+        this.encode_common_headers(req.common, http_req);
+        http_req.set_json_body(req);
+
+        const ret = await this.requestor.request(http_req);
+        return await RequestorHelper.parse_resp(ret, "trans control task")
     }
 }

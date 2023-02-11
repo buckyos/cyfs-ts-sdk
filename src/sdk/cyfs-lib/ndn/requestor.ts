@@ -1,16 +1,21 @@
-import { Attributes, CYFS_ATTRIBUTES, CYFS_OBJECT_ID, BuckyResult, CYFS_API_LEVEL, CYFS_DEC_ID, CYFS_FLAGS, CYFS_NDN_ACTION, CYFS_REFERER_OBJECT, CYFS_RESULT, CYFS_TARGET, Err, ObjectId, Ok, CYFS_REQ_PATH, CYFS_INNER_PATH, CYFS_OWNER_ID, CYFS_DATA_RANGE } from "../../cyfs-base";
-import { BaseRequestor, RequestorHelper } from "../base/base_requestor";
+import { Attributes, CYFS_ATTRIBUTES, CYFS_OBJECT_ID, BuckyResult, CYFS_API_LEVEL, CYFS_DEC_ID, CYFS_FLAGS, CYFS_NDN_ACTION, CYFS_REFERER_OBJECT, CYFS_RESULT, CYFS_TARGET, Err, ObjectId, Ok, CYFS_REQ_PATH, CYFS_INNER_PATH, CYFS_OWNER_ID, CYFS_DATA_RANGE, CYFS_CONTEXT, CYFS_TASK_GROUP } from "../../cyfs-base";
+import { http_status_code_ok } from "../../util";
+import { BaseRequestor, HttpRequestor, RequestorHelper } from "../base/base_requestor";
 import { HttpRequest } from "../base/http_request";
 import { NDNDataResponseRange } from "../base/range";
 import { NDNAction, NDNPutDataResult } from "./def";
 import { NDNQueryFileInputResponseJsonCodec, ndn_query_file_param_to_key_pair } from './input_request';
-import { NDNDeleteDataOutputRequest, NDNDeleteDataOutputResponse, NDNGetDataOutputRequest, NDNGetDataOutputResponse, NDNOutputRequestCommon, NDNPutDataOutputRequest, NDNPutDataOutputResponse, NDNQueryFileOutputRequest, NDNQueryFileOutputResponse, NDNQueryFileOutputResponseJsonCodec } from "./output_request";
+import { NDNDeleteDataOutputRequest, NDNDeleteDataOutputResponse, NDNGetDataOutputRequest, NDNGetDataOutputResponse, NDNOutputRequestCommon, NDNPutDataOutputRequest, NDNPutDataOutputResponse, NDNQueryFileOutputRequest, NDNQueryFileOutputResponse } from "./output_request";
 
 export class NDNRequestor {
     service_url: string
+    data_requestor: BaseRequestor
+    data_url: string
 
-    constructor(private requestor: BaseRequestor, private dec_id?: ObjectId) {
+    constructor(private requestor: BaseRequestor, private dec_id?: ObjectId, data_requestor?:BaseRequestor) {
         this.service_url = `http://${requestor.remote_addr()}/ndn/`;
+        this.data_requestor = data_requestor?data_requestor:requestor
+        this.data_url = `http://${this.data_requestor.remote_addr()}/ndn/`;
     }
 
     encode_common_headers(
@@ -81,7 +86,7 @@ export class NDNRequestor {
     }
 
     encode_put_data_request(action: NDNAction, req: NDNPutDataOutputRequest): HttpRequest {
-        const http_req = new HttpRequest("Put", this.service_url);
+        const http_req = new HttpRequest("Put", this.data_url);
 
         this.encode_common_headers(action, req.common, http_req);
 
@@ -116,13 +121,13 @@ export class NDNRequestor {
         const http_req = this.encode_put_data_request(NDNAction.PutData, req);
 
         http_req.set_body(req.data);
-        const r = await this.requestor.request(http_req);
+        const r = await this.data_requestor.request(http_req);
         if (r.err) {
             return r;
         }
         const resp = r.unwrap();
 
-        if (resp.status === 200) {
+        if (http_status_code_ok(resp.status)) {
             console.debug("put data to ndn service success:", req.object_id);
             return await this.decode_put_data_response(resp);
         } else {
@@ -135,13 +140,13 @@ export class NDNRequestor {
         const http_req = this.encode_put_data_request(NDNAction.PutSharedData, req);
 
         http_req.set_body(req.data);
-        const r = await this.requestor.request(http_req);
+        const r = await this.data_requestor.request(http_req);
         if (r.err) {
             return r;
         }
         const resp = r.unwrap();
 
-        if (resp.status === 200) {
+        if (http_status_code_ok(resp.status)) {
             console.debug("put data to ndn service success:", req.object_id);
             return await this.decode_put_shared_data_response(resp);
         } else {
@@ -151,22 +156,29 @@ export class NDNRequestor {
     }
 
     private encode_get_data_request(action: NDNAction, req: NDNGetDataOutputRequest): HttpRequest {
-        const http_req = new HttpRequest("Get", this.service_url);
+        const http_req = new HttpRequest("Get", this.data_url);
         this.encode_common_headers(action, req.common, http_req);
 
         http_req.insert_header(CYFS_OBJECT_ID, req.object_id.toString());
         if (req.inner_path) {
             http_req.insert_header(CYFS_INNER_PATH, encodeURIComponent(req.inner_path));
         }
+        if (req.context) {
+            http_req.insert_header(CYFS_CONTEXT, encodeURIComponent(req.context))
+        }
+        if (req.group) {
+            http_req.insert_header(CYFS_TASK_GROUP, encodeURIComponent(req.group))
+        }
+        if (req.range) {
+            http_req.insert_header("Range", req.range.toString())
+        }
 
         return http_req;
     }
 
     private async decode_get_data_response(
-        resp: Response,
+        resp: Response, return_stream?: boolean
     ): Promise<BuckyResult<NDNGetDataOutputResponse>> {
-        const data = await resp.arrayBuffer();
-
         const attr = RequestorHelper.decode_optional_header(resp, CYFS_ATTRIBUTES, s => new Attributes(parseInt(s, 10)));
 
         const object_id = RequestorHelper.decode_header(resp, CYFS_OBJECT_ID, s => ObjectId.from_base_58(s).unwrap());
@@ -191,6 +203,17 @@ export class NDNRequestor {
         if (length.err) {
             return length;
         }
+        const group = RequestorHelper.decode_optional_header(resp, CYFS_TASK_GROUP, (s) => {
+            return decodeURIComponent(s)
+        });
+
+        let data, stream;
+        if (return_stream) {
+            stream = resp.body!
+        } else {
+            data = new Uint8Array(await resp.arrayBuffer());
+        }
+
         const ret = {
             object_id: object_id.unwrap(),
             attr,
@@ -198,26 +221,28 @@ export class NDNRequestor {
             range: range?range.unwrap():undefined,
 
             length: length.unwrap(),
-            data: new Uint8Array(data),
+            data,
+            stream,
+            group
         };
 
         return Ok(ret);
     }
 
     async get_data(
-        req: NDNGetDataOutputRequest,
+        req: NDNGetDataOutputRequest, return_stream?: boolean
     ): Promise<BuckyResult<NDNGetDataOutputResponse>> {
         const http_req = this.encode_get_data_request(NDNAction.GetData, req);
 
-        const r = await this.requestor.request(http_req);
+        const r = await this.data_requestor.request(http_req);
         if (r.err) {
             return r;
         }
         const resp = r.unwrap();
 
-        if (resp.status === 200) {
+        if (http_status_code_ok(resp.status)) {
             console.debug("get data from ndn service success:", req.object_id);
-            return await this.decode_get_data_response(resp);
+            return await this.decode_get_data_response(resp, return_stream);
         } else {
             const e = await RequestorHelper.error_from_resp(resp);
             return Err(e);
@@ -225,19 +250,19 @@ export class NDNRequestor {
     }
 
     async get_shared_data(
-        req: NDNGetDataOutputRequest,
+        req: NDNGetDataOutputRequest, return_stream?: boolean
     ): Promise<BuckyResult<NDNGetDataOutputResponse>> {
         const http_req = this.encode_get_data_request(NDNAction.GetSharedData, req);
 
-        const r = await this.requestor.request(http_req);
+        const r = await this.data_requestor.request(http_req);
         if (r.err) {
             return r;
         }
         const resp = r.unwrap();
 
-        if (resp.status === 200) {
+        if (http_status_code_ok(resp.status)) {
             console.debug("get data from ndn service success:", req.object_id);
-            return await this.decode_get_data_response(resp);
+            return await this.decode_get_data_response(resp, return_stream);
         } else {
             const e = await RequestorHelper.error_from_resp(resp);
             return Err(e);
@@ -273,7 +298,7 @@ export class NDNRequestor {
         }
         const resp = r.unwrap();
 
-        if (resp.status === 200) {
+        if (http_status_code_ok(resp.status)) {
             console.debug("delete data from ndn service success:", req.object_id);
             return await this.decode_delete_data_response(resp);
         } else {
@@ -305,7 +330,7 @@ export class NDNRequestor {
         }
         const resp = r.unwrap();
 
-        if (resp.status === 200) {
+        if (http_status_code_ok(resp.status)) {
             const json = await resp.json();
             const r = (new NDNQueryFileInputResponseJsonCodec()).decode_object(json);
             if (r.err) {

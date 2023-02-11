@@ -16,6 +16,9 @@ export const CYFS_FILTER_DEC_ID = "cyfs-filter-dec-id";
 export const CYFS_REQ_PATH = "cyfs-req-path";
 export const CYFS_INNER_PATH = "cyfs-inner-path";
 
+export const CYFS_CONTEXT = "cyfs-context";
+export const CYFS_TASK_GROUP = "cyfs-task-group";
+
 export const CYFS_OWNER_ID = "cyfs-owner-id";
 
 export const CYFS_AUTHOR_ID = "cyfs-author-id";

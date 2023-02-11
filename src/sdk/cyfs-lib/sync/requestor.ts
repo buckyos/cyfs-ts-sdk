@@ -3,6 +3,7 @@ import { BaseRequestor, RequestorHelper } from "../base/base_requestor";
 import { BuckyResult, ObjectId, Err, Ok, BuckyErrorCode, DeviceId } from "../../cyfs-base";
 import JSBI from "jsbi";
 import { JsonCodecHelper } from "../base/codec";
+import { http_status_code_ok } from "../../util";
 
 export interface DeviceSyncStatus {
     ood_device_id: DeviceId,
@@ -121,7 +122,7 @@ export class SyncRequestor {
         }
         const resp = r.unwrap();
 
-        if (resp.status === 200) {
+        if (http_status_code_ok(resp.status)) {
             const status_resp = await this.decode_sync_status_resp(resp);
             if (status_resp.err) {
                 return status_resp;

@@ -241,7 +241,7 @@ export class SharedCyfsStack {
 
         this.m_util_service = new UtilRequestor(requestor_holder.select_requestor(param, param.requestor_config!.util_service), this.dec_id);
         this.m_non_service = new NONRequestor(requestor_holder.select_requestor(param, param.requestor_config!.non_service), this.dec_id);
-        this.m_ndn_service = new NDNRequestor(requestor_holder.select_requestor(param, param.requestor_config!.ndn_service), this.dec_id);
+        this.m_ndn_service = new NDNRequestor(requestor_holder.select_requestor(param, param.requestor_config!.ndn_service), this.dec_id, requestor_holder.select_requestor(param, CyfsStackRequestorType.Http));
         this.m_trans_service = new TransRequestor(requestor_holder.select_requestor(param, param.requestor_config!.trans_service), this.dec_id);
         this.m_crypto = new CryptoRequestor(requestor_holder.select_requestor(param, param.requestor_config!.crypto_service), this.dec_id);
         this.m_root_state = new GlobalStateRequestor(GlobalStateCategory.RootState, requestor_holder.select_requestor(param, param.requestor_config!.root_state), this.dec_id);
@@ -437,8 +437,6 @@ export class SharedCyfsStack {
     local_cache_meta_stub(dec_id?: ObjectId): GlobalStateMetaStub {
         return new GlobalStateMetaStub(this.local_cache_meta(), undefined, dec_id);
     }
-
-
 
     // state_storage
     global_state_storage(

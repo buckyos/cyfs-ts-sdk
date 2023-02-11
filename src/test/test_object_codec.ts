@@ -1,4 +1,4 @@
-import { Area, Device, DeviceCategory, DeviceDecoder, DeviceId, Endpoint, PeopleId, PrivateKey, Some, to_buf, UniqueId } from '../sdk';
+import { Area, Device, DeviceCategory, DeviceDecoder, DeviceId, Endpoint, PeopleId, PrivateKey, to_buf, UniqueId } from '../sdk';
 
 
 export function test_object_codec() {
@@ -27,7 +27,7 @@ export function test_object_codec() {
 
     const area = new Area(0, 5, 0, 0);
     const unique_id = UniqueId.default();
-    const device = Device.create(Some(people_id.object_id),
+    const device = Device.create(people_id.object_id,
         unique_id,
         endpoints,
         sn_list,

@@ -2,6 +2,7 @@ import * as fs from "fs";
 import * as path from "path";
 import * as cyfs from "../sdk";
 import JSBI from "jsbi";
+import { get_system_dec_app } from '../sdk';
 
 function test_zone() {
   const desc_file = path.join(cyfs.get_app_data_dir("tests"), "zone.desc");
@@ -39,7 +40,7 @@ function test_zone() {
 function test_text() {
   {
     const rust_id = "9cfBkPspECqrFGSe5FqDZj4vTiAGnbb8JZkc4CYNqwXg";
-    const empty_obj = cyfs.TextObject.create(cyfs.None, "", "", "");
+    const empty_obj = cyfs.TextObject.create(undefined, "", "", "");
     const id = empty_obj.desc().calculate_id().to_base_58();
     console.assert(id === rust_id);
   }
@@ -177,7 +178,7 @@ async function _putObj(
 
 async function test_app_cmd() {
   const sharedStatck: cyfs.SharedCyfsStack =
-    cyfs.SharedCyfsStack.open_runtime();
+    cyfs.SharedCyfsStack.open_runtime(get_system_dec_app().object_id);
   await sharedStatck.wait_online();
   const router: cyfs.NONRequestor = sharedStatck.non_service();
   const owner = cyfs.ObjectId.from_base_58(
@@ -199,8 +200,9 @@ async function test_app_cmd() {
       "test_app_manager_list_listener",
       0,
       `obj_type == ${cyfs.CoreObjectType.AppLocalList}`,
+      undefined,
       cyfs.RouterHandlerAction.Pass,
-      cyfs.Some(handler)
+      handler,
     )
   }
 
@@ -213,8 +215,9 @@ async function test_app_cmd() {
       "test_app_manager_status_listener",
       0,
       `obj_type == ${cyfs.CoreObjectType.AppLocalStatus}`,
+      undefined,
       cyfs.RouterHandlerAction.Pass,
-      cyfs.Some(handler)
+      handler,
     )
   }
 
@@ -382,7 +385,7 @@ async function test_app_cmd() {
 }
 
 async function test_app_list_ex() {
-  const sharedStatck = cyfs.SharedCyfsStack.open_runtime();
+  const sharedStatck = cyfs.SharedCyfsStack.open_runtime(get_system_dec_app().object_id);
   await sharedStatck.wait_online();
   const router: cyfs.NONRequestor = sharedStatck.non_service();
 

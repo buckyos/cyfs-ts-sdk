@@ -1288,550 +1288,9 @@ export namespace MsgDescContent {
   }
 }
 
-export class MsgInfo extends jspb.Message {
-  getOrderd(): number;
-  setOrderd(value: number): void;
-
-  getSeq(): number;
-  setSeq(value: number): void;
-
-  getMsgObjId(): Uint8Array | string;
-  getMsgObjId_asU8(): Uint8Array;
-  getMsgObjId_asB64(): string;
-  setMsgObjId(value: Uint8Array | string): void;
-
-  getMemberId(): Uint8Array | string;
-  getMemberId_asU8(): Uint8Array;
-  getMemberId_asB64(): string;
-  setMemberId(value: Uint8Array | string): void;
-
-  serializeBinary(): Uint8Array;
-  toObject(includeInstance?: boolean): MsgInfo.AsObject;
-  static toObject(includeInstance: boolean, msg: MsgInfo): MsgInfo.AsObject;
-  static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
-  static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
-  static serializeBinaryToWriter(message: MsgInfo, writer: jspb.BinaryWriter): void;
-  static deserializeBinary(bytes: Uint8Array): MsgInfo;
-  static deserializeBinaryFromReader(message: MsgInfo, reader: jspb.BinaryReader): MsgInfo;
-}
-
-export namespace MsgInfo {
-  export type AsObject = {
-    orderd: number,
-    seq: number,
-    msgObjId: Uint8Array | string,
-    memberId: Uint8Array | string,
-  }
-}
-
-export class TopicMessageListDescContent extends jspb.Message {
-  getTopicId(): Uint8Array | string;
-  getTopicId_asU8(): Uint8Array;
-  getTopicId_asB64(): string;
-  setTopicId(value: Uint8Array | string): void;
-
-  getSlot(): number;
-  setSlot(value: number): void;
-
-  serializeBinary(): Uint8Array;
-  toObject(includeInstance?: boolean): TopicMessageListDescContent.AsObject;
-  static toObject(includeInstance: boolean, msg: TopicMessageListDescContent): TopicMessageListDescContent.AsObject;
-  static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
-  static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
-  static serializeBinaryToWriter(message: TopicMessageListDescContent, writer: jspb.BinaryWriter): void;
-  static deserializeBinary(bytes: Uint8Array): TopicMessageListDescContent;
-  static deserializeBinaryFromReader(message: TopicMessageListDescContent, reader: jspb.BinaryReader): TopicMessageListDescContent;
-}
-
-export namespace TopicMessageListDescContent {
-  export type AsObject = {
-    topicId: Uint8Array | string,
-    slot: number,
-  }
-}
-
-export class TopicMessageListBodyContent extends jspb.Message {
-  getStart(): number;
-  setStart(value: number): void;
-
-  clearMsgListList(): void;
-  getMsgListList(): Array<MsgInfo>;
-  setMsgListList(value: Array<MsgInfo>): void;
-  addMsgList(value?: MsgInfo, index?: number): MsgInfo;
-
-  serializeBinary(): Uint8Array;
-  toObject(includeInstance?: boolean): TopicMessageListBodyContent.AsObject;
-  static toObject(includeInstance: boolean, msg: TopicMessageListBodyContent): TopicMessageListBodyContent.AsObject;
-  static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
-  static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
-  static serializeBinaryToWriter(message: TopicMessageListBodyContent, writer: jspb.BinaryWriter): void;
-  static deserializeBinary(bytes: Uint8Array): TopicMessageListBodyContent;
-  static deserializeBinaryFromReader(message: TopicMessageListBodyContent, reader: jspb.BinaryReader): TopicMessageListBodyContent;
-}
-
-export namespace TopicMessageListBodyContent {
-  export type AsObject = {
-    start: number,
-    msgListList: Array<MsgInfo.AsObject>,
-  }
-}
-
-export class TopicPublishReqDescContent extends jspb.Message {
-  getTopicId(): Uint8Array | string;
-  getTopicId_asU8(): Uint8Array;
-  getTopicId_asB64(): string;
-  setTopicId(value: Uint8Array | string): void;
-
-  getTopicOwnerId(): Uint8Array | string;
-  getTopicOwnerId_asU8(): Uint8Array;
-  getTopicOwnerId_asB64(): string;
-  setTopicOwnerId(value: Uint8Array | string): void;
-
-  getMemberId(): Uint8Array | string;
-  getMemberId_asU8(): Uint8Array;
-  getMemberId_asB64(): string;
-  setMemberId(value: Uint8Array | string): void;
-
-  getSeq(): number;
-  setSeq(value: number): void;
-
-  getCount(): number;
-  setCount(value: number): void;
-
-  serializeBinary(): Uint8Array;
-  toObject(includeInstance?: boolean): TopicPublishReqDescContent.AsObject;
-  static toObject(includeInstance: boolean, msg: TopicPublishReqDescContent): TopicPublishReqDescContent.AsObject;
-  static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
-  static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
-  static serializeBinaryToWriter(message: TopicPublishReqDescContent, writer: jspb.BinaryWriter): void;
-  static deserializeBinary(bytes: Uint8Array): TopicPublishReqDescContent;
-  static deserializeBinaryFromReader(message: TopicPublishReqDescContent, reader: jspb.BinaryReader): TopicPublishReqDescContent;
-}
-
-export namespace TopicPublishReqDescContent {
-  export type AsObject = {
-    topicId: Uint8Array | string,
-    topicOwnerId: Uint8Array | string,
-    memberId: Uint8Array | string,
-    seq: number,
-    count: number,
-  }
-}
-
-export class TopicPublishRespDescContent extends jspb.Message {
-  getTopicId(): Uint8Array | string;
-  getTopicId_asU8(): Uint8Array;
-  getTopicId_asB64(): string;
-  setTopicId(value: Uint8Array | string): void;
-
-  getTopicOwnerId(): Uint8Array | string;
-  getTopicOwnerId_asU8(): Uint8Array;
-  getTopicOwnerId_asB64(): string;
-  setTopicOwnerId(value: Uint8Array | string): void;
-
-  getMemberId(): Uint8Array | string;
-  getMemberId_asU8(): Uint8Array;
-  getMemberId_asB64(): string;
-  setMemberId(value: Uint8Array | string): void;
-
-  getSeq(): number;
-  setSeq(value: number): void;
-
-  serializeBinary(): Uint8Array;
-  toObject(includeInstance?: boolean): TopicPublishRespDescContent.AsObject;
-  static toObject(includeInstance: boolean, msg: TopicPublishRespDescContent): TopicPublishRespDescContent.AsObject;
-  static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
-  static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
-  static serializeBinaryToWriter(message: TopicPublishRespDescContent, writer: jspb.BinaryWriter): void;
-  static deserializeBinary(bytes: Uint8Array): TopicPublishRespDescContent;
-  static deserializeBinaryFromReader(message: TopicPublishRespDescContent, reader: jspb.BinaryReader): TopicPublishRespDescContent;
-}
-
-export namespace TopicPublishRespDescContent {
-  export type AsObject = {
-    topicId: Uint8Array | string,
-    topicOwnerId: Uint8Array | string,
-    memberId: Uint8Array | string,
-    seq: number,
-  }
-}
-
-export class TopicPublishStatusDescContent extends jspb.Message {
-  getTopicId(): Uint8Array | string;
-  getTopicId_asU8(): Uint8Array;
-  getTopicId_asB64(): string;
-  setTopicId(value: Uint8Array | string): void;
-
-  serializeBinary(): Uint8Array;
-  toObject(includeInstance?: boolean): TopicPublishStatusDescContent.AsObject;
-  static toObject(includeInstance: boolean, msg: TopicPublishStatusDescContent): TopicPublishStatusDescContent.AsObject;
-  static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
-  static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
-  static serializeBinaryToWriter(message: TopicPublishStatusDescContent, writer: jspb.BinaryWriter): void;
-  static deserializeBinary(bytes: Uint8Array): TopicPublishStatusDescContent;
-  static deserializeBinaryFromReader(message: TopicPublishStatusDescContent, reader: jspb.BinaryReader): TopicPublishStatusDescContent;
-}
-
-export namespace TopicPublishStatusDescContent {
-  export type AsObject = {
-    topicId: Uint8Array | string,
-  }
-}
-
-export class SeqInfo extends jspb.Message {
-  getId(): Uint8Array | string;
-  getId_asU8(): Uint8Array;
-  getId_asB64(): string;
-  setId(value: Uint8Array | string): void;
-
-  getOffset(): number;
-  setOffset(value: number): void;
-
-  getStartSeq(): number;
-  setStartSeq(value: number): void;
-
-  clearReceivedSeqsList(): void;
-  getReceivedSeqsList(): Array<number>;
-  setReceivedSeqsList(value: Array<number>): void;
-  addReceivedSeqs(value: number, index?: number): number;
-
-  serializeBinary(): Uint8Array;
-  toObject(includeInstance?: boolean): SeqInfo.AsObject;
-  static toObject(includeInstance: boolean, msg: SeqInfo): SeqInfo.AsObject;
-  static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
-  static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
-  static serializeBinaryToWriter(message: SeqInfo, writer: jspb.BinaryWriter): void;
-  static deserializeBinary(bytes: Uint8Array): SeqInfo;
-  static deserializeBinaryFromReader(message: SeqInfo, reader: jspb.BinaryReader): SeqInfo;
-}
-
-export namespace SeqInfo {
-  export type AsObject = {
-    id: Uint8Array | string,
-    offset: number,
-    startSeq: number,
-    receivedSeqsList: Array<number>,
-  }
-}
-
-export class TopicPublishStatusBodyContent extends jspb.Message {
-  getTopicId(): Uint8Array | string;
-  getTopicId_asU8(): Uint8Array;
-  getTopicId_asB64(): string;
-  setTopicId(value: Uint8Array | string): void;
-
-  clearDeviceListList(): void;
-  getDeviceListList(): Array<Uint8Array | string>;
-  getDeviceListList_asU8(): Array<Uint8Array>;
-  getDeviceListList_asB64(): Array<string>;
-  setDeviceListList(value: Array<Uint8Array | string>): void;
-  addDeviceList(value: Uint8Array | string, index?: number): Uint8Array | string;
-
-  getMsgList(): Uint8Array | string;
-  getMsgList_asU8(): Uint8Array;
-  getMsgList_asB64(): string;
-  setMsgList(value: Uint8Array | string): void;
-
-  getMsgLength(): number;
-  setMsgLength(value: number): void;
-
-  clearSeqMapList(): void;
-  getSeqMapList(): Array<SeqInfo>;
-  setSeqMapList(value: Array<SeqInfo>): void;
-  addSeqMap(value?: SeqInfo, index?: number): SeqInfo;
-
-  serializeBinary(): Uint8Array;
-  toObject(includeInstance?: boolean): TopicPublishStatusBodyContent.AsObject;
-  static toObject(includeInstance: boolean, msg: TopicPublishStatusBodyContent): TopicPublishStatusBodyContent.AsObject;
-  static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
-  static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
-  static serializeBinaryToWriter(message: TopicPublishStatusBodyContent, writer: jspb.BinaryWriter): void;
-  static deserializeBinary(bytes: Uint8Array): TopicPublishStatusBodyContent;
-  static deserializeBinaryFromReader(message: TopicPublishStatusBodyContent, reader: jspb.BinaryReader): TopicPublishStatusBodyContent;
-}
-
-export namespace TopicPublishStatusBodyContent {
-  export type AsObject = {
-    topicId: Uint8Array | string,
-    deviceListList: Array<Uint8Array | string>,
-    msgList: Uint8Array | string,
-    msgLength: number,
-    seqMapList: Array<SeqInfo.AsObject>,
-  }
-}
-
-export class TopicPublishDescContent extends jspb.Message {
-  getTopicId(): Uint8Array | string;
-  getTopicId_asU8(): Uint8Array;
-  getTopicId_asB64(): string;
-  setTopicId(value: Uint8Array | string): void;
-
-  getTopicOwnerId(): Uint8Array | string;
-  getTopicOwnerId_asU8(): Uint8Array;
-  getTopicOwnerId_asB64(): string;
-  setTopicOwnerId(value: Uint8Array | string): void;
-
-  hasMsgInfo(): boolean;
-  clearMsgInfo(): void;
-  getMsgInfo(): MsgInfo | undefined;
-  setMsgInfo(value?: MsgInfo): void;
-
-  serializeBinary(): Uint8Array;
-  toObject(includeInstance?: boolean): TopicPublishDescContent.AsObject;
-  static toObject(includeInstance: boolean, msg: TopicPublishDescContent): TopicPublishDescContent.AsObject;
-  static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
-  static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
-  static serializeBinaryToWriter(message: TopicPublishDescContent, writer: jspb.BinaryWriter): void;
-  static deserializeBinary(bytes: Uint8Array): TopicPublishDescContent;
-  static deserializeBinaryFromReader(message: TopicPublishDescContent, reader: jspb.BinaryReader): TopicPublishDescContent;
-}
-
-export namespace TopicPublishDescContent {
-  export type AsObject = {
-    topicId: Uint8Array | string,
-    topicOwnerId: Uint8Array | string,
-    msgInfo?: MsgInfo.AsObject,
-  }
-}
-
-export class TopicSubscribeSuccessDescContent extends jspb.Message {
-  getTopicId(): Uint8Array | string;
-  getTopicId_asU8(): Uint8Array;
-  getTopicId_asB64(): string;
-  setTopicId(value: Uint8Array | string): void;
-
-  getTopicOwnerId(): Uint8Array | string;
-  getTopicOwnerId_asU8(): Uint8Array;
-  getTopicOwnerId_asB64(): string;
-  setTopicOwnerId(value: Uint8Array | string): void;
-
-  getMemberId(): Uint8Array | string;
-  getMemberId_asU8(): Uint8Array;
-  getMemberId_asB64(): string;
-  setMemberId(value: Uint8Array | string): void;
-
-  getMsgSeq(): number;
-  setMsgSeq(value: number): void;
-
-  hasMsgObjId(): boolean;
-  clearMsgObjId(): void;
-  getMsgObjId(): Uint8Array | string;
-  getMsgObjId_asU8(): Uint8Array;
-  getMsgObjId_asB64(): string;
-  setMsgObjId(value: Uint8Array | string): void;
-
-  serializeBinary(): Uint8Array;
-  toObject(includeInstance?: boolean): TopicSubscribeSuccessDescContent.AsObject;
-  static toObject(includeInstance: boolean, msg: TopicSubscribeSuccessDescContent): TopicSubscribeSuccessDescContent.AsObject;
-  static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
-  static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
-  static serializeBinaryToWriter(message: TopicSubscribeSuccessDescContent, writer: jspb.BinaryWriter): void;
-  static deserializeBinary(bytes: Uint8Array): TopicSubscribeSuccessDescContent;
-  static deserializeBinaryFromReader(message: TopicSubscribeSuccessDescContent, reader: jspb.BinaryReader): TopicSubscribeSuccessDescContent;
-}
-
-export namespace TopicSubscribeSuccessDescContent {
-  export type AsObject = {
-    topicId: Uint8Array | string,
-    topicOwnerId: Uint8Array | string,
-    memberId: Uint8Array | string,
-    msgSeq: number,
-    msgObjId: Uint8Array | string,
-  }
-}
-
-export class TopicSubscribeDescContent extends jspb.Message {
-  getTopicId(): Uint8Array | string;
-  getTopicId_asU8(): Uint8Array;
-  getTopicId_asB64(): string;
-  setTopicId(value: Uint8Array | string): void;
-
-  getTopicOwnerId(): Uint8Array | string;
-  getTopicOwnerId_asU8(): Uint8Array;
-  getTopicOwnerId_asB64(): string;
-  setTopicOwnerId(value: Uint8Array | string): void;
-
-  getMemberId(): Uint8Array | string;
-  getMemberId_asU8(): Uint8Array;
-  getMemberId_asB64(): string;
-  setMemberId(value: Uint8Array | string): void;
-
-  getMsgOffset(): number;
-  setMsgOffset(value: number): void;
-
-  hasMsgObjId(): boolean;
-  clearMsgObjId(): void;
-  getMsgObjId(): Uint8Array | string;
-  getMsgObjId_asU8(): Uint8Array;
-  getMsgObjId_asB64(): string;
-  setMsgObjId(value: Uint8Array | string): void;
-
-  serializeBinary(): Uint8Array;
-  toObject(includeInstance?: boolean): TopicSubscribeDescContent.AsObject;
-  static toObject(includeInstance: boolean, msg: TopicSubscribeDescContent): TopicSubscribeDescContent.AsObject;
-  static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
-  static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
-  static serializeBinaryToWriter(message: TopicSubscribeDescContent, writer: jspb.BinaryWriter): void;
-  static deserializeBinary(bytes: Uint8Array): TopicSubscribeDescContent;
-  static deserializeBinaryFromReader(message: TopicSubscribeDescContent, reader: jspb.BinaryReader): TopicSubscribeDescContent;
-}
-
-export namespace TopicSubscribeDescContent {
-  export type AsObject = {
-    topicId: Uint8Array | string,
-    topicOwnerId: Uint8Array | string,
-    memberId: Uint8Array | string,
-    msgOffset: number,
-    msgObjId: Uint8Array | string,
-  }
-}
-
-export class TopicUnsubscribeSuccessDescContent extends jspb.Message {
-  getTopicId(): Uint8Array | string;
-  getTopicId_asU8(): Uint8Array;
-  getTopicId_asB64(): string;
-  setTopicId(value: Uint8Array | string): void;
-
-  getTopicOwnerId(): Uint8Array | string;
-  getTopicOwnerId_asU8(): Uint8Array;
-  getTopicOwnerId_asB64(): string;
-  setTopicOwnerId(value: Uint8Array | string): void;
-
-  getMemberId(): Uint8Array | string;
-  getMemberId_asU8(): Uint8Array;
-  getMemberId_asB64(): string;
-  setMemberId(value: Uint8Array | string): void;
-
-  hasMsgObjId(): boolean;
-  clearMsgObjId(): void;
-  getMsgObjId(): Uint8Array | string;
-  getMsgObjId_asU8(): Uint8Array;
-  getMsgObjId_asB64(): string;
-  setMsgObjId(value: Uint8Array | string): void;
-
-  serializeBinary(): Uint8Array;
-  toObject(includeInstance?: boolean): TopicUnsubscribeSuccessDescContent.AsObject;
-  static toObject(includeInstance: boolean, msg: TopicUnsubscribeSuccessDescContent): TopicUnsubscribeSuccessDescContent.AsObject;
-  static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
-  static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
-  static serializeBinaryToWriter(message: TopicUnsubscribeSuccessDescContent, writer: jspb.BinaryWriter): void;
-  static deserializeBinary(bytes: Uint8Array): TopicUnsubscribeSuccessDescContent;
-  static deserializeBinaryFromReader(message: TopicUnsubscribeSuccessDescContent, reader: jspb.BinaryReader): TopicUnsubscribeSuccessDescContent;
-}
-
-export namespace TopicUnsubscribeSuccessDescContent {
-  export type AsObject = {
-    topicId: Uint8Array | string,
-    topicOwnerId: Uint8Array | string,
-    memberId: Uint8Array | string,
-    msgObjId: Uint8Array | string,
-  }
-}
-
-export class TopicUnsubscribeDescContent extends jspb.Message {
-  getTopicId(): Uint8Array | string;
-  getTopicId_asU8(): Uint8Array;
-  getTopicId_asB64(): string;
-  setTopicId(value: Uint8Array | string): void;
-
-  getTopicOwnerId(): Uint8Array | string;
-  getTopicOwnerId_asU8(): Uint8Array;
-  getTopicOwnerId_asB64(): string;
-  setTopicOwnerId(value: Uint8Array | string): void;
-
-  getMemberId(): Uint8Array | string;
-  getMemberId_asU8(): Uint8Array;
-  getMemberId_asB64(): string;
-  setMemberId(value: Uint8Array | string): void;
-
-  hasMsgObjId(): boolean;
-  clearMsgObjId(): void;
-  getMsgObjId(): Uint8Array | string;
-  getMsgObjId_asU8(): Uint8Array;
-  getMsgObjId_asB64(): string;
-  setMsgObjId(value: Uint8Array | string): void;
-
-  serializeBinary(): Uint8Array;
-  toObject(includeInstance?: boolean): TopicUnsubscribeDescContent.AsObject;
-  static toObject(includeInstance: boolean, msg: TopicUnsubscribeDescContent): TopicUnsubscribeDescContent.AsObject;
-  static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
-  static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
-  static serializeBinaryToWriter(message: TopicUnsubscribeDescContent, writer: jspb.BinaryWriter): void;
-  static deserializeBinary(bytes: Uint8Array): TopicUnsubscribeDescContent;
-  static deserializeBinaryFromReader(message: TopicUnsubscribeDescContent, reader: jspb.BinaryReader): TopicUnsubscribeDescContent;
-}
-
-export namespace TopicUnsubscribeDescContent {
-  export type AsObject = {
-    topicId: Uint8Array | string,
-    topicOwnerId: Uint8Array | string,
-    memberId: Uint8Array | string,
-    msgObjId: Uint8Array | string,
-  }
-}
-
-export class TopicDescContent extends jspb.Message {
-  getUniqueId(): Uint8Array | string;
-  getUniqueId_asU8(): Uint8Array;
-  getUniqueId_asB64(): string;
-  setUniqueId(value: Uint8Array | string): void;
-
-  hasUserDataId(): boolean;
-  clearUserDataId(): void;
-  getUserDataId(): Uint8Array | string;
-  getUserDataId_asU8(): Uint8Array;
-  getUserDataId_asB64(): string;
-  setUserDataId(value: Uint8Array | string): void;
-
-  serializeBinary(): Uint8Array;
-  toObject(includeInstance?: boolean): TopicDescContent.AsObject;
-  static toObject(includeInstance: boolean, msg: TopicDescContent): TopicDescContent.AsObject;
-  static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
-  static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
-  static serializeBinaryToWriter(message: TopicDescContent, writer: jspb.BinaryWriter): void;
-  static deserializeBinary(bytes: Uint8Array): TopicDescContent;
-  static deserializeBinaryFromReader(message: TopicDescContent, reader: jspb.BinaryReader): TopicDescContent;
-}
-
-export namespace TopicDescContent {
-  export type AsObject = {
-    uniqueId: Uint8Array | string,
-    userDataId: Uint8Array | string,
-  }
-}
-
-export class TopicBodyContent extends jspb.Message {
-  hasTopicPublishStatusId(): boolean;
-  clearTopicPublishStatusId(): void;
-  getTopicPublishStatusId(): Uint8Array | string;
-  getTopicPublishStatusId_asU8(): Uint8Array;
-  getTopicPublishStatusId_asB64(): string;
-  setTopicPublishStatusId(value: Uint8Array | string): void;
-
-  serializeBinary(): Uint8Array;
-  toObject(includeInstance?: boolean): TopicBodyContent.AsObject;
-  static toObject(includeInstance: boolean, msg: TopicBodyContent): TopicBodyContent.AsObject;
-  static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
-  static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
-  static serializeBinaryToWriter(message: TopicBodyContent, writer: jspb.BinaryWriter): void;
-  static deserializeBinary(bytes: Uint8Array): TopicBodyContent;
-  static deserializeBinaryFromReader(message: TopicBodyContent, reader: jspb.BinaryReader): TopicBodyContent;
-}
-
-export namespace TopicBodyContent {
-  export type AsObject = {
-    topicPublishStatusId: Uint8Array | string,
-  }
-}
-
 export class TransContextDescContent extends jspb.Message {
-  getDecId(): Uint8Array | string;
-  getDecId_asU8(): Uint8Array;
-  getDecId_asB64(): string;
-  setDecId(value: Uint8Array | string): void;
-
-  getContextName(): string;
-  setContextName(value: string): void;
+  getContextPath(): string;
+  setContextPath(value: string): void;
 
   serializeBinary(): Uint8Array;
   toObject(includeInstance?: boolean): TransContextDescContent.AsObject;
@@ -1845,25 +1304,89 @@ export class TransContextDescContent extends jspb.Message {
 
 export namespace TransContextDescContent {
   export type AsObject = {
-    decId: Uint8Array | string,
-    contextName: string,
+    contextPath: string,
   }
 }
 
-export class TransContextBodyContent extends jspb.Message {
-  hasRefId(): boolean;
-  clearRefId(): void;
-  getRefId(): Uint8Array | string;
-  getRefId_asU8(): Uint8Array;
-  getRefId_asB64(): string;
-  setRefId(value: Uint8Array | string): void;
+export class TransContextDeviceChunkCodecInfo extends jspb.Message {
+  hasStart(): boolean;
+  clearStart(): void;
+  getStart(): number;
+  setStart(value: number): void;
 
+  hasEnd(): boolean;
+  clearEnd(): void;
+  getEnd(): number;
+  setEnd(value: number): void;
+
+  hasStep(): boolean;
+  clearStep(): void;
+  getStep(): number;
+  setStep(value: number): void;
+
+  serializeBinary(): Uint8Array;
+  toObject(includeInstance?: boolean): TransContextDeviceChunkCodecInfo.AsObject;
+  static toObject(includeInstance: boolean, msg: TransContextDeviceChunkCodecInfo): TransContextDeviceChunkCodecInfo.AsObject;
+  static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+  static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+  static serializeBinaryToWriter(message: TransContextDeviceChunkCodecInfo, writer: jspb.BinaryWriter): void;
+  static deserializeBinary(bytes: Uint8Array): TransContextDeviceChunkCodecInfo;
+  static deserializeBinaryFromReader(message: TransContextDeviceChunkCodecInfo, reader: jspb.BinaryReader): TransContextDeviceChunkCodecInfo;
+}
+
+export namespace TransContextDeviceChunkCodecInfo {
+  export type AsObject = {
+    start: number,
+    end: number,
+    step: number,
+  }
+}
+
+export class TransContextDevice extends jspb.Message {
+  getTarget(): Uint8Array | string;
+  getTarget_asU8(): Uint8Array;
+  getTarget_asB64(): string;
+  setTarget(value: Uint8Array | string): void;
+
+  getChunkCodecDesc(): TransContextDevice.ChunkCodecDescMap[keyof TransContextDevice.ChunkCodecDescMap];
+  setChunkCodecDesc(value: TransContextDevice.ChunkCodecDescMap[keyof TransContextDevice.ChunkCodecDescMap]): void;
+
+  hasChunkCodecInfo(): boolean;
+  clearChunkCodecInfo(): void;
+  getChunkCodecInfo(): TransContextDeviceChunkCodecInfo | undefined;
+  setChunkCodecInfo(value?: TransContextDeviceChunkCodecInfo): void;
+
+  serializeBinary(): Uint8Array;
+  toObject(includeInstance?: boolean): TransContextDevice.AsObject;
+  static toObject(includeInstance: boolean, msg: TransContextDevice): TransContextDevice.AsObject;
+  static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+  static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+  static serializeBinaryToWriter(message: TransContextDevice, writer: jspb.BinaryWriter): void;
+  static deserializeBinary(bytes: Uint8Array): TransContextDevice;
+  static deserializeBinaryFromReader(message: TransContextDevice, reader: jspb.BinaryReader): TransContextDevice;
+}
+
+export namespace TransContextDevice {
+  export type AsObject = {
+    target: Uint8Array | string,
+    chunkCodecDesc: TransContextDevice.ChunkCodecDescMap[keyof TransContextDevice.ChunkCodecDescMap],
+    chunkCodecInfo?: TransContextDeviceChunkCodecInfo.AsObject,
+  }
+
+  export interface ChunkCodecDescMap {
+    UNKNOWN: 0;
+    STREAM: 1;
+    RAPTOR: 2;
+  }
+
+  export const ChunkCodecDesc: ChunkCodecDescMap;
+}
+
+export class TransContextBodyContent extends jspb.Message {
   clearDeviceListList(): void;
-  getDeviceListList(): Array<Uint8Array | string>;
-  getDeviceListList_asU8(): Array<Uint8Array>;
-  getDeviceListList_asB64(): Array<string>;
-  setDeviceListList(value: Array<Uint8Array | string>): void;
-  addDeviceList(value: Uint8Array | string, index?: number): Uint8Array | string;
+  getDeviceListList(): Array<TransContextDevice>;
+  setDeviceListList(value: Array<TransContextDevice>): void;
+  addDeviceList(value?: TransContextDevice, index?: number): TransContextDevice;
 
   serializeBinary(): Uint8Array;
   toObject(includeInstance?: boolean): TransContextBodyContent.AsObject;
@@ -1877,8 +1400,7 @@ export class TransContextBodyContent extends jspb.Message {
 
 export namespace TransContextBodyContent {
   export type AsObject = {
-    refId: Uint8Array | string,
-    deviceListList: Array<Uint8Array | string>,
+    deviceListList: Array<TransContextDevice.AsObject>,
   }
 }
 
@@ -1923,6 +1445,52 @@ export class NFTListDescContent extends jspb.Message {
 export namespace NFTListDescContent {
   export type AsObject = {
     nftListList: Array<NFTFileDesc.AsObject>,
+  }
+}
+
+export class SyncResponseObjectMetaInfo extends jspb.Message {
+  getInsertTime(): number;
+  setInsertTime(value: number): void;
+
+  hasCreateDecId(): boolean;
+  clearCreateDecId(): void;
+  getCreateDecId(): Uint8Array | string;
+  getCreateDecId_asU8(): Uint8Array;
+  getCreateDecId_asB64(): string;
+  setCreateDecId(value: Uint8Array | string): void;
+
+  hasContext(): boolean;
+  clearContext(): void;
+  getContext(): string;
+  setContext(value: string): void;
+
+  hasLastAccessRpath(): boolean;
+  clearLastAccessRpath(): void;
+  getLastAccessRpath(): string;
+  setLastAccessRpath(value: string): void;
+
+  hasAccessString(): boolean;
+  clearAccessString(): void;
+  getAccessString(): number;
+  setAccessString(value: number): void;
+
+  serializeBinary(): Uint8Array;
+  toObject(includeInstance?: boolean): SyncResponseObjectMetaInfo.AsObject;
+  static toObject(includeInstance: boolean, msg: SyncResponseObjectMetaInfo): SyncResponseObjectMetaInfo.AsObject;
+  static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+  static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+  static serializeBinaryToWriter(message: SyncResponseObjectMetaInfo, writer: jspb.BinaryWriter): void;
+  static deserializeBinary(bytes: Uint8Array): SyncResponseObjectMetaInfo;
+  static deserializeBinaryFromReader(message: SyncResponseObjectMetaInfo, reader: jspb.BinaryReader): SyncResponseObjectMetaInfo;
+}
+
+export namespace SyncResponseObjectMetaInfo {
+  export type AsObject = {
+    insertTime: number,
+    createDecId: Uint8Array | string,
+    context: string,
+    lastAccessRpath: string,
+    accessString: number,
   }
 }
 

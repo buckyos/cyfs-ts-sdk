@@ -109,12 +109,12 @@ export class BuckyErrorCodeEx {
     readonly m_code: BuckyErrorCode;
     readonly m_value: number;
 
-    get code() {
+    get code(): BuckyErrorCode {
         return this.m_code;
     }
 
     // 如果是MetaError/DecError，那么获取对应的int value, 从0开始
-    get value() {
+    get value(): number {
         return this.m_value;
     }
 
