@@ -1,6 +1,6 @@
 import { Command } from "commander";
 import path from "path";
-import { NDNAPILevel, NONAPILevel, ObjectId, ObjectTypeCode, SharedCyfsStack, TransTaskState, ObjectMapSimpleContentType, PathOpEnvStub, get_system_dec_app, AccessString } from "../../sdk";
+import { NDNAPILevel, NONAPILevel, ObjectId, ObjectTypeCode, SharedCyfsStack, TransTaskState, ObjectMapSimpleContentType, PathOpEnvStub, get_system_dec_app, AccessString, GlobalStatePathAccessItem } from "../../sdk";
 import { create_stack, CyfsToolConfig, get_final_owner, stop_runtime } from "../lib/util";
 import * as fs from 'fs-extra';
 
@@ -98,26 +98,6 @@ async function upload_obj(stack: SharedCyfsStack, target: ObjectId, path: string
     return files;
 }
 
-async function publish_all(stack: SharedCyfsStack, id: ObjectId) {
-    (await stack.non_service().update_object_meta({
-        common: {
-            level: NONAPILevel.NOC,
-            flags: 0
-        },
-        object_id: id,
-        access: AccessString.full()
-    })).unwrap()
-
-    if (id.obj_type_code() === ObjectTypeCode.ObjectMap) {
-        const op_env = (await stack.root_state_stub().create_single_op_env()).unwrap();
-        (await op_env.load(id)).unwrap()
-        
-        for (const item of (await op_env.list()).unwrap()) {
-            await publish_all(stack, item.map!.value)
-        }
-    }
-}
-
 async function run(upload_path: string, options:any, stack: SharedCyfsStack) {
     const endpoint = options.endpoint || "runtime";
 
@@ -163,6 +143,7 @@ async function run(upload_path: string, options:any, stack: SharedCyfsStack) {
         local_path: upload_path,
         // chunk大小
         chunk_size: chunk_size*1024,
+        access: AccessString.full()
     });
     if (r.err) {
         console.error(`add file ${upload_path} to stack failed, err ${r.val}`);
@@ -171,12 +152,10 @@ async function run(upload_path: string, options:any, stack: SharedCyfsStack) {
 
     const obj_id = r.unwrap().file_id;
 
-    // 开放权限
-    await publish_all(stack, obj_id);
-
     const is_dir = obj_id.obj_type_code() === ObjectTypeCode.ObjectMap;
 
     // 把对象存到root_state，以防以后被gc掉
+    await stack.root_state_meta_stub().add_access(GlobalStatePathAccessItem.new('/upload_files', AccessString.full()))
     const op_env = (await stack.root_state_stub().create_path_op_env()).unwrap()
 
     const ret = await op_env.set_with_key('/upload_files', obj_id.to_base_58(), obj_id, undefined, true)
@@ -204,6 +183,8 @@ async function run(upload_path: string, options:any, stack: SharedCyfsStack) {
         if (files === undefined) {
             return
         }
+
+        await stack.root_state_meta_stub(oods[0].object_id).add_access(GlobalStatePathAccessItem.new('/upload_files', AccessString.full()))
 
         // 存到ood的root_state，防止gc
         const op_env = (await stack.root_state_stub(oods[0].object_id).create_path_op_env()).unwrap()
@@ -264,7 +245,7 @@ async function run(upload_path: string, options:any, stack: SharedCyfsStack) {
                 if (resp.err) {
                     console.warn("get task state failed, maybe finished. check next file.")
                     unfinished.delete(task_id);
-                } else if (resp.unwrap().state === TransTaskState.Finished) {
+                } else if (resp.unwrap().state.state === TransTaskState.Finished) {
                     unfinished.delete(task_id);
                 }
             }
@@ -278,6 +259,9 @@ async function run(upload_path: string, options:any, stack: SharedCyfsStack) {
     } else {
         (console as any).origin.log(`\nFile ${path} upload finish，use CYFS Browser to open ${cyfs_link} to access it`);
     }
+
+    const cyfs_r_link = `cyfs://r/${owner_id}/${dec_id}/upload_files/${obj_id}`;
+    (console as any).origin.log(`\nAnd create cyfs r link ${cyfs_r_link}, it can used as cyfs://o link as above`);
 
     (console as any).origin.log(`\nupload path： ${endpoint} -> ${options.target || "runtime"}`)
     

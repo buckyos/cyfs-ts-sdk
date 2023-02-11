@@ -46,6 +46,12 @@ export async function run(options:any, config: CyfsToolConfig, ctx: CyfsToolCont
             if (answer !== "yes") {
                 process.exit(0);
             }
+
+            // 检查这个路径传的对不对
+            if (!(fs.existsSync(`${options.owner}.sec`) && fs.existsSync(`${options.owner}.desc`))) {
+                console.error(`path ${options.owner}.sec or ${options.owner}.desc not exists!`)
+                process.exit(1)
+            }
     
             // 修改owner.json
             if (!ctx.owner) {
