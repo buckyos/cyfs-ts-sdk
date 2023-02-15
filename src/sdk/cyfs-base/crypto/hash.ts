@@ -37,15 +37,16 @@ export class HashValue implements RawEncode {
     static hash_data(data: Uint8Array): HashValue {
         // calc hash
         const hash = md.sha256.create()
-        let binstr = "";
         const chunk_size = 8*1024;
         let i;
-        for (i = 0; i < data.byteLength / chunk_size; i++) {
-            binstr += util.binary.raw.encode(data.slice(i*chunk_size, (i+1)*chunk_size))
+        for (i = 0; i < (data.byteLength / chunk_size) -1; i++) {
+            hash.update(util.binary.raw.encode(data.slice(i*chunk_size, (i+1)*chunk_size)), 'raw')
         }
-        binstr += util.binary.raw.encode(data.slice(i*chunk_size));
 
-        hash.update(binstr, 'raw')
+        if (data.byteLength > i*chunk_size) {
+            hash.update(util.binary.raw.encode(data.slice(i*chunk_size)), 'raw');
+        }
+
         const val = hash.digest();
 
         // construct
