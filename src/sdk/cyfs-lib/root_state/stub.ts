@@ -101,6 +101,30 @@ export class GlobalStateStub {
         return this.create_path_op_env_with_access()
     }
 
+    public async create_isolate_path_op_env(): Promise<BuckyResult<IsolatePathOpEnvStub>> {
+        return this.create_isolate_path_op_env_with_access()
+    }
+
+    public async create_isolate_path_op_env_with_access(access?: RootStateOpEnvAccess): Promise<BuckyResult<IsolatePathOpEnvStub>> {
+        const req: RootStateCreateOpEnvOutputRequest = {
+            common: {
+                flags: 0,
+                target: this.target,
+                target_dec_id: this.target_dec_id,
+            },
+            op_env_type: ObjectMapOpEnvType.IsolatePath,
+            access
+        };
+        const r = await this.requestor.create_op_env(req);
+        if (r.err) {
+            return r;
+        }
+        const opEnvRequestor = r.unwrap();
+
+        const stub = new IsolatePathOpEnvStub(opEnvRequestor, this.target, this.target_dec_id);
+        return Ok(stub);
+    }
+
     public async create_path_op_env_with_access(access?: RootStateOpEnvAccess): Promise<BuckyResult<PathOpEnvStub>> {
         const req: RootStateCreateOpEnvOutputRequest = {
             common: {
@@ -535,10 +559,10 @@ export class SingleOpEnvStub {
 }
 
 export class PathOpEnvStub {
-    private requestor: OpEnvRequestor;
-    private sid_: JSBI;
-    private target?: ObjectId;
-    private target_dec_id?: ObjectId;
+    protected requestor: OpEnvRequestor;
+    protected sid_: JSBI;
+    protected target?: ObjectId;
+    protected target_dec_id?: ObjectId;
 
     public constructor(requestor: OpEnvRequestor, target?: ObjectId, target_dec_id?: ObjectId) {
         this.requestor = requestor;
@@ -1039,6 +1063,63 @@ export class PathOpEnvStub {
         };
 
         return Ok(metadata);
+    }
+}
+
+export class IsolatePathOpEnvStub extends PathOpEnvStub {
+    // methods
+    public async create_new(
+        content_type: ObjectMapSimpleContentType
+    ): Promise<BuckyResult<void>> {
+        const req: OpEnvCreateNewOutputRequest = {
+            common: {
+                flags: 0,
+                target: this.target,
+                target_dec_id: this.target_dec_id,
+                sid: this.sid_,
+            },
+            content_type,
+        };
+        const r = await this.requestor.create_new(req);
+        if (r.err) {
+            return r;
+        }
+        return Ok(undefined);
+    }
+
+    public async load(target: ObjectId, inner_path?: string): Promise<BuckyResult<void>> {
+        const req: OpEnvLoadOutputRequest = {
+            common: {
+                flags: 0,
+                target: this.target,
+                target_dec_id: this.target_dec_id,
+                sid: this.sid_,
+            },
+            target,
+            inner_path
+        };
+        const r = await this.requestor.load(req);
+        if (r.err) {
+            return r;
+        }
+        return Ok(undefined);
+    }
+
+    public async load_by_path(path: string): Promise<BuckyResult<void>> {
+        const req: OpEnvLoadByPathOutputRequest = {
+            common: {
+                flags: 0,
+                target: this.target,
+                target_dec_id: this.target_dec_id,
+                sid: this.sid_,
+            },
+            path,
+        };
+        const r = await this.requestor.load_by_path(req);
+        if (r.err) {
+            return r;
+        }
+        return Ok(undefined);
     }
 }
 

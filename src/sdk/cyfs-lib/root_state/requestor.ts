@@ -324,8 +324,8 @@ export class OpEnvRequestor {
     // load
     // op_env/init/target
     public async load(req: OpEnvLoadOutputRequest): Promise<BuckyResult<void>> {
-        if (this.op_env_type_ !== ObjectMapOpEnvType.Single) {
-            const err_msg = `load method only valid for single_op_env! sid = ${this.sid_}`;
+        if (this.op_env_type_ !== ObjectMapOpEnvType.Single && this.op_env_type_ !== ObjectMapOpEnvType.IsolatePath) {
+            const err_msg = `load method only valid for single_op_env and isolate_path_op_env! sid = ${this.sid_}`;
             console.log(err_msg);
             return Ok(undefined);
         }
@@ -372,8 +372,8 @@ export class OpEnvRequestor {
     public async load_by_path(
         req: OpEnvLoadByPathOutputRequest
     ): Promise<BuckyResult<void>> {
-        if (this.op_env_type_ !== ObjectMapOpEnvType.Single) {
-            const msg = `load_by_path method only valid for single_op_env! sid={self.sid_}`;
+        if (this.op_env_type_ !== ObjectMapOpEnvType.Single && this.op_env_type_ !== ObjectMapOpEnvType.IsolatePath) {
+            const msg = `load_by_path method only valid for single_op_env and isolate_path_op_env! sid={self.sid_}`;
             console.error(msg);
             return Err(new BuckyError(BuckyErrorCode.UnSupport, msg));
         }
