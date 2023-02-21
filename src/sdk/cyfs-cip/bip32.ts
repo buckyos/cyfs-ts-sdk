@@ -17,14 +17,14 @@ export class ExtendedPrivateKey {
     /// Attempts to derive an extended private key from a path.
     static derive(seed: Uint8Array, path: DerivationPath): BuckyResult<ExtendedPrivateKey>
     {
-        let hmac1 = hmac.create()
+        const hmac1 = hmac.create()
         hmac1.start('sha512', "BFC seed");
         hmac1.update(util.binary.raw.encode(seed));
-        let result = hmac1.digest().bytes();
-        let private_key = result.slice(0, 32);
-        let chain_code = result.slice(32);
+        const result = hmac1.digest().bytes();
+        const private_key = result.slice(0, 32);
+        const chain_code = result.slice(32);
 
-        let pk = PrivateKeySeedGen.gen(util.binary.raw.decode(private_key));
+        const pk = PrivateKeySeedGen.gen(util.binary.raw.decode(private_key));
         if (pk.err) {
             return pk;
         }
@@ -32,7 +32,7 @@ export class ExtendedPrivateKey {
         let sk = new ExtendedPrivateKey(pk.unwrap(), util.binary.raw.decode(chain_code));
 
         for (const child of path.path) {
-            let r = sk.child(child);
+            const r = sk.child(child);
             if (r.err) {
                 return r;
             }
@@ -48,17 +48,17 @@ export class ExtendedPrivateKey {
     }
 
     child(child: ChildNumber): BuckyResult<ExtendedPrivateKey> {
-        let hmac1 = hmac.create()
+        const hmac1 = hmac.create()
         hmac1.start('sha512', util.binary.raw.encode(this.chain_code));
 
         if (child.is_normal()) {
-            let bytes = to_vec(this.private_key.public())
+            const bytes = to_vec(this.private_key.public())
             if (bytes.err) {
                 return bytes;
             }
             hmac1.update(util.binary.raw.encode(bytes.unwrap()));
         } else {
-            let bytes = to_vec(this.private_key)
+            const bytes = to_vec(this.private_key)
             if (bytes.err) {
                 return bytes;
             }
@@ -68,17 +68,17 @@ export class ExtendedPrivateKey {
 
         hmac1.update(util.binary.raw.encode(child.to_bytes()));
 
-        let result = hmac1.digest().bytes()
+        const result = hmac1.digest().bytes()
 
-        let private_key = result.slice(0, 32);
-        let chain_code = result.slice(32);
+        const private_key = result.slice(0, 32);
+        const chain_code = result.slice(32);
 
-        let pk = PrivateKeySeedGen.gen(util.binary.raw.decode(private_key));
+        const pk = PrivateKeySeedGen.gen(util.binary.raw.decode(private_key));
         if (pk.err) {
             return pk;
         }
 
-        let sk = new ExtendedPrivateKey(pk.unwrap(), util.binary.raw.decode(chain_code));
+        const sk = new ExtendedPrivateKey(pk.unwrap(), util.binary.raw.decode(chain_code));
 
         return Ok(sk)
     }
