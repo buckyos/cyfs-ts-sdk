@@ -1,3 +1,5 @@
+export const CYFS_API_EDITION = "cyfs-api-edition";
+
 export const CYFS_OBJECT_ID = "cyfs-object-id";
 export const CYFS_OBJECT = "cyfs-object";
 
