@@ -1066,7 +1066,19 @@ export class PathOpEnvStub {
     }
 }
 
-export class IsolatePathOpEnvStub extends PathOpEnvStub {
+export class IsolatePathOpEnvStub {
+    protected requestor: OpEnvRequestor;
+    protected sid_: JSBI;
+    protected target?: ObjectId;
+    protected target_dec_id?: ObjectId;
+
+    public constructor(requestor: OpEnvRequestor, target?: ObjectId, target_dec_id?: ObjectId) {
+        this.requestor = requestor;
+        this.sid_ = requestor.get_sid();
+        this.target = target;
+        this.target_dec_id = target_dec_id;
+    }
+
     // methods
     public async create_new(
         content_type: ObjectMapSimpleContentType
@@ -1080,6 +1092,30 @@ export class IsolatePathOpEnvStub extends PathOpEnvStub {
             },
             content_type,
         };
+        const r = await this.requestor.create_new(req);
+        if (r.err) {
+            return r;
+        }
+        return Ok(undefined);
+    }
+
+    public async create_new_with_key(
+        path: string,
+        key: string,
+        content_type: ObjectMapSimpleContentType,
+    ): Promise<BuckyResult<void>> {
+        const req: OpEnvCreateNewOutputRequest = {
+            common: {
+                flags: 0,
+                target: this.target,
+                target_dec_id: this.target_dec_id,
+                sid: this.sid_,
+            },
+            path,
+            key,
+            content_type,
+        };
+
         const r = await this.requestor.create_new(req);
         if (r.err) {
             return r;
@@ -1120,6 +1156,439 @@ export class IsolatePathOpEnvStub extends PathOpEnvStub {
             return r;
         }
         return Ok(undefined);
+    }
+
+    public async get_by_key(
+        path: string,
+        key: string
+    ): Promise<BuckyResult<ObjectId | undefined>> {
+        const req: OpEnvGetByKeyOutputRequest = {
+            common: {
+                flags: 0,
+                target: this.target,
+                target_dec_id: this.target_dec_id,
+                sid: this.sid_,
+            },
+            key,
+            path,
+        };
+        const r = await this.requestor.get_by_key(req);
+        if (r.err) {
+            return r;
+        }
+        const resp = r.unwrap();
+        let value;
+        if (resp.value) {
+            value = resp.value!;
+        }
+        return Ok(value);
+    }
+
+    public async insert_with_key(
+        path: string,
+        key: string,
+        value: ObjectId
+    ): Promise<BuckyResult<void>> {
+        const req: OpEnvInsertWithKeyOutputRequest = {
+            common: {
+                flags: 0,
+                target: this.target,
+                target_dec_id: this.target_dec_id,
+                sid: this.sid_,
+            },
+            key,
+            value,
+            path,
+        };
+        const r = await this.requestor.insert_with_key(req);
+        if (r.err) {
+            return r;
+        }
+        return Ok(undefined);
+    }
+
+    public async set_with_key(
+        path: string,
+        key: string,
+        value: ObjectId,
+        prev_value?: ObjectId,
+        auto_insert?: boolean
+    ): Promise<BuckyResult<ObjectId | undefined>> {
+        const req: OpEnvSetWithKeyOutputRequest = {
+            common: {
+                flags: 0,
+                target: this.target,
+                target_dec_id: this.target_dec_id,
+                sid: this.sid_,
+            },
+            path,
+            key,
+            value,
+            prev_value,
+            auto_insert: auto_insert ? auto_insert : false,
+        };
+        const r = await this.requestor.set_with_key(req);
+        if (r.err) {
+            return r;
+        }
+        const resp = r.unwrap();
+        let prev_value_;
+        if (resp.prev_value) {
+            prev_value_ = resp.prev_value;
+        }
+        return Ok(prev_value_);
+    }
+
+    public async remove_with_key(
+        path: string,
+        key: string,
+        prev_value?: ObjectId
+    ): Promise<BuckyResult<ObjectId | undefined>> {
+        const req: OpEnvRemoveWithKeyOutputRequest = {
+            common: {
+                flags: 0,
+                target: this.target,
+                target_dec_id: this.target_dec_id,
+                sid: this.sid_,
+            },
+            key,
+            path,
+            prev_value,
+        };
+        const r = await this.requestor.remove_with_key(req);
+        if (r.err) {
+            return r;
+        }
+        const resp = r.unwrap();
+        let value;
+        if (resp.value) {
+            value = resp.value;
+        }
+        return Ok(value);
+    }
+
+    // map methods with full_path
+    public async get_by_path(
+        full_path: string
+    ): Promise<BuckyResult<ObjectId | undefined>> {
+        const req: OpEnvGetByKeyOutputRequest = {
+            common: {
+                flags: 0,
+                target: this.target,
+                target_dec_id: this.target_dec_id,
+                sid: this.sid_,
+            },
+            key: full_path,
+        };
+        const r = await this.requestor.get_by_key(req);
+        if (r.err) {
+            return r;
+        }
+        const resp = r.unwrap();
+        let value;
+        if (resp.value) {
+            value = resp.value!;
+        }
+        return Ok(value);
+    }
+
+    public async create_new_with_path(
+        full_path: string,
+        content_type: ObjectMapSimpleContentType,
+    ): Promise<BuckyResult<void>> {
+        const req: OpEnvCreateNewOutputRequest = {
+            common: {
+                flags: 0,
+                target: this.target,
+                target_dec_id: this.target_dec_id,
+                sid: this.sid_,
+            },
+            key: full_path,
+            content_type,
+        };
+        const r = await this.requestor.create_new(req);
+        if (r.err) {
+            return r;
+        }
+        return Ok(undefined);
+    }
+
+    public async insert_with_path(
+        full_path: string,
+        value: ObjectId
+    ): Promise<BuckyResult<void>> {
+        const req: OpEnvInsertWithKeyOutputRequest = {
+            common: {
+                flags: 0,
+                target: this.target,
+                target_dec_id: this.target_dec_id,
+                sid: this.sid_,
+            },
+            key: full_path,
+            value,
+        };
+        const resp = await this.requestor.insert_with_key(req);
+        if (resp.err) {
+            return resp;
+        }
+        return Ok(undefined);
+    }
+
+    public async set_with_path(
+        full_path: string,
+        value: ObjectId,
+        prev_value?: ObjectId,
+        auto_insert?: boolean
+    ): Promise<BuckyResult<ObjectId | undefined>> {
+        const req: OpEnvSetWithKeyOutputRequest = {
+            common: {
+                flags: 0,
+                target: this.target,
+                target_dec_id: this.target_dec_id,
+                sid: this.sid_,
+            },
+            value,
+            auto_insert: auto_insert ? auto_insert : false,
+            prev_value,
+            key: full_path,
+        };
+        const resp = await this.requestor.set_with_key(req);
+        if (resp.err) {
+            return resp;
+        }
+        let value_;
+        if (resp.unwrap().prev_value) {
+            value_ = resp.unwrap().prev_value;
+        }
+        return Ok(value_);
+    }
+
+    public async remove_with_path(
+        full_path: string,
+        prev_value?: ObjectId
+    ): Promise<BuckyResult<ObjectId | undefined>> {
+        const req: OpEnvRemoveWithKeyOutputRequest = {
+            common: {
+                flags: 0,
+                target: this.target,
+                target_dec_id: this.target_dec_id,
+                sid: this.sid_,
+            },
+            key: full_path,
+            prev_value,
+        };
+        const resp = await this.requestor.remove_with_key(req);
+        if (resp.err) {
+            return resp;
+        }
+        let value;
+        if (resp.unwrap().value) {
+            value = resp.unwrap().value!;
+        }
+        return Ok(value);
+    }
+
+    // set methods
+    public async contains(
+        path: string,
+        object_id: ObjectId
+    ): Promise<BuckyResult<boolean>> {
+        const req: OpEnvContainsOutputRequest = {
+            common: {
+                flags: 0,
+                target: this.target,
+                target_dec_id: this.target_dec_id,
+                sid: this.sid_,
+            },
+            value: object_id,
+            path,
+        };
+        const resp = await this.requestor.contains(req);
+        if (resp.err) {
+            return resp;
+        }
+        return Ok(resp.unwrap().result as boolean);
+    }
+
+    public async insert(
+        path: string,
+        object_id: ObjectId
+    ): Promise<BuckyResult<boolean>> {
+        const req: OpEnvInsertOutputRequest = {
+            common: {
+                flags: 0,
+                target: this.target,
+                target_dec_id: this.target_dec_id,
+                sid: this.sid_,
+            },
+            value: object_id,
+            path,
+        };
+        const resp = await this.requestor.insert(req);
+        if (resp.err) {
+            return resp;
+        }
+        return Ok(resp.unwrap().result as boolean);
+    }
+
+    public async remove(
+        path: string,
+        object_id: ObjectId
+    ): Promise<BuckyResult<boolean>> {
+        const req: OpEnvRemoveOutputRequest = {
+            common: {
+                flags: 0,
+                target: this.target,
+                target_dec_id: this.target_dec_id,
+                sid: this.sid_,
+            },
+            value: object_id,
+            path,
+        };
+        const resp = await this.requestor.remove(req);
+        if (resp.err) {
+            return resp;
+        }
+        return Ok(resp.unwrap().result);
+    }
+
+    // get_current_root
+    public async get_current_root(): Promise<BuckyResult<DecRootInfo>> {
+        const req: OpEnvGetCurrentRootOutputRequest = {
+            common: {
+                flags: 0,
+                target: this.target,
+                target_dec_id: this.target_dec_id,
+                sid: this.sid_,
+            },
+        };
+        const r = await this.requestor.get_current_root(req);
+        if (r.err) {
+            return r;
+        }
+        const resp = r.unwrap();
+
+        const info: DecRootInfo = {
+            root: resp.root,
+            revision: resp.revision,
+            dec_root: resp.dec_root,
+        };
+
+        return Ok(info);
+    }
+
+    // transcation
+    public async update(): Promise<BuckyResult<DecRootInfo>> {
+        const req: OpEnvCommitOutputRequest = {
+            common: {
+                flags: 0,
+                target: this.target,
+                target_dec_id: this.target_dec_id,
+                sid: this.sid_,
+            },
+            op_type: OpEnvCommitOpType.Update,
+        };
+        const r = await this.requestor.commit(req);
+        if (r.err) {
+            return r;
+        }
+        const resp = r.unwrap();
+
+        const info: DecRootInfo = {
+            root: resp.root,
+            revision: resp.revision,
+            dec_root: resp.dec_root,
+        };
+
+        return Ok(info);
+    }
+
+    public async commit(): Promise<BuckyResult<DecRootInfo>> {
+        const req: OpEnvCommitOutputRequest = {
+            common: {
+                flags: 0,
+                target: this.target,
+                target_dec_id: this.target_dec_id,
+                sid: this.sid_,
+            },
+        };
+        const r = await this.requestor.commit(req);
+        if (r.err) {
+            return r;
+        }
+        const resp = r.unwrap();
+
+        const info: DecRootInfo = {
+            root: resp.root,
+            revision: resp.revision,
+            dec_root: resp.dec_root,
+        };
+
+        return Ok(info);
+    }
+
+    public async abort(): Promise<BuckyResult<void>> {
+        const req: OpEnvAbortOutputRequest = {
+            common: {
+                flags: 0,
+                target: this.target,
+                target_dec_id: this.target_dec_id,
+                sid: this.sid_,
+            },
+        };
+        const resp = await this.requestor.abort(req);
+        if (resp.err) {
+            return resp;
+        }
+
+        return Ok(undefined);
+    }
+
+    // list
+    public async list(path: string): Promise<BuckyResult<ObjectMapContentItem[]>> {
+        const req: OpEnvListOutputRequest = {
+            common: {
+                target_dec_id: this.target_dec_id,
+                target: this.target,
+                flags: 0,
+                sid: JSBI.BigInt(0)
+            },
+            path
+        }
+
+        const r = await this.requestor.list(req)
+        if (r.err) {
+            return r;
+        }
+
+        return Ok(r.unwrap().list)
+    }
+
+    // metadata
+    public async metadata(path: string): Promise<BuckyResult<ObjectMapMetaData>> {
+        const req: OpEnvMetadataOutputRequest = {
+            common: {
+                flags: 0,
+                target: this.target,
+                target_dec_id: this.target_dec_id,
+                sid: this.sid_,
+            },
+            path,
+        };
+        const r = await this.requestor.metadata(req);
+        if (r.err) {
+            return r;
+        }
+        const resp = r.unwrap();
+        const metadata: ObjectMapMetaData = {
+            content_mode: resp.content_mode,
+            content_type: resp.content_type,
+            count: resp.count,
+            size: resp.size,
+            depth: resp.depth,
+        };
+
+        return Ok(metadata);
     }
 }
 
