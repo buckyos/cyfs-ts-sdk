@@ -420,7 +420,7 @@ export class NDNObjectInfo implements RawEncode {
                         return ret;
                     }
 
-                    const chunk_id = ChunkId.calculate(ret.unwrap()).unwrap();
+                    const chunk_id = ChunkId.calculate(ret.unwrap());
                     return chunk_id.raw_encode(buf);
                 } else {
                     return obj_list.raw_encode(buf);
@@ -741,7 +741,7 @@ export class Dir extends NamedObject<DirDescContent, DirBodyContent>{
                         return r;
                     }
                     const chunk = r.unwrap();
-                    const chunk_id = ChunkId.calculate(chunk).unwrap();
+                    const chunk_id = ChunkId.calculate(chunk);
 
                     if (this.body()) {
                         return this.body_expect().content().match<BuckyResult<void>>({

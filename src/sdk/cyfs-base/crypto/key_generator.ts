@@ -94,7 +94,7 @@ function to_dec_str(buffer: Uint8Array):string {
 }
 
 export function data_to_biguint(data: Uint8Array): jsbn.BigInteger {
-    let uint_num_str = to_dec_str(data);
+    const uint_num_str = to_dec_str(data);
 
     return new jsbn.BigInteger(uint_num_str);
 }
@@ -109,10 +109,10 @@ function gen_prime(rng: RsaRng, bit_size: number): jsbn.BigInteger {
         b = 8;
     }
 
-    let bytes_len = Math.floor((bit_size + 7) / 8);
+    const bytes_len = Math.floor((bit_size + 7) / 8);
 
     while(true) {
-        let bytes = rng.getBytesSync(bytes_len);
+        const bytes = rng.getBytesSync(bytes_len);
 
         // Clear bits in the first byte to make sure the candidate has a size <= bits.
         bytes[0] &= ((1 << b) - 1);
@@ -136,10 +136,10 @@ function gen_prime(rng: RsaRng, bit_size: number): jsbn.BigInteger {
 
         let p = data_to_biguint(bytes)
         // must always be a u64, as the SMALL_PRIMES_PRODUCT is a u64
-        let rem = p.remainder(SMALL_PRIMES_PRODUCT);
+        const rem = p.remainder(SMALL_PRIMES_PRODUCT);
 
         for (let delta = 0; delta < 1 << 20; delta+=2) {
-            let m = rem.add(new jsbn.BigInteger(delta.toString()));
+            const m = rem.add(new jsbn.BigInteger(delta.toString()));
 
             let cont = false;
             for (const prime of SMALL_PRIMES) {
@@ -174,13 +174,13 @@ export interface RsaRng {
 }
 
 export function generate_rsa_by_rng(rng: RsaRng, bits: number): pki.rsa.PrivateKey {
-    let primes: jsbn.BigInteger[] = [];
+    const primes: jsbn.BigInteger[] = [];
     let n_final = jsbn.BigInteger.ZERO
     let d_final = jsbn.BigInteger.ZERO
 
     const nprimes = 2;
 
-    let e = new jsbn.BigInteger((65537).toString())
+    const e = new jsbn.BigInteger((65537).toString())
 
     while (true) {
         let todo = bits;
@@ -205,7 +205,7 @@ export function generate_rsa_by_rng(rng: RsaRng, bits: number): pki.rsa.PrivateK
             continue;
         }
 
-        let d = e.modInverse(totient);
+        const d = e.modInverse(totient);
         if (!d.equals(jsbn.BigInteger.ZERO)) {
             n_final = n;
             d_final = d;
@@ -213,10 +213,10 @@ export function generate_rsa_by_rng(rng: RsaRng, bits: number): pki.rsa.PrivateK
         }
     }
 
-    let p1 = primes[0].subtract(jsbn.BigInteger.ONE);
-    let q1 = primes[1].subtract(jsbn.BigInteger.ONE);
-    let dp = d_final.remainder(p1)// JSBI.remainder(d_final, p1)
-    let dq = d_final.remainder(q1)
-    let qinv = primes[1].modInverse(primes[0])
+    const p1 = primes[0].subtract(jsbn.BigInteger.ONE);
+    const q1 = primes[1].subtract(jsbn.BigInteger.ONE);
+    const dp = d_final.remainder(p1)// JSBI.remainder(d_final, p1)
+    const dq = d_final.remainder(q1)
+    const qinv = primes[1].modInverse(primes[0])
     return pki.rsa.setPrivateKey(n_final, e, d_final, primes[0], primes[1], dp, dq, qinv)
 }

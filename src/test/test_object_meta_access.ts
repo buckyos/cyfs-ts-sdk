@@ -59,7 +59,7 @@ async function add_file(): Promise<[cyfs.SharedCyfsStack, cyfs.ObjectId, cyfs.Ob
     const owner_id = stack.local_device().desc().owner()!;
 
     const data = forge.util.binary.raw.decode(`test chunk ${cyfs.bucky_time_now()}`);
-    const chunk_id = cyfs.ChunkId.calculate(data).unwrap();
+    const chunk_id = cyfs.ChunkId.calculate(data);
 
     (await stack.ndn_service().put_data({
         common: {

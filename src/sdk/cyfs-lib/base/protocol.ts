@@ -1,3 +1,5 @@
+
+export const CYFS_CURRENT_API_EDITION = 1;
 // non_stack的http服务url
 export const NON_STACK_HTTP_URL = "http://127.0.0.1:1318";
 export const NON_STACK_WS_URL = "ws://127.0.0.1:1319";

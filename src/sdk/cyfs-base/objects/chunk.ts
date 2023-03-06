@@ -246,7 +246,7 @@ export class ChunkId implements RawEncode {
         return undefined;
     }
 
-    static calculate(data: Uint8Array): BuckyResult<ChunkId> {
+    static calculate(data: Uint8Array): ChunkId {
         const hash = HashValue.hash_data(data).as_slice();
         const len = data.length;
         const chunk = new Uint8Array(CHUNK_ID_LEN);
@@ -254,7 +254,7 @@ export class ChunkId implements RawEncode {
         view.setUint8(0, parseInt("01000000", 2) | (ObjectTypeCode.Chunk << 4 >> 2));
         view.setUint32(1, len, true);
         chunk.set(hash.slice(0, 27), 5);
-        return Ok(new ChunkId(chunk));
+        return new ChunkId(chunk);
     }
 }
 

@@ -110,6 +110,8 @@ export class MsgDescContent extends ProtobufDescContent {
             return (r! as Err<BuckyError>);
         }
 
+        target.setContent(content)
+
         return Ok(target);
     }
 

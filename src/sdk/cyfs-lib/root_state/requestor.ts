@@ -324,8 +324,8 @@ export class OpEnvRequestor {
     // load
     // op_env/init/target
     public async load(req: OpEnvLoadOutputRequest): Promise<BuckyResult<void>> {
-        if (this.op_env_type_ !== ObjectMapOpEnvType.Single) {
-            const err_msg = `load method only valid for single_op_env! sid = ${this.sid_}`;
+        if (this.op_env_type_ !== ObjectMapOpEnvType.Single && this.op_env_type_ !== ObjectMapOpEnvType.IsolatePath) {
+            const err_msg = `load method only valid for single_op_env and isolate_path_op_env! sid = ${this.sid_}`;
             console.log(err_msg);
             return Ok(undefined);
         }
@@ -372,8 +372,8 @@ export class OpEnvRequestor {
     public async load_by_path(
         req: OpEnvLoadByPathOutputRequest
     ): Promise<BuckyResult<void>> {
-        if (this.op_env_type_ !== ObjectMapOpEnvType.Single) {
-            const msg = `load_by_path method only valid for single_op_env! sid={self.sid_}`;
+        if (this.op_env_type_ !== ObjectMapOpEnvType.Single && this.op_env_type_ !== ObjectMapOpEnvType.IsolatePath) {
+            const msg = `load_by_path method only valid for single_op_env and isolate_path_op_env! sid={self.sid_}`;
             console.error(msg);
             return Err(new BuckyError(BuckyErrorCode.UnSupport, msg));
         }
@@ -427,27 +427,21 @@ export class OpEnvRequestor {
     public async create_new(
         req: OpEnvCreateNewOutputRequest
     ): Promise<BuckyResult<void>> {
-        if (this.op_env_type_ !== ObjectMapOpEnvType.Single) {
-            const msg = `create_new method only valid for single_op_env! sid={self.sid_}`;
-            console.error(msg);
-            return Err(new BuckyError(BuckyErrorCode.UnSupport, msg));
-        }
-
         const http_req = this.encode_create_new_request(req);
         const r = await this.requestor_.request(http_req);
         if (r.err) {
-            console.error(`create_new for single_op_env request failed: sid=${this.sid_}, ret=${r}`);
+            console.error(`create_new for op_env request failed: sid=${this.sid_}, ret=${r}`);
             return r;
         }
 
         const resp = r.unwrap();
         if (http_status_code_ok(resp.status)) {
-            console.log(`create_new for single_op_env success: sid=${this.sid_}`);
+            console.log(`create_new for op_env success: sid=${this.sid_}`);
 
             return Ok(undefined);
         } else {
             const e = await RequestorHelper.error_from_resp(resp);
-            console.error(`create_new for single_op_env failed: sid=${this.sid_}, err=${e}`);
+            console.error(`create_new for op_env failed: sid=${this.sid_}, err=${e}`);
 
             return Err(e);
         }

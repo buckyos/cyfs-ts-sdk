@@ -48,6 +48,7 @@ export enum OpEnvAction {
 export enum ObjectMapOpEnvType {
     Path = "path",
     Single = "single",
+    IsolatePath = "isolate-path"
 }
 
 export interface OpEnvSetResponse {
