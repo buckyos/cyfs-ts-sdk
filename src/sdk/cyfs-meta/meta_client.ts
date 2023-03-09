@@ -161,11 +161,11 @@ export function meta_target_from_str(target?: string): MetaMinerTarget | undefin
     if (target === undefined) {
         return default_meta_target();
     }
-    if (target === "dev") {
+    if (target === "dev" || target === "nightly") {
         return MetaMinerTarget.Dev;
-    } else if (target === "test") {
+    } else if (target === "test" || target === "beta") {
         return MetaMinerTarget.Test;
-    } else if (target === "formal") {
+    } else if (target === "formal" ||  target === "stable") {
         return MetaMinerTarget.Formal;
     } else {
         return undefined

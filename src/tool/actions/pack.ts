@@ -123,13 +123,18 @@ function pack_web(config: CyfsToolConfig, ctx: CyfsToolContext): boolean {
         return false;
     }
     // 在web folder下生成一个web_config.json文件，当前就只是存储entry首页的信息
-    // 直接把web文件夹拷贝到${dist}/web
-    fs.copySync(ctx.app!.web.folder, path.join(ctx.get_app_dist_path(), "web"));
+    // 把web文件夹拷贝到${dist}/web
+    const web_dir = path.join(ctx.get_app_dist_path(), "web");
+    fs.copySync(ctx.app!.web.folder, web_dir);
     const web_config:any = {};
     if (ctx.app!.web.entry) {
         web_config.entry = ctx.app!.web.entry
     }
-    fs.writeJSONSync(path.join(ctx.get_app_dist_path(), "web", "web_config.json"), web_config);
+    fs.writeJSONSync(path.join(web_dir, "web_config.json"), web_config);
+    // 用pack-tool将web文件夹打包成zip
+    console.log(`pack ${web_dir}`);
+    exec(`"${config.pack_tool}" -d "${web_dir}"`, process.cwd());
+    fs.removeSync(web_dir)
     return true;
 }
 
