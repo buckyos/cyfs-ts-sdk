@@ -5,6 +5,7 @@ import {
     AnyNamedObject,
     NONAPILevel, NONObjectInfo,
     create_meta_client,
+    get_system_dec_app,
 } from '../../sdk';
 
 import { check_channel, create_stack, CyfsToolConfig, exec, get_owner_path, load_desc_and_sec, stop_runtime, upload_app_objs } from "../lib/util";
@@ -15,6 +16,9 @@ import * as fs from 'fs-extra';
 
 import { CyfsToolContext, CUR_CONFIG_VERSION } from '../lib/ctx';
 import { Command } from 'commander';
+import { upload } from './upload';
+
+const dec_id = get_system_dec_app().object_id;
 
 interface DeployOptions {
     tag?: string,
@@ -75,7 +79,7 @@ export function update_ext_info(ctx: CyfsToolContext, update_release_date: boole
     }
 
     if (update_release_date) {
-        let date = new Date()
+        const date = new Date()
         new_info["cyfs-app-store"]["releasedate"][ctx.app.version] = `${date.getFullYear()}-${date.getMonth()+1}-${date.getDate()}`
     }
     
@@ -115,6 +119,21 @@ function update_app_version(options: DeployOptions, ctx: CyfsToolContext) {
 
     // 向app_ext对象添加extinfo
     update_ext_info(ctx, true);
+}
+
+// 如果icon填写了本地路径，那么上传到OOD并替换成cyfs路径
+async function upload_app_icon(ctx: CyfsToolContext, stack: SharedCyfsStack) {
+    // icon存在，且为文件
+    const icon_path = ctx.app!.icon;
+    if (icon_path && fs.existsSync(icon_path) && fs.statSync(icon_path).isFile()) {
+        const upload_r = await upload(icon_path, true, stack);
+        if (upload_r.err) {
+            console.error(`upload icon ${icon_path} err ${upload_r.val}`)
+        }
+        const [owner_id, obj_id] = upload_r.unwrap()
+        ctx.app!.icon = `cyfs://o/${owner_id}/${obj_id}`
+        console.log(`upload app icon ${icon_path} to ood, cyfs link ${ctx.app!.icon}`)
+    }
 }
 
 // 更新app对象的desc和icon部分
@@ -215,6 +234,7 @@ async function deploy_dec_app(options:DeployOptions, config: CyfsToolConfig, ctx
         return;
     }
     upload_dec_app(config, ctx);
+    upload_app_icon(ctx, stack);
     update_app_obj(ctx);
     update_app_version(options, ctx);
     const old_ver = inc_app_version(ctx);
@@ -236,7 +256,7 @@ export function makeCommand(config:CyfsToolConfig): Command {
                 process.exit(0);
             }
 
-            const [stack, writable] = await create_stack("runtime", config)
+            const [stack, writable] = await create_stack("runtime", config, dec_id)
             if (!writable) {
                 console.error('runtime running in anonymous(readonly) mode, cannot deploy app.')
                 return;
