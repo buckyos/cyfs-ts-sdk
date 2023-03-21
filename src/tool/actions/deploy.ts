@@ -146,6 +146,7 @@ function update_app_obj(ctx: CyfsToolContext) {
 
     const icon = (ctx.app!.icon !== "")?ctx.app!.icon:undefined;
     if (icon !== app.icon()) {
+        console.log(`set app icon to ${icon}`)
         app.set_icon(icon)
     }
 
@@ -234,7 +235,7 @@ async function deploy_dec_app(options:DeployOptions, config: CyfsToolConfig, ctx
         return;
     }
     upload_dec_app(config, ctx);
-    upload_app_icon(ctx, stack);
+    await upload_app_icon(ctx, stack);
     update_app_obj(ctx);
     update_app_version(options, ctx);
     const old_ver = inc_app_version(ctx);
