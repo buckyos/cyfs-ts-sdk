@@ -59,16 +59,16 @@ export function get_log_dir(service_name: string): string {
     return dir;
 }
 
-export function get_app_log_dir(app_name: string): string {
-    const dir = path.join(get_cyfs_root_path(), 'log', 'app', app_name);
+export function get_app_log_dir(app_id: string): string {
+    const dir = path.join(get_cyfs_root_path(), 'log', 'app', app_id);
 
     ensureDirSync(dir);
 
     return dir;
 }
 
-export function get_app_data_dir(app_name: string): string {
-    const dir = path.join(get_cyfs_root_path(), 'data', 'app', app_name);
+export function get_app_data_dir(app_id: string): string {
+    const dir = path.join(get_cyfs_root_path(), 'data', 'app', app_id);
 
     ensureDirSync(dir);
 

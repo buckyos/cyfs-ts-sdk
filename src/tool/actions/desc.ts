@@ -268,6 +268,9 @@ async function run(option: any) {
                 people = meta_people
             }
 
+            people_desc_path = path.join(workspace, 'people.desc');
+            people_sec_path = path.join(workspace, 'people.sec');
+
             if (!is_bind) {
                 console.log('generateing ood keypair...')
                 const unique_id = Date.now().toString();
@@ -296,25 +299,20 @@ async function run(option: any) {
                 // OOD 上链
                 await meta_client.create_desc(ood, cyfs.SavedMetaObject.try_from(ood).unwrap(), JSBI.BigInt(0), 0, 0, ood_pk);
 
-
-                people_desc_path = path.join(workspace, 'people.desc');
-                people_sec_path = path.join(workspace, 'people.sec');
-
                 ood_desc_path = path.join(workspace, 'ood.desc');
                 ood_sec_path = path.join(workspace, 'ood.sec');
 
-                check_desc_file(people_desc_path)
                 check_desc_file(ood_desc_path)
-
-                // People写入文件
-                fs.writeFileSync(people_desc_path, people.to_vec().unwrap());
-                fs.writeFileSync(people_sec_path, people_pk.to_vec().unwrap());
 
                 // ood写入文件
                 fs.writeFileSync(ood_desc_path, ood.to_vec().unwrap());
                 fs.writeFileSync(ood_sec_path, ood_pk.to_vec().unwrap());
             }
 
+            // People写入文件
+            check_desc_file(people_desc_path)
+            fs.writeFileSync(people_desc_path, people.to_vec().unwrap());
+            fs.writeFileSync(people_sec_path, people_pk.to_vec().unwrap());
         }
 
         if (!option.onlyOod) {
