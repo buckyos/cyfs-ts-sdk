@@ -26,5 +26,4 @@ non_sdk.js
 /node_modules/
 /out/
 /dist/
-/package-lock.json
 /web/
