@@ -1,5 +1,5 @@
 import { AccessPermissions, AccessString, ObjectId } from "../../cyfs-base";
-import { DeviceZoneCategory } from "../access/source";
+import { DeviceZoneCategory, RequestSourceInfo } from "../access/source";
 
 export enum MetaAction {
     GlobalStateAddAccess = "global-state-add-access",
@@ -41,6 +41,7 @@ export interface GlobalStatePathSpecifiedGroup {
 export class GlobalStatePathGroupAccess {
     default?: number;   // full permission, treat as u32, init with AccessString
     specified?: GlobalStatePathSpecifiedGroup;
+    handler?: boolean;
     private constructor() {}
     static Specified(group: GlobalStatePathSpecifiedGroup): GlobalStatePathGroupAccess {
         const self = new GlobalStatePathGroupAccess();
@@ -53,12 +54,19 @@ export class GlobalStatePathGroupAccess {
         self.default = access;
         return self;
     }
+    static Handler(): GlobalStatePathGroupAccess {
+        const self = new GlobalStatePathGroupAccess();
+        self.handler = true;
+        return self;
+    }
 
     to_obj(): any {
         if (this.default !== undefined) {
             return {Default: this.default}
         } else if (this.specified !== undefined) {
             return {Specified: this.specified}
+        } else if (this.handler) {
+            return "Handler"
         } else {
             return {}
         }
@@ -78,6 +86,8 @@ export class GlobalStatePathGroupAccess {
                 zone_category: obj.Specified.zone_category?obj.Specified.zone_category:undefined,
                 access: obj.Specified.access
             })
+        } else if (obj === "Handler") {
+            return GlobalStatePathGroupAccess.Handler()
         } else {
             throw new Error(`decode GlobalStatePathGroupAccess from ${JSON.stringify(obj)} failed`)
         }
@@ -154,4 +164,19 @@ export interface GlobalStatePathConfigItem {
 
     // 重建深度.0表示无引用深度，1表示会重建其引用的1层对象。不配置则根据对象的Selector确定初始重建深度。对大文件不自动重建，需要手动将depth设置为1.
     depth?: number,
+}
+
+export interface GlobalStatePathHandlerRequest {
+    // target_dec_id
+    dec_id: ObjectId,
+
+    // request source
+    source: RequestSourceInfo,
+
+    // full_req_path = {req_path}?{query_string}
+    req_path: string,
+    req_query_string?: string,
+    
+    // The required permissions
+    permissions: AccessPermissions,
 }

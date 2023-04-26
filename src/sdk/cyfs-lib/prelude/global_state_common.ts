@@ -41,6 +41,8 @@ export class RequestGlobalStatePath {
 
     // inernal path of global-state, without the dec-id segment
     _req_path?: string;
+    // extra query params in URL query parameters format, after a question mark (?)
+    req_query_string?: string;
 
     constructor(dec_id?: ObjectId, req_path?: string, global_state_category?: GlobalStateCategory, global_state_root?: RequestGlobalStateRoot) {
         this.dec_id = dec_id;
@@ -61,6 +63,21 @@ export class RequestGlobalStatePath {
         return this.dec_id?this.dec_id:source.dec
     }
 
+    set_req_query_string(query: string): void {
+        this.req_query_string = query;
+    }
+
+    static parse_req_path_with_query_string(
+        req_path_with_query_string: string,
+    ): [string, string|undefined] {
+        const pos = req_path_with_query_string.lastIndexOf("?")
+        if (pos != -1) {
+            return [req_path_with_query_string.slice(0, pos), req_path_with_query_string.slice(pos+1)]
+        } else {
+            return [req_path_with_query_string, undefined]
+        }
+    }
+
     /*
     The first paragraph is optional root-state/local-cache, default root-state
     The second paragraph is optional current/root:{root-id}/dec-root:{dec-root-id}, default is current
@@ -68,7 +85,8 @@ export class RequestGlobalStatePath {
     Fourth paragraph optional global-state-inner-path
     */
 
-    static from_str(req_path: string): BuckyResult<RequestGlobalStatePath> {
+    static from_str(org_req_path: string): BuckyResult<RequestGlobalStatePath> {
+        const [req_path, query_string] = RequestGlobalStatePath.parse_req_path_with_query_string(org_req_path);
         const segs: string[] = []
         req_path.split("/").forEach((value) => {
             if (value) {
@@ -139,6 +157,7 @@ export class RequestGlobalStatePath {
         const self = new RequestGlobalStatePath(dec_id, real_req_path);
         self.global_state_category = global_state_category;
         self.global_state_root = global_state_root;
+        self.req_query_string = query_string;
         return Ok(self)
     }
 
@@ -167,7 +186,12 @@ export class RequestGlobalStatePath {
             }
         }
 
-        return "/" + segs.join("/");
+        let path = "/" + segs.join("/");
+        if (this.req_query_string) {
+            path += `?${this.req_query_string}`;
+        }
+
+        return path;
     }
 
     format_string(): string {

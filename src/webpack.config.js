@@ -67,7 +67,7 @@ module.exports = {
     ],
     optimization: {
         // TODO 暂时不开启优化，方便调试诊断
-        minimize: false
+        minimize: true
     },
     performance: {
         hints: "warning",

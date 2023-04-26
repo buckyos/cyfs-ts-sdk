@@ -33,7 +33,7 @@ export class AccessPermissions {
     static None = new AccessPermissions(0);
     static CallOnly = new AccessPermissions(0b001);
     static WriteOnly = new AccessPermissions(0b010);
-    static WirteAndCall = new AccessPermissions(0b011);
+    static WriteAndCall = new AccessPermissions(0b011);
     static ReadOnly = new AccessPermissions(0b100);
     static ReadAndCall = new AccessPermissions(0b101);
     static ReadAndWrite = new AccessPermissions(0b110);
@@ -57,6 +57,29 @@ export class AccessPermissions {
         }
 
         return Ok(new AccessPermissions(value));
+    }
+
+    static from_str(value: string): BuckyResult<AccessPermissions> {
+        switch (value) {
+            case "---":
+                return Ok(AccessPermissions.None);
+            case "--x":
+                return Ok(AccessPermissions.CallOnly);
+            case "-w-":
+                return Ok(AccessPermissions.WriteOnly);
+            case "-wx":
+                return Ok(AccessPermissions.WriteAndCall);
+            case "r--":
+                return Ok(AccessPermissions.ReadOnly);
+            case "r-x":
+                return Ok(AccessPermissions.ReadAndCall);
+            case "rw-":
+                return Ok(AccessPermissions.ReadAndWrite);
+            case "rwx":
+                return Ok(AccessPermissions.Full);
+            default:
+                return Err(new BuckyError(BuckyErrorCode.InvalidFormat, `invalid access permissions ${value}`));
+        }
     }
 
     format_u8(v: number): string {
