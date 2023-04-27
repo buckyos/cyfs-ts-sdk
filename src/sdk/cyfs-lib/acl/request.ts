@@ -30,7 +30,7 @@ export class AclHandlerRequestJsonCodec extends JsonCodec<AclHandlerRequest> {
     }
 
     decode_object(o: any): BuckyResult<AclHandlerRequest> {
-        const dec_id = ObjectId.from_base_58(o.device_id);
+        const dec_id = ObjectId.from_base_58(o.dec_id);
         if (dec_id.err) {
             return dec_id;
         }
