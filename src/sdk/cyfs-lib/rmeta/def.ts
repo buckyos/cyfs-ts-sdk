@@ -119,6 +119,10 @@ export class GlobalStatePathAccessItem {
         return new GlobalStatePathAccessItem(GlobalStatePathAccessItem.fix_path(path), GlobalStatePathGroupAccess.Default(access.value))
     }
 
+    public static new_handler(path: string): GlobalStatePathAccessItem {
+        return new GlobalStatePathAccessItem(path, GlobalStatePathGroupAccess.Handler())
+    }
+
     public static new_group(path: string, zone: ObjectId|undefined, zone_category: DeviceZoneCategory|undefined, dec: ObjectId|undefined, access: AccessPermissions): GlobalStatePathAccessItem {
         return new GlobalStatePathAccessItem(GlobalStatePathAccessItem.fix_path(path), GlobalStatePathGroupAccess.Specified({
             zone,
