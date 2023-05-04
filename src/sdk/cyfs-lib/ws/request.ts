@@ -1,7 +1,9 @@
-import { bucky_time_now, BuckyError, BuckyErrorCode, BuckyResult, Err, Ok} from "../../cyfs-base";
+import { bucky_time_now, BuckyError, BuckyErrorCode, BuckyResult, Err, Ok } from "../../cyfs-base";
 import { WebSocketSession } from "./session";
 import { WSPacket } from "./packet";
 import JSBI from 'jsbi';
+import { BuckyErrorJsonCodec } from '../base/codec';
+import { WS_CMD_PROCESS_ERROR } from '../base/protocol';
 
 const WS_REQUEST_DEFAULT_TIMEOUT: JSBI = JSBI.BigInt(1000 * 1000 * 60 * 10 * 10);
 
@@ -10,7 +12,7 @@ export abstract class WebSocketRequestHandler {
         requestor: WebSocketRequestManager,
         cmd: number,
         content: Uint8Array,
-    ): Promise<BuckyResult<Uint8Array|undefined>> {
+    ): Promise<BuckyResult<Uint8Array | undefined>> {
         return this.process_string_request(requestor, cmd, content);
     }
 
@@ -18,7 +20,7 @@ export abstract class WebSocketRequestHandler {
         requestor: WebSocketRequestManager,
         cmd: number,
         content: Uint8Array,
-    ): Promise<BuckyResult<Uint8Array|undefined>> {
+    ): Promise<BuckyResult<Uint8Array | undefined>> {
 
         // 解码到文本
         const de = new TextDecoder();
@@ -44,7 +46,7 @@ export abstract class WebSocketRequestHandler {
         requestor: WebSocketRequestManager,
         cmd: number,
         content: string,
-    ): Promise<BuckyResult<string|undefined>> {
+    ): Promise<BuckyResult<string | undefined>> {
         console.error(`on_string_request should had one impl!`);
         return Err(BuckyError.from(BuckyErrorCode.NotImplement));
     }
@@ -190,24 +192,32 @@ export class WebSocketRequestManager {
     static async on_msg(requestor: WebSocketRequestManager, packet: WSPacket): Promise<BuckyResult<void>> {
         // console.log('on_msg', packet);
         const cmd = packet.header.cmd;
-        if (cmd > 0) {
+        if (cmd > 0 && cmd !== WS_CMD_PROCESS_ERROR) {
             const seq = packet.header.seq;
             console.debug(`recv ws cmd packet: sid=${requestor.session!.sid}, seq=${seq}`);
 
             const ret = await requestor.handler.on_request(requestor, cmd, packet.content);
             if (ret.err) {
-                return ret;
-            }
+                // Use error packet for response
+                const codec = new BuckyErrorJsonCodec().encode_object(ret.val);
 
-            const resp = ret.unwrap();
-            if (!resp) {
-                console.assert(seq === 0);
-            } else {
-                console.assert(seq > 0);
+                const enc = new TextEncoder();
+                const resp_buffer = enc.encode(codec.encode_string());
 
-                const resp_packet = WSPacket.new_from_buffer(seq, 0, resp);
+                const resp_packet = WSPacket.new_from_buffer(seq, WS_CMD_PROCESS_ERROR, resp_buffer);
                 const buf = resp_packet.encode();
                 return await requestor.post_to_session(buf)
+            } else {
+                const resp = ret.unwrap();
+                if (!resp) {
+                    console.assert(seq === 0);
+                } else {
+                    console.assert(seq > 0);
+
+                    const resp_packet = WSPacket.new_from_buffer(seq, 0, resp);
+                    const buf = resp_packet.encode();
+                    return await requestor.post_to_session(buf)
+                }
             }
         } else {
             // console.debug(`recv ws resp packet: sid=${requestor.session.unwrap().sid}, seq=${packet.header.seq}`);
@@ -253,7 +263,6 @@ export class WebSocketRequestManager {
 
     // 收到了应答
     async on_resp(packet: WSPacket): Promise<BuckyResult<void>> {
-        console.assert(packet.header.cmd === 0);
         console.assert(packet.header.seq > 0);
         const seq = packet.header.seq;
         const item = this.reqs.remove_request(seq);
@@ -264,7 +273,23 @@ export class WebSocketRequestManager {
         }
 
         // 保存应答并唤醒
-        item.resp = Ok(packet.content);
+        if (packet.header.cmd === WS_CMD_PROCESS_ERROR) {
+            const de = new TextDecoder();
+            const content = de.decode(packet.content);
+
+            const ret = new BuckyErrorJsonCodec().decode_string(content);
+            if (ret.err) {
+                console.warn(`decode ws error response failed! sid=${this.sid}, seq=${seq}, content=${content}`, ret);
+                return ret;
+            }
+
+            const err = ret.unwrap();
+            item.resp = Err(err);
+        } else {
+            console.assert(packet.header.cmd === 0);
+
+            item.resp = Ok(packet.content);
+        }
 
         console.log(`ws recv resp, sid=${this.sid}, seq=${item.seq}`);
 

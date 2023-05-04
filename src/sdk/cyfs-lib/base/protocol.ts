@@ -22,3 +22,9 @@ export const ROUTER_WS_HANDLER_CMD_EVENT = 13;
 
 // 基于ws的http request
 export const HTTP_CMD_REQUEST = 21;
+
+// [u16::MAX - 32, u16::MAX] for reserved
+export const WS_CMD_RESERVED_BEGIN = 65535 - 32;
+
+// An error occurred while processing the request
+export const WS_CMD_PROCESS_ERROR = 65535;
