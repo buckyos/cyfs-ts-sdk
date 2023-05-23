@@ -12,7 +12,7 @@ import { ObjectTypeCode, number_2_obj_type_code } from "./object_type_info";
 import { ObjectId, ObjectIdDecoder, ObjectLink, ObjectLinkDecoder, } from "./object_id";
 import { base_trace } from "../base/log";
 import JSBI from 'jsbi';
-import { OBJECT_CONTENT_CODEC_FORMAT_RAW } from '../codec';
+import { OBJECT_CONTENT_CODEC_FORMAT_PROTOBUF, OBJECT_CONTENT_CODEC_FORMAT_RAW, ProtobufCodecHelper, ProtobufCodecImpl, protos } from '../codec';
 import { BuckySize, BuckySizeDecoder } from '../base/bucky_usize';
 
 export class ObjectIdBuilder<T extends RawEncode & ObjectDesc> {
@@ -66,21 +66,21 @@ export class ObjectIdBuilder<T extends RawEncode & ObjectDesc> {
         hash_value[4] = 0;
 
         if (!this.m_t.is_standard_object()) {
-            // 用户类型
-            // 4个可用flag
+            // user type
+            // 4 available flags
             let type_code;
             if (this.m_t.obj_type() > OBJECT_TYPE_CORE_END) {
-                // 这是一个dec app 对象
-                // 高2bits固定为11
+                // this is a decapp object
+                // High 2bits fixed at 11
                 type_code = parseInt("00110000", 2);
             } else {
                 // base_trace("xxxx");
-                // 这是一个core 对象
-                // 高2bits固定为10，
+                // this is a core object
+                // High 2bits fixed at 10
                 type_code = parseInt("00100000", 2);
             }
 
-            // | 是否有area_code | 是否有public_key | 是否是多Key对象 | 是否有owner |
+            // | has area_code | has public_key | has multi Key | has owner |
             if (this.m_area) {
                 type_code = type_code | parseInt("00001000", 2);
             }
@@ -100,7 +100,7 @@ export class ObjectIdBuilder<T extends RawEncode & ObjectDesc> {
             if (this.m_area) {
                 const area = this.m_area;
                 // --------------------------------------------
-                // (2bit)(4bit)(国家编码8bits)+(运营商编码4bits)+城市编码(14bits)+inner(8bits) = 40 bit
+                // (2bit)(4bit)(country code 8bits)+(carrier code 4bits)+city code(14bits)+inner(8bits) = 40 bit
                 // --------------------------------------------
                 // 0 obj_bits[. .]type_code[. . . .] country[. .]
                 // 1 country[. . . . . .]carrier[x x x x . .]
@@ -116,18 +116,18 @@ export class ObjectIdBuilder<T extends RawEncode & ObjectDesc> {
                 // base_trace("calc_id_hash_x:", hash_value);
                 // base_trace("calc_id_hash_2:", (type_code & parseInt('00111111', 2)) << 2);
 
-                // 前 6 bit 写入类型信息
+                // First 6 bits write type info
                 hash_value[0] = type_code << 2;
                 // base_trace("calc_id_hash_3:", hash_value[0]);
             }
         } else {
-            // 标准类型
-            // 6bits的类型(高2bits固定为01，4bits的内置对象类型）+ option<34bits>的区域编码构成
+            // standard type
+            // 6bits type(high 2bits fixed to 01，4bits inner object type）+ option<34bits> area code
             const type_code = this.m_obj_type_code;
 
             if (this.m_area) {
                 // --------------------------------------------
-                // (2bit)(4bit)(国家编码8bits)+(运营商编码4bits)+城市编码(14bits)+inner(8bits) = 40 bit
+                // (2bit)(4bit)(country code 8bits)+(carrier code 4bits)+city code(14bits)+inner(8bits) = 40 bit
                 // --------------------------------------------
                 // 0 obj_bits[. .]type_code[. . . .] country[. .]
                 // 1 country[. . . . . .]carrier[x x x x . .]
@@ -156,33 +156,33 @@ export class ObjectIdBuilder<T extends RawEncode & ObjectDesc> {
 
 // obj_flags: number
 // ========
-// * 前5个bits是用来指示编码状态，不计入hash计算。（计算时永远填0）
-// * 剩下的11bits用来标识desc header
+// * The first 5 bits are used to indicate the encoding status and are not counted in the hash calculation. (Always fill in 0 when calculating)
+// * The remaining 11bits are used to identify the desc header
 //
-// 段编码标志位
+// Segment code flag bits
 // --------
-// 0:  是否加密 crypto（现在未定义加密结构，一定填0)
-// 1:  是否包含 mut_body
-// 2:  是否包含 desc_signs
-// 3:  是否包含 body_signs
-// 4:  是否包含 nonce
+// 0:  Whether crypto（Now the encryption structure is not defined, must fill in 0)
+// 1:  If contains mut_body
+// 2:  If contains desc_signs
+// 3:  If contains body_signs
+// 4:  If contains nonce
 //
-// ObjectDesc编码标志位
+// ObjectDesc code flag bits
 // --------
-// 5:  是否包含 dec_id
-// 6:  是否包含 ref_objecs
-// 7:  是否包含 prev
-// 8:  是否包含 create_timestamp
-// 9:  是否包含 create_time
-// 10: 是否包含 expired_time
+// 5:  If contains dec_id
+// 6:  If contains ref_objecs
+// 7:  If contains prev
+// 8:  If contains create_timestamp
+// 9:  If contains create_time
+// 10: If contains expired_time
 //
-// OwnerObjectDesc/AreaObjectDesc/AuthorObjectDesc/PublicKeyObjectDesc 标志位
+// OwnerObjectDesc/AreaObjectDesc/AuthorObjectDesc/PublicKeyObjectDesc flag bits
 // ---------
-// 11: 是否包含 owner
-// 12: 是否包含 area
-// 13: 是否包含 author
-// 14: 是否包含 public_key
-// 15: 保留，目前为0
+// 11: If contains owner
+// 12: If contains area
+// 13: If contains author
+// 14: If contains public_key
+// 15: If contains ext
 
 export const OBJECT_FLAG_CTYPTO = 0x01;
 export const OBJECT_FLAG_MUT_BODY: number = 0x01 << 1;
@@ -202,10 +202,10 @@ export const OBJECT_FLAG_AREA: number = 0x01 << 12;
 export const OBJECT_FLAG_AUTHOR: number = 0x01 << 13;
 export const OBJECT_FLAG_PUBLIC_KEY: number = 0x01 << 14;
 
-// 是否包含扩展字段，预留的非DescContent部分的扩展，包括一个u16长度+对应的content
+// If contains the ext field, reserved for the non-DescContent part of the extension, including a u16 length + the corresponding content
 export const OBJECT_FLAG_EXT: number = 0x01 << 15;
 
-// 左闭右闭 区间定义
+// Object type interval definition, [start, end)
 export const OBJECT_TYPE_ANY = 0;
 export const OBJECT_TYPE_STANDARD_START = 1;
 export const OBJECT_TYPE_STANDARD_END = 16;
@@ -221,7 +221,7 @@ export const OBJECT_PUBLIC_KEY_MN = 0x02;
 export const OBJECT_BODY_FLAG_PREV = 0x01;
 export const OBJECT_BODY_FLAG_USER_DATA: number = 0x01 << 1;
 
-// 是否包含扩展字段，格式和desc一致
+// Whether include extended fields, in the same format as desc
 export const OBJECT_BODY_FLAG_EXT: number = 0x01 << 2;
 
 export function is_standard_object(object_type: number): boolean {
@@ -248,7 +248,7 @@ export abstract class ObjectDesc {
         return this.m_obj_type;
     }
 
-    // 默认实现，从obj_type 转 obj_type_code
+    // default implement，from obj_type to obj_type_code
     obj_type_code(): ObjectTypeCode {
         return number_2_obj_type_code(this.m_obj_type);
     }
@@ -270,28 +270,27 @@ export abstract class ObjectDesc {
         return c === ObjectTypeCode.Custom && (t >= OBJECT_TYPE_DECAPP_START && t <= OBJECT_TYPE_DECAPP_END);
     }
 
-    // 计算 id
     abstract calculate_id(): ObjectId;
 
-    // 获取所属 DECApp 的 id
+    // Get the dec-id(object-id) of the DECApp to which it belongs
     abstract dec_id(): ObjectId | undefined;
 
-    // 链接对象列表
+    // List of linked objects
     abstract ref_objs(): Vec<ObjectLink> | undefined;
 
-    // 前一个版本号
+    // Previous version number
     abstract prev(): ObjectId | undefined;
 
-    // 创建时的 BTC Hash
+    // The associated hash at the time of creation, e.g. BTC Transaction hash
     abstract create_timestamp(): HashValue | undefined;
 
-    // 创建时间戳，如果不存在，则返回0
+    // Created timestamp, or return 0 if it does not exist
     abstract create_time(): JSBI;
 
     // 过期时间戳
     abstract expired_time(): JSBI | undefined;
 
-    // 所有者
+    // Expiration timestamp
     abstract owner(): ObjectId | undefined;
 }
 
@@ -310,12 +309,62 @@ export class NamedObjectBodyContext {
     }
 }
 
+export class ObjectBodyExt implements RawEncode {
+    constructor(public object_id?: ObjectId) {}
+    raw_measure(ctx?: any, purpose?: RawEncodePurpose | undefined): BuckyResult<number> {
+        return ProtobufCodecImpl.raw_measure(this.try_to_proto.bind(this));
+    }
+    raw_encode(buf: Uint8Array, ctx?: any, purpose?: RawEncodePurpose | undefined): BuckyResult<Uint8Array> {
+        return ProtobufCodecImpl.raw_encode(buf, this.try_to_proto.bind(this));
+    }
+
+    is_empty(): boolean {
+        return !this.object_id;
+    }
+
+    try_to_proto(): BuckyResult<protos.ObjectBodyExt> {
+        const ext = new protos.ObjectBodyExt();
+        if (this.object_id) {
+            const buf = ProtobufCodecHelper.encode_buf(this.object_id);
+            if (buf.err) {
+                return buf;
+            }
+
+            ext.setObjectId(buf.unwrap())
+        }
+
+        return Ok(ext);
+    }
+
+    static from_proto(value: protos.ObjectBodyExt): BuckyResult<ObjectBodyExt> {
+        let object_id = undefined;
+
+        if (value.hasObjectId()) {
+            const ret = ProtobufCodecHelper.decode_buf(value.getObjectId_asU8(), new ObjectIdDecoder());
+            if (ret.err) {
+                return ret;
+            }
+
+            object_id = ret.unwrap();
+        }
+
+        return Ok(new ObjectBodyExt(object_id));
+    }
+}
+
+export class ObjectBodyExtDecoder implements RawDecode<ObjectBodyExt> {
+    raw_decode(buf: Uint8Array): BuckyResult<[ObjectBodyExt, Uint8Array]> {
+        return ProtobufCodecImpl.raw_decode(buf, {format: OBJECT_CONTENT_CODEC_FORMAT_PROTOBUF, version: 1}, ObjectBodyExt.from_proto, protos.ObjectBodyExt.deserializeBinary)
+    }
+    
+}
+
 export class NamedObjectContext implements RawEncode {
     private m_obj_type: number;
     private m_obj_flags: number;
     private m_obj_type_code: ObjectTypeCode;
 
-    // DescContent缓存的大小
+    // DescContents's cache size during codec
     private m_desc_content_cached_size?: number;
 
     private m_body_context: NamedObjectBodyContext;
@@ -591,22 +640,24 @@ export class NamedObjectContextDecoder extends RawHexDecode<NamedObjectContext>{
 }
 
 /**
- * NamedObject的可变Body部分的建构器
+ * Builder for the mutBody part of NamedObject
  */
 export class ObjectMutBodyBuilder<
     DC extends DescContent,
     BC extends BodyContent
     >{
-    private m_prev_version?:HashValue;   // 上个版本的MutBody Hash
-    private m_update_time: JSBI;               // 时间戳
-    private m_content: BC;                       // 根据不同的类型，可以有不同的MutBody
-    private m_user_data?:Uint8Array;     // 可以嵌入任意数据。（比如json?)
+    private m_prev_version?: HashValue;     // Perv versions's ObjectMutBody Hash
+    private m_update_time: JSBI;            // Record the timestamp of the last update of body, in bucky time format
+    private m_content: BC;                  // Depending on the type, there can be different MutBody
+    private m_user_data?: Uint8Array;       // Any data can be embedded. (e.g. json?)
+    private m_ext: ObjectBodyExt;
     private m_obj_type: number;
 
     constructor(obj_type: number, content: BC) {
         this.m_update_time = bucky_time_now();
         this.m_content = content;
         this.m_obj_type = obj_type;
+        this.m_ext = new ObjectBodyExt();
     }
 
     update_time(value: JSBI): ObjectMutBodyBuilder<DescContent, BC> {
@@ -641,6 +692,16 @@ export class ObjectMutBodyBuilder<
         return this;
     }
 
+    object_id(value: ObjectId): ObjectMutBodyBuilder<DC, BC> {
+        this.m_ext.object_id = value;
+        return this;
+    }
+
+    option_object_id(value?:ObjectId): ObjectMutBodyBuilder<DC, BC> {
+        this.m_ext.object_id = value;
+        return this;
+    }
+
     build(): ObjectMutBody<DC, BC> {
         return new ObjectMutBody<DescContent, BC>(
             this.m_obj_type,
@@ -648,21 +709,23 @@ export class ObjectMutBodyBuilder<
             this.m_update_time,
             this.m_content,
             this.m_user_data,
+            this.m_ext.is_empty()?undefined:this.m_ext,
         );
     }
 }
 
 /**
- * NamedObject的可变Body部分
+ * The MutBody part of a NamedObject
  */
 export class ObjectMutBody<
     DC extends DescContent,
     BC extends BodyContent
     > implements RawEncode {
-    private m_prev_version?:HashValue;   // 上个版本的MutBody Hash
-    private m_update_time: JSBI;               // 时间戳
-    private m_content: BC;              // 根据不同的类型，可以有不同的MutBody
-    private m_user_data?:Uint8Array;     // 可以嵌入任意数据。（比如json?)
+    private m_prev_version?:HashValue;      // Perv versions's ObjectMutBody Hash
+    private m_update_time: JSBI;            // Record the timestamp of the last update of body, in bucky time format
+    private m_content: BC;                  // Depending on the type, there can be different MutBody
+    private m_user_data?:Uint8Array;        // Any data can be embedded. (e.g. json?)
+    private m_ext?: ObjectBodyExt;
     private m_obj_type: number;
     private m_trace?: number;
 
@@ -670,12 +733,13 @@ export class ObjectMutBody<
         return `ObjectMutBody:{{ prev_version:${this.prev_version}, update_time:${this.update_time}, content:${this.content}, user_data: ... }}`;
     }
 
-    constructor(obj_type: number, prev_version:HashValue|undefined, update_time: JSBI, content: BC, user_data?:Uint8Array) {
+    constructor(obj_type: number, prev_version:HashValue|undefined, update_time: JSBI, content: BC, user_data?:Uint8Array, ext?: ObjectBodyExt) {
         this.m_obj_type = obj_type;
         this.m_prev_version = prev_version;
         this.m_update_time = update_time;
         this.m_content = content;
         this.m_user_data = user_data;
+        this.m_ext = ext;
     }
 
     set_trace_id(trace: number): void {
@@ -722,7 +786,7 @@ export class ObjectMutBody<
         this.m_update_time = value;
     }
 
-    // 更新时间，并且确保大于旧时间
+    // Update the time and make sure it is greater than the old time
     increase_update_time(value: JSBI): void {
         if (JSBI.lessThan(value, this.m_update_time)) {
             console.warn(`object body new time is older than current time! now=${value.toString()}, cur=${this.m_update_time.toString()}`);
@@ -735,6 +799,33 @@ export class ObjectMutBody<
     set_userdata(user_data: Uint8Array): void {
         this.m_user_data = user_data;
         this.m_update_time = bucky_time_now();
+    }
+    
+    object_id(): ObjectId|undefined {
+        return this.m_ext?.object_id
+    }
+
+    verify_object_id(object_id: ObjectId): BuckyResult<void> {
+        const self_obj_id = this.object_id();
+        if (!self_obj_id) {
+            return Ok(undefined)
+        }
+
+        if (self_obj_id.eq(object_id)) {
+            return Ok(undefined)
+        } else {
+            const msg = `object_id and object_id of body binding do not match! body object_id=${self_obj_id}, object_id=${object_id}`;
+            console.warn(msg);
+            return Err(new BuckyError(BuckyErrorCode.Unmatch, msg))
+        }
+    }
+
+    set_object_id(object_id?: ObjectId) {
+        if (!this.m_ext) {
+            this.m_ext = new ObjectBodyExt();
+        }
+
+        this.m_ext.object_id = object_id;
     }
 
     raw_measure(ctx: NamedObjectBodyContext, purpose?: RawEncodePurpose): BuckyResult<number> {
@@ -754,10 +845,20 @@ export class ObjectMutBody<
         // update_time u64
         bytes += 8;
 
+        // ext
+        if (this.m_ext && !this.m_ext.is_empty()) {
+            bytes += 2;
+            const ret = this.m_ext.raw_measure(ctx, purpose);
+            if (ret.err) {
+                return ret;
+            }
+            bytes += ret.unwrap();
+        }
+
         // verison+format, 8bits * 2
         bytes += 2;
 
-        // content,包含usize+content
+        // content,include usize+content
         let body_size;
         {
             const r = this.m_content.raw_measure(purpose);
@@ -771,7 +872,7 @@ export class ObjectMutBody<
         bytes += new BuckySize(body_size).raw_measure(undefined, purpose).unwrap();
         bytes += body_size;
 
-        // 缓存body_size
+        // cache body_size
         ctx.cache_body_content_size(body_size);
 
         // user_data(len+buffer)
@@ -800,10 +901,15 @@ export class ObjectMutBody<
                 body_flags = body_flags | OBJECT_BODY_FLAG_USER_DATA;
             }
 
+            if (this.m_ext && !this.m_ext.is_empty()) {
+                body_flags = body_flags | OBJECT_BODY_FLAG_EXT;
+            }
+
             buf[0] = body_flags;
             buf = buf.offset(1);
         }
         base_trace(`[body(${this.trace_id()})] raw_encode, body_flags, buf len:`, buf.length);
+
 
         // prev_version
         if (this.m_prev_version) {
@@ -827,8 +933,29 @@ export class ObjectMutBody<
         }
         base_trace(`[body(${this.trace_id()})] raw_encode, update_time, buf len:`, buf.length);
 
+        if (this.m_ext && !this.m_ext.is_empty()) {
+            const size = this.m_ext.raw_measure(ctx, purpose);
+            if (size.err) {
+                return size;
+            }
+
+            let r = new BuckyNumber('u16', size.unwrap()).raw_encode(buf);
+            if (r.err) {
+                return r;
+            }
+
+            buf = r.unwrap();
+
+            r = this.m_ext.raw_encode(buf, ctx, purpose);
+            if (r.err) {
+                return r;
+            }
+
+            buf = r.unwrap();
+        }
+
         // version+format
-        // 编码version，8bits
+        // encode version，8bits
         {
             const r = new BuckyNumber("u8", this.m_content.codec_info().version).raw_encode(buf);
             if (r.err) {
@@ -839,7 +966,7 @@ export class ObjectMutBody<
             buf = r.unwrap();
         }
 
-        // 编码format，8bits
+        // encode format，8bits
         {
             const r = new BuckyNumber("u8", this.m_content.codec_info().format).raw_encode(buf);
             if (r.err) {
@@ -862,7 +989,7 @@ export class ObjectMutBody<
             base_trace(`[body(${this.trace_id()})] raw_encode, BodyContentFormat.Typed, body_size:${body_size}, buf len:`, buf.length);
         }
 
-        // 对body_content编码，采用精确大小的buf
+        // encode body_content，use fixed size buf
         {
             const body_buf = buf.subarray(0, body_size);
             const r = this.m_content.raw_encode(body_buf);
@@ -871,7 +998,7 @@ export class ObjectMutBody<
                 return r;
             }
 
-            // 正确编码完毕，应该消耗完整个buf
+            // encode complete, the entire buf should be consumed
             const remain_buf = r.unwrap();
             if (remain_buf.byteOffset - buf.byteOffset !== body_size) {
                 console.warn(`encode body content but return nonempty remain buf! obj_type=${this.m_obj_type}, remain=${remain_buf.byteOffset - buf.byteOffset}`);
@@ -906,7 +1033,7 @@ export class ObjectMutBody<
     }
 
     encode_to_buf(purpose?: RawEncodePurpose): BuckyResult<Uint8Array> {
-        // 使用raw_measure_ctx替代raw_measure，减少一次内部的raw_measure调用
+        // Use raw_measure_ctx instead of raw_measure to reduce one internal raw_measure call
         const ctx = new NamedObjectBodyContext();
         const r = this.raw_measure(ctx, purpose);
         if (r.err) {
@@ -994,7 +1121,8 @@ export class ObjectMutBodyDecoder<
         }
         base_trace(`[body(${this.trace_id()})] raw_decode, update_time, buf len:`, buf.length);
 
-        // 预留的扩展字段
+        // Here we try to read if there is an ext extension field, if it exists then we have to skip it for forward compatibility
+        let ext;
         if ((body_flags & OBJECT_BODY_FLAG_EXT) === OBJECT_BODY_FLAG_EXT) {
             const r = new BuckyNumberDecoder('u16').raw_decode(buf);
             if (r.err) {
@@ -1005,9 +1133,17 @@ export class ObjectMutBodyDecoder<
             let ext_len;
             [ext_len, buf] = r.unwrap();
 
-            console.warn(`read unknown body ext content! len=${ext_len.toNumber()}, obj_type=${this.obj_type}`);
+            // console.warn(`read unknown body ext content! len=${ext_len.toNumber()}, obj_type=${this.obj_type}`);
+            if (ext_len.toNumber() > 0) {
+                const ext_buf = buf.slice(0, ext_len.toNumber());
+                const r = new ObjectBodyExtDecoder().raw_decode(ext_buf);
+                if (r.err) {
+                    return r;
+                }
 
-            // 跳过此段不识别的内容
+                ext = r.unwrap()[0];
+            }
+
             buf = buf.offset(ext_len.toNumber());
         }
 
@@ -1094,6 +1230,7 @@ export class ObjectMutBodyDecoder<
                 .option_prev_version(prev_version)
                 .update_time(update_time.toBigInt())
                 .option_user_data(user_data)
+                .option_object_id(ext?.object_id)
                 .build();
 
         const result: [ObjectMutBody<DC, BC>, Uint8Array] = [obj, buf];

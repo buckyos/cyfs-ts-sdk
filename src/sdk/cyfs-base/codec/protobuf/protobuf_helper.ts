@@ -10,8 +10,7 @@ import { OBJECT_CONTENT_CODEC_FORMAT_PROTOBUF } from '../contants';
 
 const OBJECT_CONTENT_DEFAULT_PROTOBUF_CODEC_INFO = new ContentCodecInfo(0, OBJECT_CONTENT_CODEC_FORMAT_PROTOBUF);
 
-
-class ProtobufCodecImpl {
+export class ProtobufCodecImpl {
     static raw_measure(try_to_proto: () => BuckyResult<jspb.Message>): BuckyResult<number> {
         let value: jspb.Message;
         try {

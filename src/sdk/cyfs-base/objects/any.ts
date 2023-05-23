@@ -142,7 +142,7 @@ export class StandardObjectDecoder implements RawDecode<StandardObject> {
             if (r.err) {
                 console.error("StandardObject::raw_decode/NamedObjectContext error:", r.val);
                 return r;
-            };
+            }
             let _buf;
             [ctx, _buf] = r.unwrap();
         }
@@ -154,7 +154,7 @@ export class StandardObjectDecoder implements RawDecode<StandardObject> {
                 if (r.err) {
                     console.error("StandardObject::raw_decode/Device error:", r.val);
                     return r;
-                };
+                }
                 return r;
             }
             case ObjectTypeCode.People: {
@@ -162,7 +162,7 @@ export class StandardObjectDecoder implements RawDecode<StandardObject> {
                 if (r.err) {
                     console.error("StandardObject::raw_decode/People error:", r.val);
                     return r;
-                };
+                }
                 return r;
             }
             case ObjectTypeCode.SimpleGroup: {
@@ -170,7 +170,7 @@ export class StandardObjectDecoder implements RawDecode<StandardObject> {
                 if (r.err) {
                     console.error("StandardObject::raw_decode/SimpleGroup error:", r.val);
                     return r;
-                };
+                }
                 return r;
             }
             case ObjectTypeCode.Org: {
@@ -178,7 +178,7 @@ export class StandardObjectDecoder implements RawDecode<StandardObject> {
                 if (r.err) {
                     console.error("StandardObject::raw_decode/Org error:", r.val);
                     return r;
-                };
+                }
                 return r;
             }
             case ObjectTypeCode.AppGroup: {
@@ -186,7 +186,7 @@ export class StandardObjectDecoder implements RawDecode<StandardObject> {
                 if (r.err) {
                     console.error("StandardObject::raw_decode/AppGroup error:", r.val);
                     return r;
-                };
+                }
                 return r;
             }
             case ObjectTypeCode.UnionAccount: {
@@ -194,7 +194,7 @@ export class StandardObjectDecoder implements RawDecode<StandardObject> {
                 if (r.err) {
                     console.error("StandardObject::raw_decode/UnionAccount error:", r.val);
                     return r;
-                };
+                }
                 return r;
             }
             case ObjectTypeCode.Chunk: {
@@ -202,7 +202,7 @@ export class StandardObjectDecoder implements RawDecode<StandardObject> {
                 if (r.err) {
                     console.error("StandardObject::raw_decode/Chunk error:", r.val);
                     return r;
-                };
+                }
                 return r;
             }
             case ObjectTypeCode.File: {
@@ -210,7 +210,7 @@ export class StandardObjectDecoder implements RawDecode<StandardObject> {
                 if (r.err) {
                     console.error("StandardObject::raw_decode/File error:", r.val);
                     return r;
-                };
+                }
                 return r;
             }
 
@@ -219,7 +219,7 @@ export class StandardObjectDecoder implements RawDecode<StandardObject> {
                 if (r.err) {
                     console.error("StandardObject::raw_decode/Dir error:", r.val);
                     return r;
-                };
+                }
                 return r;
             }
 
@@ -253,7 +253,7 @@ export class StandardObjectDecoder implements RawDecode<StandardObject> {
                 if (r.err) {
                     console.error("StandardObject::raw_decode/Action error:", r.val);
                     return r;
-                };
+                }
                 return r;
             }
             case ObjectTypeCode.ObjectMap: {
@@ -261,7 +261,7 @@ export class StandardObjectDecoder implements RawDecode<StandardObject> {
                 if (r.err) {
                     console.error("StandardObject::raw_decode/ObjectMap error:", r.val);
                     return r;
-                };
+                }
                 return r;
             }
             case ObjectTypeCode.Contract: {
@@ -269,7 +269,7 @@ export class StandardObjectDecoder implements RawDecode<StandardObject> {
                 if (r.err) {
                     console.error("StandardObject::raw_decode/Contract error:", r.val);
                     return r;
-                };
+                }
                 return r;
             }
             case ObjectTypeCode.Tx: {

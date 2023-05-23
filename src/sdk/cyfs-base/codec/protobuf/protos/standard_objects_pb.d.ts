@@ -3,6 +3,30 @@
 
 import * as jspb from "google-protobuf";
 
+export class ObjectBodyExt extends jspb.Message {
+  hasObjectId(): boolean;
+  clearObjectId(): void;
+  getObjectId(): Uint8Array | string;
+  getObjectId_asU8(): Uint8Array;
+  getObjectId_asB64(): string;
+  setObjectId(value: Uint8Array | string): void;
+
+  serializeBinary(): Uint8Array;
+  toObject(includeInstance?: boolean): ObjectBodyExt.AsObject;
+  static toObject(includeInstance: boolean, msg: ObjectBodyExt): ObjectBodyExt.AsObject;
+  static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+  static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+  static serializeBinaryToWriter(message: ObjectBodyExt, writer: jspb.BinaryWriter): void;
+  static deserializeBinary(bytes: Uint8Array): ObjectBodyExt;
+  static deserializeBinaryFromReader(message: ObjectBodyExt, reader: jspb.BinaryReader): ObjectBodyExt;
+}
+
+export namespace ObjectBodyExt {
+  export type AsObject = {
+    objectId: Uint8Array | string,
+  }
+}
+
 export class ContractBodyContent extends jspb.Message {
   getData(): Uint8Array | string;
   getData_asU8(): Uint8Array;
@@ -52,6 +76,11 @@ export class DeviceBodyContent extends jspb.Message {
   getName(): string;
   setName(value: string): void;
 
+  hasBdtVersion(): boolean;
+  clearBdtVersion(): void;
+  getBdtVersion(): number;
+  setBdtVersion(value: number): void;
+
   serializeBinary(): Uint8Array;
   toObject(includeInstance?: boolean): DeviceBodyContent.AsObject;
   static toObject(includeInstance: boolean, msg: DeviceBodyContent): DeviceBodyContent.AsObject;
@@ -68,6 +97,7 @@ export namespace DeviceBodyContent {
     snListList: Array<Uint8Array | string>,
     passivePnListList: Array<Uint8Array | string>,
     name: string,
+    bdtVersion: number,
   }
 }
 
@@ -216,94 +246,6 @@ export namespace FileBodyContent {
   }
 }
 
-export class Director extends jspb.Message {
-  getId(): Uint8Array | string;
-  getId_asU8(): Uint8Array;
-  getId_asB64(): string;
-  setId(value: Uint8Array | string): void;
-
-  getRight(): number;
-  setRight(value: number): void;
-
-  serializeBinary(): Uint8Array;
-  toObject(includeInstance?: boolean): Director.AsObject;
-  static toObject(includeInstance: boolean, msg: Director): Director.AsObject;
-  static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
-  static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
-  static serializeBinaryToWriter(message: Director, writer: jspb.BinaryWriter): void;
-  static deserializeBinary(bytes: Uint8Array): Director;
-  static deserializeBinaryFromReader(message: Director, reader: jspb.BinaryReader): Director;
-}
-
-export namespace Director {
-  export type AsObject = {
-    id: Uint8Array | string,
-    right: number,
-  }
-}
-
-export class OrgMember extends jspb.Message {
-  getId(): Uint8Array | string;
-  getId_asU8(): Uint8Array;
-  getId_asB64(): string;
-  setId(value: Uint8Array | string): void;
-
-  getRight(): number;
-  setRight(value: number): void;
-
-  getShares(): string;
-  setShares(value: string): void;
-
-  serializeBinary(): Uint8Array;
-  toObject(includeInstance?: boolean): OrgMember.AsObject;
-  static toObject(includeInstance: boolean, msg: OrgMember): OrgMember.AsObject;
-  static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
-  static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
-  static serializeBinaryToWriter(message: OrgMember, writer: jspb.BinaryWriter): void;
-  static deserializeBinary(bytes: Uint8Array): OrgMember;
-  static deserializeBinaryFromReader(message: OrgMember, reader: jspb.BinaryReader): OrgMember;
-}
-
-export namespace OrgMember {
-  export type AsObject = {
-    id: Uint8Array | string,
-    right: number,
-    shares: string,
-  }
-}
-
-export class OrgBodyContent extends jspb.Message {
-  clearMembersList(): void;
-  getMembersList(): Array<OrgMember>;
-  setMembersList(value: Array<OrgMember>): void;
-  addMembers(value?: OrgMember, index?: number): OrgMember;
-
-  clearDirectorsList(): void;
-  getDirectorsList(): Array<Director>;
-  setDirectorsList(value: Array<Director>): void;
-  addDirectors(value?: Director, index?: number): Director;
-
-  getTotalEquity(): string;
-  setTotalEquity(value: string): void;
-
-  serializeBinary(): Uint8Array;
-  toObject(includeInstance?: boolean): OrgBodyContent.AsObject;
-  static toObject(includeInstance: boolean, msg: OrgBodyContent): OrgBodyContent.AsObject;
-  static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
-  static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
-  static serializeBinaryToWriter(message: OrgBodyContent, writer: jspb.BinaryWriter): void;
-  static deserializeBinary(bytes: Uint8Array): OrgBodyContent;
-  static deserializeBinaryFromReader(message: OrgBodyContent, reader: jspb.BinaryReader): OrgBodyContent;
-}
-
-export namespace OrgBodyContent {
-  export type AsObject = {
-    membersList: Array<OrgMember.AsObject>,
-    directorsList: Array<Director.AsObject>,
-    totalEquity: string,
-  }
-}
-
 export class PeopleBodyContent extends jspb.Message {
   clearOodListList(): void;
   getOodListList(): Array<Uint8Array | string>;
@@ -348,13 +290,52 @@ export namespace PeopleBodyContent {
   }
 }
 
-export class SimpleGroupBodyContent extends jspb.Message {
+export class GroupMember extends jspb.Message {
+  getId(): Uint8Array | string;
+  getId_asU8(): Uint8Array;
+  getId_asB64(): string;
+  setId(value: Uint8Array | string): void;
+
+  getTitle(): string;
+  setTitle(value: string): void;
+
+  serializeBinary(): Uint8Array;
+  toObject(includeInstance?: boolean): GroupMember.AsObject;
+  static toObject(includeInstance: boolean, msg: GroupMember): GroupMember.AsObject;
+  static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+  static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+  static serializeBinaryToWriter(message: GroupMember, writer: jspb.BinaryWriter): void;
+  static deserializeBinary(bytes: Uint8Array): GroupMember;
+  static deserializeBinaryFromReader(message: GroupMember, reader: jspb.BinaryReader): GroupMember;
+}
+
+export namespace GroupMember {
+  export type AsObject = {
+    id: Uint8Array | string,
+    title: string,
+  }
+}
+
+export class CommonGroupBodyContent extends jspb.Message {
+  hasName(): boolean;
+  clearName(): void;
+  getName(): string;
+  setName(value: string): void;
+
+  hasIcon(): boolean;
+  clearIcon(): void;
+  getIcon(): string;
+  setIcon(value: string): void;
+
+  hasDescription(): boolean;
+  clearDescription(): void;
+  getDescription(): string;
+  setDescription(value: string): void;
+
   clearMembersList(): void;
-  getMembersList(): Array<Uint8Array | string>;
-  getMembersList_asU8(): Array<Uint8Array>;
-  getMembersList_asB64(): Array<string>;
-  setMembersList(value: Array<Uint8Array | string>): void;
-  addMembers(value: Uint8Array | string, index?: number): Uint8Array | string;
+  getMembersList(): Array<GroupMember>;
+  setMembersList(value: Array<GroupMember>): void;
+  addMembers(value?: GroupMember, index?: number): GroupMember;
 
   clearOodListList(): void;
   getOodListList(): Array<Uint8Array | string>;
@@ -363,10 +344,79 @@ export class SimpleGroupBodyContent extends jspb.Message {
   setOodListList(value: Array<Uint8Array | string>): void;
   addOodList(value: Uint8Array | string, index?: number): Uint8Array | string;
 
-  hasOodWorkMode(): boolean;
-  clearOodWorkMode(): void;
-  getOodWorkMode(): string;
-  setOodWorkMode(value: string): void;
+  hasPrevShellId(): boolean;
+  clearPrevShellId(): void;
+  getPrevShellId(): Uint8Array | string;
+  getPrevShellId_asU8(): Uint8Array;
+  getPrevShellId_asB64(): string;
+  setPrevShellId(value: Uint8Array | string): void;
+
+  getVersion(): number;
+  setVersion(value: number): void;
+
+  serializeBinary(): Uint8Array;
+  toObject(includeInstance?: boolean): CommonGroupBodyContent.AsObject;
+  static toObject(includeInstance: boolean, msg: CommonGroupBodyContent): CommonGroupBodyContent.AsObject;
+  static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+  static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+  static serializeBinaryToWriter(message: CommonGroupBodyContent, writer: jspb.BinaryWriter): void;
+  static deserializeBinary(bytes: Uint8Array): CommonGroupBodyContent;
+  static deserializeBinaryFromReader(message: CommonGroupBodyContent, reader: jspb.BinaryReader): CommonGroupBodyContent;
+}
+
+export namespace CommonGroupBodyContent {
+  export type AsObject = {
+    name: string,
+    icon: string,
+    description: string,
+    membersList: Array<GroupMember.AsObject>,
+    oodListList: Array<Uint8Array | string>,
+    prevShellId: Uint8Array | string,
+    version: number,
+  }
+}
+
+export class SimpleGroupDescContent extends jspb.Message {
+  getUniqueId(): Uint8Array | string;
+  getUniqueId_asU8(): Uint8Array;
+  getUniqueId_asB64(): string;
+  setUniqueId(value: Uint8Array | string): void;
+
+  hasFounderId(): boolean;
+  clearFounderId(): void;
+  getFounderId(): Uint8Array | string;
+  getFounderId_asU8(): Uint8Array;
+  getFounderId_asB64(): string;
+  setFounderId(value: Uint8Array | string): void;
+
+  clearAdminsList(): void;
+  getAdminsList(): Array<GroupMember>;
+  setAdminsList(value: Array<GroupMember>): void;
+  addAdmins(value?: GroupMember, index?: number): GroupMember;
+
+  serializeBinary(): Uint8Array;
+  toObject(includeInstance?: boolean): SimpleGroupDescContent.AsObject;
+  static toObject(includeInstance: boolean, msg: SimpleGroupDescContent): SimpleGroupDescContent.AsObject;
+  static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+  static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+  static serializeBinaryToWriter(message: SimpleGroupDescContent, writer: jspb.BinaryWriter): void;
+  static deserializeBinary(bytes: Uint8Array): SimpleGroupDescContent;
+  static deserializeBinaryFromReader(message: SimpleGroupDescContent, reader: jspb.BinaryReader): SimpleGroupDescContent;
+}
+
+export namespace SimpleGroupDescContent {
+  export type AsObject = {
+    uniqueId: Uint8Array | string,
+    founderId: Uint8Array | string,
+    adminsList: Array<GroupMember.AsObject>,
+  }
+}
+
+export class SimpleGroupBodyContent extends jspb.Message {
+  hasCommon(): boolean;
+  clearCommon(): void;
+  getCommon(): CommonGroupBodyContent | undefined;
+  setCommon(value?: CommonGroupBodyContent): void;
 
   serializeBinary(): Uint8Array;
   toObject(includeInstance?: boolean): SimpleGroupBodyContent.AsObject;
@@ -380,9 +430,65 @@ export class SimpleGroupBodyContent extends jspb.Message {
 
 export namespace SimpleGroupBodyContent {
   export type AsObject = {
-    membersList: Array<Uint8Array | string>,
-    oodListList: Array<Uint8Array | string>,
-    oodWorkMode: string,
+    common?: CommonGroupBodyContent.AsObject,
+  }
+}
+
+export class OrgDescContent extends jspb.Message {
+  getUniqueId(): Uint8Array | string;
+  getUniqueId_asU8(): Uint8Array;
+  getUniqueId_asB64(): string;
+  setUniqueId(value: Uint8Array | string): void;
+
+  hasFounderId(): boolean;
+  clearFounderId(): void;
+  getFounderId(): Uint8Array | string;
+  getFounderId_asU8(): Uint8Array;
+  getFounderId_asB64(): string;
+  setFounderId(value: Uint8Array | string): void;
+
+  serializeBinary(): Uint8Array;
+  toObject(includeInstance?: boolean): OrgDescContent.AsObject;
+  static toObject(includeInstance: boolean, msg: OrgDescContent): OrgDescContent.AsObject;
+  static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+  static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+  static serializeBinaryToWriter(message: OrgDescContent, writer: jspb.BinaryWriter): void;
+  static deserializeBinary(bytes: Uint8Array): OrgDescContent;
+  static deserializeBinaryFromReader(message: OrgDescContent, reader: jspb.BinaryReader): OrgDescContent;
+}
+
+export namespace OrgDescContent {
+  export type AsObject = {
+    uniqueId: Uint8Array | string,
+    founderId: Uint8Array | string,
+  }
+}
+
+export class OrgBodyContent extends jspb.Message {
+  clearAdminsList(): void;
+  getAdminsList(): Array<GroupMember>;
+  setAdminsList(value: Array<GroupMember>): void;
+  addAdmins(value?: GroupMember, index?: number): GroupMember;
+
+  hasCommon(): boolean;
+  clearCommon(): void;
+  getCommon(): CommonGroupBodyContent | undefined;
+  setCommon(value?: CommonGroupBodyContent): void;
+
+  serializeBinary(): Uint8Array;
+  toObject(includeInstance?: boolean): OrgBodyContent.AsObject;
+  static toObject(includeInstance: boolean, msg: OrgBodyContent): OrgBodyContent.AsObject;
+  static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+  static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+  static serializeBinaryToWriter(message: OrgBodyContent, writer: jspb.BinaryWriter): void;
+  static deserializeBinary(bytes: Uint8Array): OrgBodyContent;
+  static deserializeBinaryFromReader(message: OrgBodyContent, reader: jspb.BinaryReader): OrgBodyContent;
+}
+
+export namespace OrgBodyContent {
+  export type AsObject = {
+    adminsList: Array<GroupMember.AsObject>,
+    common?: CommonGroupBodyContent.AsObject,
   }
 }
 

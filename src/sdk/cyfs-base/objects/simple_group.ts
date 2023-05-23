@@ -98,14 +98,15 @@ export class SimpleGroupBodyContent extends ProtobufBodyContent {
 
     try_to_proto(): BuckyResult<protos.SimpleGroupBodyContent> {
         const target = new protos.SimpleGroupBodyContent();
-
+        // TODO: 
+        /*
         target.setMembersList(ProtobufCodecHelper.encode_buf_list(this.members).unwrap());
         target.setOodListList(ProtobufCodecHelper.encode_buf_list(this.ood_list).unwrap());
 
         if (this.m_ood_work_mode != null) {
             target.setOodWorkMode(this.m_ood_work_mode);
         }
-
+        */
         return Ok(target);
     }
 }
@@ -117,6 +118,7 @@ export class SimpleGroupBodyContentDecoder extends ProtobufBodyContentDecoder<Si
     }
 
     try_from_proto(value: protos.SimpleGroupBodyContent): BuckyResult<SimpleGroupBodyContent> {
+        /*
         const members = ProtobufCodecHelper.decode_buf_list(value.getMembersList_asU8(), new ObjectIdDecoder()).unwrap();
         const ood_list = ProtobufCodecHelper.decode_buf_list(value.getOodListList_asU8(), new DeviceIdDecoder()).unwrap();
 
@@ -124,8 +126,9 @@ export class SimpleGroupBodyContentDecoder extends ProtobufBodyContentDecoder<Si
         if (value.hasOodWorkMode()) {
             mode = value.getOodWorkMode() as OODWorkMode;
         }
-
-        const result = new SimpleGroupBodyContent(members, ood_list, mode);
+        */
+        // TODO: 
+        const result = new SimpleGroupBodyContent([], [], undefined);
         return Ok(result);
     }
 }

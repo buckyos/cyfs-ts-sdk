@@ -1,5 +1,46 @@
-import { Area, Device, DeviceCategory, DeviceDecoder, DeviceId, Endpoint, PeopleId, PrivateKey, to_buf, UniqueId } from '../sdk';
+import { Area, Device, DeviceCategory, DeviceDecoder, DeviceId, Endpoint, ObjectId, PeopleId, PrivateKey, to_buf, UniqueId } from '../sdk';
 
+export function test_body_ext() {
+    const area = new Area(1, 2, 1, 0);
+    const owner = ObjectId.from_str("5r4MYfFMLwNG8oaBA7tmssaV2Z94sVZUfKXejfC1RMjX").unwrap();
+    const unique_id = UniqueId.create_with_hash(Uint8Array.from(Buffer.from("test_device")));
+
+    const sn_list =
+        [DeviceId.from_base_58("5aSixgMAjePp1j5M7ngnU6CN6Do2gitKirviqJswuGVM").unwrap()];
+
+    const private_key = PrivateKey.generate_rsa(1024).unwrap();
+    const public_key = private_key.public();
+
+    const device = Device.create(
+        owner,
+        unique_id,
+        [],
+        sn_list,
+        [],
+        public_key,
+        area,
+        DeviceCategory.IOSMobile,
+    );
+
+    let buf = device.to_vec().unwrap();
+    console.log("device without object_id: ", buf.toHex());
+
+    {
+        const device1 = new DeviceDecoder().from_raw(buf).unwrap();
+        console.assert(!device1.body_expect().object_id(), "device body object id should be empty");
+    }
+
+    const device_with_body_object_id = device;
+    device_with_body_object_id.body_expect().set_object_id(owner);
+
+    buf = device_with_body_object_id.to_vec().unwrap();
+    console.log("device with object_id: {}", buf.toHex());
+
+    {
+        const device1 = new DeviceDecoder().from_raw(buf).unwrap();
+        console.assert(device1.body_expect().object_id()!.eq(owner), "device body object id should match");
+    }
+}
 
 export function test_object_codec() {
     const sk = PrivateKey.generate_rsa(1024).unwrap();
@@ -51,7 +92,7 @@ export function test_object_codec() {
         const buf4 = new Uint8Array(buf.buffer, 0, 5);
         console.info(buf4.length);
         console.info(buf4);
-        let buf5 = buf4.offset(5);
+        const buf5 = buf4.offset(5);
         console.info(buf5.length, buf5);
 
         const buf6 = buf5.subarray(0, 3);

@@ -85,7 +85,8 @@ export class OrgBodyContent extends ProtobufBodyContent {
 
     try_to_proto(): BuckyResult<protos.OrgBodyContent> {
         const target = new protos.OrgBodyContent();
-
+        // TODO
+        /*
         target.setTotalEquity(this.total_equity.toString());
 
         for (const item of this.directors) {
@@ -104,7 +105,7 @@ export class OrgBodyContent extends ProtobufBodyContent {
 
             target.addMembers(value);
         }
-
+        */
         return Ok(target);
     }
 }
@@ -116,6 +117,7 @@ export class OrgBodyContentDecoder extends ProtobufBodyContentDecoder<OrgBodyCon
     }
 
     try_from_proto(value: protos.OrgBodyContent): BuckyResult<OrgBodyContent> {
+        /*
         const members: OrgMember[] = [];
         const directors: Director[] = [];
         const total_equity = ProtobufCodecHelper.decode_int64(value.getTotalEquity());
@@ -136,8 +138,9 @@ export class OrgBodyContentDecoder extends ProtobufBodyContentDecoder<OrgBodyCon
 
             directors.push(new Director(id, right));
         }
-
-        const result = new OrgBodyContent(members, directors, total_equity);
+        */
+        // TODO
+        const result = new OrgBodyContent([], [], JSBI.BigInt(0));
         return Ok(result);
     }
 }
